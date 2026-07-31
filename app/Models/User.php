@@ -12,6 +12,9 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
+    /** Daftar peran yang valid (sinkron dengan enum kolom `role`). */
+    public const ROLES = ['buyer', 'seller', 'supervisor'];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -24,7 +27,6 @@ class User extends Authenticatable
         'email',
         'phone',
         'wallet_address',
-        'is_admin',
         'role',
         'password',
         'nonce',
@@ -67,7 +69,6 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'is_admin' => 'boolean',
             'explorer_public' => 'boolean',
             'nonce_expires_at' => 'datetime',
         ];

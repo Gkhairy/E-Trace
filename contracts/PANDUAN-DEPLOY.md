@@ -76,16 +76,16 @@ Jangan ubah `TOKEN_DECIMALS = 18` (harus sama dengan token).
 
 ---
 
-## 5. Jadikan dirimu admin (agar bisa listing produk)
+## 5. Jadikan dirimu penjual (agar bisa listing produk)
 
-Jalankan migrasi lalu set salah satu user jadi admin:
+Jalankan migrasi lalu set peran user jadi `seller` (peran = kolom `role`: `buyer`/`seller`/`supervisor`):
 
 ```bash
 php artisan migrate
 
-# tandai user sebagai admin (ganti email sesuai akunmu)
+# tandai user sebagai penjual (ganti email sesuai akunmu)
 php artisan tinker
->>> \App\Models\User::where('email','emailkamu@contoh.com')->update(['is_admin'=>true]);
+>>> \App\Models\User::where('email','emailkamu@contoh.com')->update(['role'=>'seller']);
 ```
 
 Setelah itu tombol **+ Add Product** akan muncul di halaman Produk.
