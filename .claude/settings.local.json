@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php --version)",
+      "Bash(php artisan *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://127.0.0.1:8000/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://127.0.0.1:8000/products)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://127.0.0.1:8000/login)",
+      "Bash(curl -s -o /dev/null -w \"%{redirect_url}\\\\n\" http://127.0.0.1:8000/products)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://127.0.0.1:8000/product_images/1764159617-Zeppelin.jpg)",
+      "Bash(curl -s \"https://cdn.jsdelivr.net/npm/ethers@6.7.1/dist/ethers.min.js\")",
+      "Bash(curl -s \"https://cdn.jsdelivr.net/npm/ethers@6.7.1/dist/ethers.umd.min.js\")",
+      "Bash(curl -s -o /dev/null -w \"products list \\(guest→login\\): %{http_code}\\\\n\" http://127.0.0.1:8000/products)",
+      "Bash(grep -v \"^$\")",
+      "Bash(composer require *)",
+      "Bash(grep -nE \"^\\\\s*;?\\\\s*extension\\\\s*=\\\\s*gmp\" \"C:/xampp/php/php.ini\")",
+      "Bash(php -m)",
+      "Bash(curl -s -o /dev/null -w \"status: %{http_code}\\\\n\" http://127.0.0.1:8000/)",
+      "Bash(curl -s http://127.0.0.1:8000/)"
+    ]
+  }
+}

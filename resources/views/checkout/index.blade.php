@@ -1,0 +1,225 @@
+@extends('layouts.app')
+
+@section('content')
+
+@php
+    // Baris item untuk dikirim ke JS (amount sebagai string desimal, hindari float error).
+    $lines = $items->values()->map(function ($it, $i) {
+        $amount = (float) $it->product->price_usdc * $it->quantity;
+        return [
+            'db_product_id' => $it->product->id,
+            'product_uuid'  => $it->product->product_id,
+            'seller'        => $it->product->seller_wallet,
+            'name'          => $it->product->name,
+            'qty'           => $it->quantity,
+            'amount'        => number_format($amount, 6, '.', ''),
+            'index'         => $i,
+        ];
+    });
+    $totalStr = number_format($total, 6, '.', '');
+@endphp
+
+<nav class="flex items-center gap-2 text-xs text-slate-500 mb-6">
+    <a href="/cart" class="hover:text-blue-600 transition">Keranjang</a>
+    <span class="text-slate-300">/</span>
+    <span class="text-slate-700">Checkout</span>
+</nav>
+
+<h1 class="text-2xl font-bold text-slate-900 mb-6">Checkout</h1>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {{-- KIRI: alamat + ringkasan per penjual --}}
+    <div class="lg:col-span-2 space-y-6">
+        {{-- FORM ALAMAT (wajib) --}}
+        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+            <h3 class="font-semibold text-slate-900 mb-1">Alamat Pengiriman</h3>
+            <p class="text-xs text-slate-400 mb-4">Data pribadi ini disimpan di database, <b>tidak</b> masuk blockchain.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Nama Penerima</label>
+                    <input id="recipient_name" value="{{ $lastAddress->recipient_name ?? '' }}" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">No HP</label>
+                    <input id="phone" value="{{ $lastAddress->phone ?? '' }}" placeholder="0812…" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Alamat Lengkap</label>
+                    <textarea id="address" rows="2" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm resize-none">{{ $lastAddress->address ?? '' }}</textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Kota</label>
+                    <input id="city" value="{{ $lastAddress->city ?? '' }}" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Kode Pos</label>
+                    <input id="postal_code" value="{{ $lastAddress->postal_code ?? '' }}" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Catatan (opsional)</label>
+                    <input id="notes" value="{{ $lastAddress->notes ?? '' }}" placeholder="Patokan, warna, dll" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
+                </div>
+            </div>
+        </div>
+
+        {{-- RINGKASAN PER PENJUAL --}}
+        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+            <h3 class="font-semibold text-slate-900 mb-1">Ringkasan per Penjual</h3>
+            <p class="text-xs text-slate-400 mb-4">Dana tiap penjual ditahan di <b>escrow terpisah</b>. Konfirmasi 1 penjual tidak melepas dana penjual lain.</p>
+
+            <div class="space-y-5">
+                @foreach($groups as $seller => $group)
+                    @php $subtotal = $group->sum(fn($it) => (float)$it->product->price_usdc * $it->quantity); @endphp
+                    <div class="border border-slate-100 rounded-xl overflow-hidden">
+                        <div class="bg-slate-50 px-4 py-2.5 flex items-center justify-between">
+                            <span class="text-xs font-mono text-slate-500">Penjual {{ substr($seller, 0, 8) }}…{{ substr($seller, -6) }}</span>
+                            <span class="text-xs font-semibold text-slate-700">{{ rtrim(rtrim(number_format($subtotal, 2), '0'), '.') }} TLKM</span>
+                        </div>
+                        <div class="divide-y divide-slate-100">
+                            @foreach($group as $it)
+                                <div class="px-4 py-3 flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-lg bg-white border border-slate-100 flex items-center justify-center p-1 shrink-0">
+                                        <img src="{{ $it->product->image ? '/product_images/'.$it->product->image : 'https://placehold.co/80x80/f1f5f9/94a3b8?text=—' }}" onerror="this.src='https://placehold.co/80x80/f1f5f9/94a3b8?text=—'" class="max-w-full max-h-full object-contain">
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-slate-800 line-clamp-1">{{ $it->product->name }}</p>
+                                        <p class="text-xs text-slate-400">{{ rtrim(rtrim(number_format($it->product->price_usdc, 2), '0'), '.') }} TLKM × {{ $it->quantity }}</p>
+                                    </div>
+                                    <span class="text-sm font-semibold text-slate-700">{{ rtrim(rtrim(number_format((float)$it->product->price_usdc * $it->quantity, 2), '0'), '.') }} TLKM</span>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+
+    {{-- KANAN: total + bayar --}}
+    <div class="lg:col-span-1">
+        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 lg:sticky lg:top-24">
+            <h3 class="font-semibold text-slate-900 mb-4">Pembayaran</h3>
+            <div class="flex justify-between text-sm text-slate-600 mb-2"><span>Jumlah item</span><span>{{ $items->sum('quantity') }}</span></div>
+            <div class="flex justify-between text-sm text-slate-600 mb-2"><span>Penjual</span><span>{{ $groups->count() }}</span></div>
+            <div class="flex justify-between items-end border-t border-slate-100 pt-3 mt-3">
+                <span class="text-sm text-slate-500">Total bayar</span>
+                <span class="text-2xl font-extrabold text-slate-900">{{ rtrim(rtrim(number_format($total, 2), '0'), '.') }} <span class="text-sm text-blue-600 font-semibold">TLKM</span></span>
+            </div>
+            {{-- Fee platform transparan sebelum checkout (dipotong dari penjual saat rilis) --}}
+            <div class="flex justify-between text-xs text-slate-500 mt-2">
+                <span>Fee platform (1%)</span>
+                <span>{{ rtrim(rtrim(number_format($total * 0.01, 2), '0'), '.') }} TLKM</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1 leading-snug">Fee dipotong dari penjual saat dana dilepas — kamu tetap membayar total di atas.</p>
+
+            <div class="flex items-center gap-2 text-xs text-green-700 mt-4 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Bayar 1× — escrow terpisah per penjual
+            </div>
+
+            <button id="payBtn" onclick="checkoutPay()"
+                class="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-3 rounded-xl text-sm font-bold transition shadow-sm">
+                Bayar {{ rtrim(rtrim(number_format($total, 2), '0'), '.') }} TLKM
+            </button>
+        </div>
+    </div>
+</div>
+
+@endsection
+
+@section('scripts')
+<script>
+const LINES = @json($lines);
+const TOTAL = @json($totalStr);
+
+function val(id) { const el = document.getElementById(id); return el ? el.value : ''; }
+
+async function checkoutPay() {
+    const shipping = {
+        recipient_name: val('recipient_name'),
+        phone:          val('phone'),
+        address:        val('address'),
+        city:           val('city'),
+        postal_code:    val('postal_code'),
+        notes:          val('notes'),
+    };
+    // Validasi alamat wajib.
+    for (const k of ['recipient_name', 'phone', 'address', 'city', 'postal_code']) {
+        if (!shipping[k].trim()) {
+            showToast('Lengkapi alamat pengiriman dulu.', 'warn');
+            document.getElementById(k).focus();
+            return;
+        }
+    }
+    if (!window.ethereum) return uiAlert({ title: 'MetaMask dibutuhkan', message: 'Install ekstensi MetaMask untuk melanjutkan.', type: 'warn' });
+    if (!LINES.length) return;
+
+    const sellers    = LINES.map(l => l.seller);
+    const amounts    = LINES.map(l => l.amount);
+    const productIds = LINES.map(l => l.product_uuid);
+    const orderId    = 'CART-' + Date.now();
+
+    const ok = await uiConfirm({
+        title: 'Konfirmasi Pembayaran',
+        message: `Bayar total <b class="text-blue-600">${TOTAL} TLKM</b> untuk ${LINES.length} item?<br><span class="text-xs text-slate-400">Dana tiap penjual ditahan di escrow terpisah.</span>`,
+        confirmText: 'Ya, bayar'
+    });
+    if (!ok) return;
+
+    const btn = document.getElementById('payBtn');
+    btn.disabled = true;
+
+    // Payload disiapkan; tx_hash diisi setelah bayar. items minimal (backend ambil dari chain).
+    const payload = {
+        order_id: orderId, tx_hash: null, shipping,
+        items: LINES.map(l => ({ product_id: l.db_product_id, item_index: l.index })),
+    };
+
+    txProgress.open('Memproses Pembayaran', ['Memeriksa jaringan', 'Menyetujui total (approve)', 'Membayar ke escrow', 'Verifikasi & simpan']);
+
+    try {
+        txProgress.active(0); await checkNetwork(); txProgress.done(0);
+
+        txProgress.active(1, 'Setujui approve total di MetaMask…');
+        await approveToken(TOTAL);
+        txProgress.done(1);
+
+        txProgress.active(2, 'Konfirmasi pembayaran di MetaMask…');
+        const { txHash } = await payCart({ sellers, amounts, productIds, orderId });
+        payload.tx_hash = txHash;
+        // Jaring pengaman: simpan draft SEBELUM POST -> kalau simpan gagal, di-retry otomatis.
+        localStorage.setItem('pendingOrder:' + orderId, JSON.stringify(payload));
+        txProgress.done(2);
+
+        txProgress.active(3, 'Verifikasi on-chain & menyimpan…');
+        await submitOrder(payload);   // verifikasi backend + hapus draft bila sukses
+        txProgress.done(3);
+
+        setTimeout(() => {
+            txProgress.close();
+            updateCartBadge(0);
+            uiAlert({
+                title: 'Pembayaran Berhasil 🎉',
+                message: `Order terverifikasi on-chain.<br><a href="https://sepolia.etherscan.io/tx/${txHash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`,
+                type: 'success'
+            }).then(() => window.location.href = '/orders');
+        }, 500);
+
+    } catch (e) {
+        console.error(e);
+        txProgress.close();
+        if (payload.tx_hash) {
+            // Sudah bayar on-chain, tapi simpan/verifikasi tertunda -> akan di-retry otomatis.
+            uiAlert({
+                title: 'Pembayaran Terkirim',
+                message: 'Pembayaran on-chain berhasil, tapi penyimpanan tertunda (mungkin menunggu konfirmasi jaringan). Sistem akan menyimpan otomatis — cek halaman Order sebentar lagi.',
+                type: 'warn'
+            }).then(() => window.location.href = '/orders');
+        } else {
+            uiAlert({ title: 'Transaksi Gagal', message: niceError(e), type: 'error' });
+            btn.disabled = false;
+        }
+    }
+}
+</script>
+@endsection
