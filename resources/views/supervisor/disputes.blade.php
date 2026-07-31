@@ -70,7 +70,7 @@ async function arbiterResolve(orderId, index, itemId, action, btn) {
     const ok = await uiConfirm({
         title: 'Putusan Pengawas',
         message: `Yakin ${label} untuk item ini? Aksi ini tereksekusi on-chain & tidak bisa dibatalkan.`,
-        confirmText: 'Ya, eksekusi', danger: action === 'refund'
+        confirmText: action === 'release' ? 'Lepas ke penjual' : 'Refund ke pembeli', danger: action === 'refund'
     });
     if (!ok) return;
     btn.disabled = true;
@@ -84,7 +84,7 @@ async function arbiterResolve(orderId, index, itemId, action, btn) {
             body: JSON.stringify({ order_item_id: itemId, status: action === 'release' ? 'completed' : 'refunded' })
         });
         txProgress.done(1);
-        setTimeout(() => { txProgress.close(); uiAlert({ title:'Putusan Dieksekusi ✅', message:`<a href="https://sepolia.etherscan.io/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type:'success' }).then(()=>location.reload()); }, 400);
+        setTimeout(() => { txProgress.close(); uiAlert({ title:'Putusan Dieksekusi', message:`<a href="https://sepolia.etherscan.io/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type:'success' }).then(()=>location.reload()); }, 400);
     } catch (e) {
         txProgress.close();
         uiAlert({ title:'Gagal', message: niceError(e), type:'error' });

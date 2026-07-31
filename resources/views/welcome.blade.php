@@ -8,7 +8,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
@@ -31,11 +31,11 @@
 </head>
 <body>
 
-<div id="page" style="position:relative;min-height:100vh;background:#f6f7fb;color:#334155;font-family:Inter,sans-serif;overflow-x:hidden;">
+<div id="page" style="position:relative;min-height:100vh;background:#f6f7fb;color:#334155;font-family:'Hanken Grotesk',sans-serif;overflow-x:hidden;">
 
   <header style="position:fixed;top:0;left:0;right:0;z-index:50;background:linear-gradient(180deg, rgba(246,247,251,0.9), rgba(246,247,251,0.75));backdrop-filter:blur(6px);border-bottom:1px solid rgba(15,23,42,0.06);">
     <div style="max-width:1200px;margin:0 auto;height:80px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;">
-      <a href="/" style="display:flex;align-items:center;gap:9px;font-family:'Space Grotesk',sans-serif;font-size:18px;color:#0f172a;">
+      <a href="/" style="display:flex;align-items:center;gap:9px;font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;">
         <span style="width:10px;height:10px;border-radius:50%;background:#2563eb;box-shadow:0 0 14px 3px rgba(37,99,235,0.6);display:inline-block;"></span>
         MyCryptoShop
       </a>
@@ -56,8 +56,8 @@
         <span style="width:6px;height:6px;border-radius:50%;background:#2563eb;display:inline-block;"></span>
         Escrow trustless &middot; Ethereum &middot; Token TLKM
       </div>
-      <h1 class="reveal" data-reveal="hero" style="font-family:'Space Grotesk',sans-serif;font-size:clamp(2.6rem,6vw,4.6rem);line-height:1.04;color:#0f172a;max-width:760px;margin:0;">
-        Marketplace yang <span style="background:linear-gradient(90deg,#2563eb,#6366f1,#9333ea);-webkit-background-clip:text;background-clip:text;color:transparent;">transparan sepenuhnya.</span>
+      <h1 class="reveal" data-reveal="hero" style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(2.6rem,6vw,4.6rem);line-height:1.04;color:#0f172a;max-width:760px;margin:0;">
+        Marketplace yang <span style="color:#2563eb;">transparan sepenuhnya.</span>
       </h1>
       <p class="reveal" data-reveal="hero" style="max-width:560px;font-size:19px;line-height:1.65;color:#475569;margin-top:26px;">
         Login dengan wallet, tanpa password. Setiap pembayaran ditahan smart contract hingga barang diterima — dan setiap transaksi bisa diverifikasi siapa saja di block explorer.
@@ -79,12 +79,12 @@
   <section id="solusi" style="position:relative;padding:130px 40px;max-width:1200px;margin:0 auto;">
     <div class="reveal" data-reveal="fade" style="max-width:660px;margin-bottom:60px;">
       <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">Masalah &amp; Solusi</p>
-      <h2 style="font-family:'Space Grotesk',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0;">Marketplace biasa menahan dana Anda di tempat yang gelap.</h2>
+      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0;">Marketplace biasa menahan dana Anda di tempat yang gelap.</h2>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;">
       <div class="reveal" data-reveal="left" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:44px;">
         <p style="color:#64748b;font-size:13px;margin:0 0 8px;">Cara konvensional</p>
-        <h3 style="font-family:'Space Grotesk',sans-serif;font-size:22px;color:#475569;margin:0 0 22px;">Perantara memegang dana</h3>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:22px;color:#475569;margin:0 0 22px;">Perantara memegang dana</h3>
         <div style="display:flex;flex-direction:column;gap:16px;color:#475569;font-size:15px;line-height:1.5;">
           <div style="display:flex;gap:12px;"><span style="color:#475569;">—</span>Dana pembeli dipegang platform, prosesnya tidak terlihat.</div>
           <div style="display:flex;gap:12px;"><span style="color:#475569;">—</span>Sengketa diselesaikan lewat tiket &amp; kebijakan sepihak.</div>
@@ -93,7 +93,7 @@
       </div>
       <div class="reveal" data-reveal="right" style="position:relative;background:#fff;border:1px solid #bfdbfe;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:44px;">
         <p style="color:#2563eb;font-size:13px;margin:0 0 8px;position:relative;">Pendekatan MyCryptoShop</p>
-        <h3 style="font-family:'Space Grotesk',sans-serif;font-size:22px;color:#0f172a;margin:0 0 22px;position:relative;">Smart contract memegang dana</h3>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:22px;color:#0f172a;margin:0 0 22px;position:relative;">Smart contract memegang dana</h3>
         <div style="display:flex;flex-direction:column;gap:16px;color:#334155;font-size:15px;line-height:1.5;position:relative;">
           <div style="display:flex;gap:12px;"><span style="color:#2563eb;">✓</span>Dana ditahan escrow on-chain, dilepas hanya saat pembeli konfirmasi.</div>
           <div style="display:flex;gap:12px;"><span style="color:#2563eb;">✓</span>Tidak diterima barang → refund, bukan keluhan berlarut.</div>
@@ -108,22 +108,22 @@
   <section style="position:relative;padding:130px 40px;max-width:1200px;margin:0 auto;">
     <div class="reveal" data-reveal="fade" style="max-width:660px;margin-bottom:70px;">
       <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">Cara Kerja</p>
-      <h2 style="font-family:'Space Grotesk',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0;">Tiga langkah, dana selalu di bawah kendali Anda.</h2>
+      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0;">Tiga langkah, dana selalu di bawah kendali Anda.</h2>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:40px;">
       <div class="reveal" data-reveal="step" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
-        <span style="font-family:'Space Grotesk',sans-serif;font-size:46px;color:transparent;-webkit-text-stroke:1.5px rgba(15,23,42,0.4);display:block;margin-bottom:20px;">01</span>
-        <h3 style="font-family:'Space Grotesk',sans-serif;font-size:20px;color:#0f172a;margin:0 0 10px;">Connect Wallet</h3>
+        <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:46px;color:transparent;-webkit-text-stroke:1.5px rgba(15,23,42,0.4);display:block;margin-bottom:20px;">01</span>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:20px;color:#0f172a;margin:0 0 10px;">Connect Wallet</h3>
         <p style="color:#475569;line-height:1.6;margin:0;">Login dengan MetaMask — tanpa email, tanpa password. Identitas Anda adalah wallet Anda.</p>
       </div>
       <div class="reveal" data-reveal="step" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
-        <span style="font-family:'Space Grotesk',sans-serif;font-size:46px;color:transparent;-webkit-text-stroke:1.5px rgba(15,23,42,0.4);display:block;margin-bottom:20px;">02</span>
-        <h3 style="font-family:'Space Grotesk',sans-serif;font-size:20px;color:#0f172a;margin:0 0 10px;">Bayar via Escrow</h3>
+        <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:46px;color:transparent;-webkit-text-stroke:1.5px rgba(15,23,42,0.4);display:block;margin-bottom:20px;">02</span>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:20px;color:#0f172a;margin:0 0 10px;">Bayar via Escrow</h3>
         <p style="color:#475569;line-height:1.6;margin:0;">Bayar dengan token TLKM. Dana masuk ke smart contract escrow, terpisah per penjual.</p>
       </div>
       <div class="reveal" data-reveal="step" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
-        <span style="font-family:'Space Grotesk',sans-serif;font-size:46px;color:transparent;-webkit-text-stroke:1.5px rgba(15,23,42,0.4);display:block;margin-bottom:20px;">03</span>
-        <h3 style="font-family:'Space Grotesk',sans-serif;font-size:20px;color:#0f172a;margin:0 0 10px;">Konfirmasi &amp; Dana Lepas</h3>
+        <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:46px;color:transparent;-webkit-text-stroke:1.5px rgba(15,23,42,0.4);display:block;margin-bottom:20px;">03</span>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:20px;color:#0f172a;margin:0 0 10px;">Konfirmasi &amp; Dana Lepas</h3>
         <p style="color:#475569;line-height:1.6;margin:0;">Barang diterima, Anda konfirmasi — escrow melepas dana ke penjual. Bermasalah? Ajukan refund.</p>
       </div>
     </div>
@@ -134,35 +134,35 @@
   <section style="position:relative;padding:130px 40px;max-width:1200px;margin:0 auto;">
     <div class="reveal" data-reveal="fade" style="max-width:660px;margin-bottom:52px;">
       <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">Fitur Unggulan</p>
-      <h2 style="font-family:'Space Grotesk',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0;">Dibangun untuk kepercayaan yang bisa dibuktikan.</h2>
+      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0;">Dibangun untuk kepercayaan yang bisa dibuktikan.</h2>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;">
       <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
         <div style="width:40px;height:40px;border-radius:10px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
         </div>
-        <h3 style="font-family:'Space Grotesk',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">Escrow Trustless</h3>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">Escrow Trustless</h3>
         <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Dana ditahan smart contract, dilepas hanya saat pembeli konfirmasi barang diterima.</p>
       </div>
       <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
         <div style="width:40px;height:40px;border-radius:10px;background:#f5f3ff;border:1px solid #ddd6fe;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
         </div>
-        <h3 style="font-family:'Space Grotesk',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">Multi-Penjual</h3>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">Multi-Penjual</h3>
         <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Satu pembayaran, banyak penjual — tiap penjual punya escrow terpisah yang independen.</p>
       </div>
       <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
         <div style="width:40px;height:40px;border-radius:10px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg>
         </div>
-        <h3 style="font-family:'Space Grotesk',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">Token TLKM</h3>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">Token TLKM</h3>
         <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Token ERC-20 milik platform, digunakan untuk seluruh transaksi di jaringan Ethereum.</p>
       </div>
       <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
         <div style="width:40px;height:40px;border-radius:10px;background:#f5f3ff;border:1px solid #ddd6fe;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"></path></svg>
         </div>
-        <h3 style="font-family:'Space Grotesk',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">Transparansi On-Chain</h3>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">Transparansi On-Chain</h3>
         <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Setiap transaksi tercatat permanen dan bisa diverifikasi siapa saja di block explorer.</p>
       </div>
     </div>
@@ -172,7 +172,7 @@
     <div style="position:relative;display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:56px;align-items:center;">
       <div class="reveal" data-reveal="left">
         <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">Transparansi Penuh</p>
-        <h2 style="font-family:'Space Grotesk',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0 0 20px;">Tak perlu percaya kami. Verifikasi sendiri.</h2>
+        <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0 0 20px;">Tak perlu percaya kami. Verifikasi sendiri.</h2>
         <p style="color:#475569;font-size:17px;line-height:1.65;max-width:460px;margin:0;">Tiap escrow, pembayaran, dan pelepasan dana adalah entri publik di blockchain Ethereum — bisa dibuka lewat block explorer mana pun. Cocok untuk lembaga dan mitra yang butuh jejak akuntabilitas yang tidak bisa diubah sepihak.</p>
       </div>
       <div class="reveal" data-reveal="right" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:26px;">
@@ -197,7 +197,7 @@
 
   <section style="position:relative;padding:150px 40px;max-width:1200px;margin:0 auto;text-align:center;overflow:hidden;">
     <div class="reveal" data-reveal="fade" style="position:relative;">
-      <h2 style="font-family:'Space Grotesk',sans-serif;font-size:clamp(2rem,5vw,3.6rem);color:#0f172a;line-height:1.15;max-width:760px;margin:0 auto;">Belanja dengan transparansi yang bisa Anda buktikan sendiri.</h2>
+      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(2rem,5vw,3.6rem);color:#0f172a;line-height:1.15;max-width:760px;margin:0 auto;">Belanja dengan transparansi yang bisa Anda buktikan sendiri.</h2>
       <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin-top:40px;">
         <a href="/login" class="btn-primary" style="padding:16px 34px;border-radius:999px;background:#2563eb;color:#fff;font-weight:600;font-size:15px;">Masuk Toko</a>
         <a href="/products" class="btn-ghost" style="padding:16px 34px;border-radius:999px;background:#fff;border:1px solid #e2e8f0;color:#1e293b;font-weight:500;font-size:15px;box-shadow:0 1px 2px rgba(15,23,42,0.04);">Lihat Katalog</a>

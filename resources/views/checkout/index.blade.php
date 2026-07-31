@@ -199,7 +199,7 @@ async function checkoutPay() {
             txProgress.close();
             updateCartBadge(0);
             uiAlert({
-                title: 'Pembayaran Berhasil 🎉',
+                title: 'Pembayaran Berhasil',
                 message: `Order terverifikasi on-chain.<br><a href="https://sepolia.etherscan.io/tx/${txHash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`,
                 type: 'success'
             }).then(() => window.location.href = '/orders');

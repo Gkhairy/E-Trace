@@ -1,7 +1,7 @@
 @php $expl = 'https://sepolia.etherscan.io/tx/'.$order->tx_hash; $addr = $order->shippingAddress; @endphp
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;color:#1e293b;">
     <div style="background:#0f172a;color:#fff;padding:20px 24px;border-radius:12px 12px 0 0;">
-        <h2 style="margin:0;font-size:18px;">Pesanan Baru Masuk 🎉</h2>
+        <h2 style="margin:0;font-size:18px;">Pesanan Baru Masuk</h2>
         <p style="margin:6px 0 0;font-size:13px;opacity:.85;">MyCryptoShop — segera siapkan pengiriman</p>
     </div>
     <div style="border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px;padding:24px;">

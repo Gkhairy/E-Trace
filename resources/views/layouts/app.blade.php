@@ -20,7 +20,7 @@
                         brand:    '#2563eb',  // biru primary (blue-600)
                     },
                     fontFamily: {
-                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                        sans: ['Hanken Grotesk', 'ui-sans-serif', 'system-ui', 'sans-serif'],
                     }
                 }
             }
@@ -31,7 +31,8 @@
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.1/dist/ethers.umd.min.js"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
         html { scroll-behavior: smooth; }
@@ -59,7 +60,7 @@
 
             <!-- LOGO -->
             <a href="/products" class="flex items-center gap-2 shrink-0">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-extrabold text-sm text-white">M</div>
+                <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-extrabold text-sm text-white">M</div>
                 <span class="text-lg font-bold tracking-tight text-slate-900 hidden sm:inline">MyCrypto<span class="text-blue-600">Shop</span></span>
             </a>
 
@@ -161,7 +162,7 @@
         <div class="max-w-7xl mx-auto px-4 md:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
             <p>© {{ date('Y') }} MyCryptoShop — E-commerce berbasis blockchain.</p>
             <div class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                <span class="w-2 h-2 rounded-full bg-green-500"></span>
                 <span>Jaringan: Ethereum Sepolia (Testnet)</span>
             </div>
         </div>
@@ -226,16 +227,16 @@
         warn:    '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>',
     };
     const TOAST_STYLE = {
-        success: 'border-l-green-500 text-green-600',
-        error:   'border-l-red-500 text-red-600',
-        info:    'border-l-blue-500 text-blue-600',
-        warn:    'border-l-amber-500 text-amber-600',
+        success: 'text-green-600',
+        error:   'text-red-600',
+        info:    'text-blue-600',
+        warn:    'text-amber-600',
     };
 
     function showToast(message, type = 'info', ms = 4500) {
         const root = document.getElementById('toastRoot');
         const el = document.createElement('div');
-        el.className = `anim-toast flex items-start gap-3 bg-white border border-slate-200 border-l-4 ${TOAST_STYLE[type]||TOAST_STYLE.info} rounded-xl px-4 py-3 shadow-lg`;
+        el.className = `anim-toast flex items-start gap-3 bg-white border border-slate-200 ${TOAST_STYLE[type]||TOAST_STYLE.info} rounded-xl px-4 py-3 shadow-lg`;
         el.innerHTML = `<div class="shrink-0 mt-0.5">${ICONS[type]||ICONS.info}</div>
                         <div class="text-sm text-slate-700 leading-snug flex-1 break-words">${message}</div>`;
         root.appendChild(el);
@@ -334,7 +335,7 @@
     //  WEB3
     // =========================================================
     async function connectWallet() {
-        if (!window.ethereum) { showToast('MetaMask belum terpasang. Install dulu ya.', 'warn'); throw new Error('MetaMask tidak ditemukan'); }
+        if (!window.ethereum) { showToast('MetaMask belum terpasang. Pasang ekstensinya dulu untuk melanjutkan.', 'warn'); throw new Error('MetaMask tidak ditemukan'); }
         await window.ethereum.request({ method: "eth_requestAccounts" });
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
@@ -444,8 +445,8 @@
         if (!e) return 'Transaksi dibatalkan.';
         if (e.message === 'WALLET_MISMATCH') return 'Wallet MetaMask aktif tidak cocok dengan wallet akunmu. Ganti dulu ke wallet yang terdaftar di akun ini.';
         if (e.code === 'ACTION_REJECTED' || e.code === 4001) return 'Kamu membatalkan transaksi di MetaMask.';
-        if (e.code === 'INSUFFICIENT_FUNDS') return 'Saldo ETH tidak cukup untuk gas fee.';
-        return e.reason || e.shortMessage || e.message || 'Transaksi gagal.';
+        if (e.code === 'INSUFFICIENT_FUNDS') return 'Saldo ETH Sepolia tidak cukup untuk biaya gas. Isi ETH testnet dulu, lalu coba lagi.';
+        return e.reason || e.shortMessage || 'Transaksi gagal. Coba lagi sebentar lagi.';
     }
 
     // ===== Jaring pengaman order: simpan draft di localStorage, kirim & retry =====

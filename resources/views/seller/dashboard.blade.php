@@ -34,7 +34,7 @@
 
 {{-- ===== HEADER TOKO ===== --}}
 <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-6">
-    <div class="h-24 md:h-28 bg-gradient-to-r from-blue-500 to-indigo-600">
+    <div class="h-24 md:h-28 bg-blue-600">
         @if($store->banner)
             <img src="/store_images/{{ $store->banner }}" class="w-full h-full object-cover" onerror="this.style.display='none'">
         @endif

@@ -3,9 +3,7 @@
 @section('content')
 
 {{-- ===== HERO BANNER (banner berwarna, teks putih — disengaja) ===== --}}
-<section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-indigo-700 mb-8 shadow-sm">
-    <div class="absolute -right-16 -top-16 w-72 h-72 bg-white/10 rounded-full blur-3xl"></div>
-    <div class="absolute -left-10 -bottom-16 w-72 h-72 bg-white/10 rounded-full blur-3xl"></div>
+<section class="relative overflow-hidden rounded-2xl bg-blue-600 mb-8">
     <div class="relative px-6 md:px-12 py-10 md:py-14 max-w-2xl">
         <span class="inline-flex items-center gap-2 text-xs font-medium bg-white/15 border border-white/20 rounded-full px-3 py-1 text-white mb-4">
             <span class="w-1.5 h-1.5 rounded-full bg-white"></span> Pembayaran on-chain • Transparan

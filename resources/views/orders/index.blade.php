@@ -27,7 +27,7 @@
             'paid'                 => ['Menunggu Konfirmasi', 'bg-amber-50 text-amber-700 border-amber-200'],
             'pending_confirmation' => ['Menunggu Jaringan',   'bg-slate-100 text-slate-500 border-slate-200'],
             'completed'            => ['Selesai',             'bg-green-50 text-green-700 border-green-200'],
-            'refunded'             => ['Refunded',            'bg-slate-100 text-slate-600 border-slate-200'],
+            'refunded'             => ['Dana Dikembalikan',   'bg-slate-100 text-slate-600 border-slate-200'],
             'disputed'             => ['Sengketa',            'bg-red-50 text-red-700 border-red-200'],
         ];
         $paidConf = (int) config('chain.paid_confirmations');
@@ -88,7 +88,7 @@
                                             @endphp
                                             @if($item->fulfillment_status && $item->fulfillment_status !== 'pending')
                                                 <p class="text-[11px] text-slate-500 mt-0.5">
-                                                    🚚 {{ $fLabel }}@if($item->tracking_number) · Resi <b class="text-slate-700">{{ $item->tracking_number }}</b>@if($item->courier) ({{ $item->courier }})@endif @endif
+                                                    {{ $fLabel }}@if($item->tracking_number) · Resi <b class="text-slate-700">{{ $item->tracking_number }}</b>@if($item->courier) ({{ $item->courier }})@endif @endif
                                                 </p>
                                             @endif
                                         </div>
@@ -140,7 +140,7 @@ async function doConfirmItem(orderId, index, btn) {
     const ok = await uiConfirm({
         title: 'Konfirmasi Item Ini',
         message: 'Barang ini sudah diterima? Dana <b class="text-slate-900">item ini saja</b> dilepas ke penjualnya. Item lain tidak terpengaruh.',
-        confirmText: 'Ya, sudah terima'
+        confirmText: 'Konfirmasi & lepas dana'
     });
     if (!ok) return;
     btn.disabled = true;
@@ -151,7 +151,7 @@ async function doConfirmItem(orderId, index, btn) {
         const hash = await confirmItem(orderId, index);
         await markItemStatus(orderId, index, 'completed');
         txProgress.done(1);
-        setTimeout(() => { txProgress.close(); uiAlert({ title:'Item Dikonfirmasi ✅', message:`Dana item dilepas ke penjual.<br><a href="https://sepolia.etherscan.io/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type:'success' }).then(()=>location.reload()); }, 400);
+        setTimeout(() => { txProgress.close(); uiAlert({ title:'Item Dikonfirmasi', message:`Dana item dilepas ke penjual.<br><a href="https://sepolia.etherscan.io/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type:'success' }).then(()=>location.reload()); }, 400);
     } catch (e) {
         txProgress.close();
         uiAlert({ title:'Gagal', message: niceError(e), type:'error' });
@@ -187,7 +187,7 @@ async function doDisputeItem(orderId, index, btn) {
     const ok = await uiConfirm({
         title: 'Ajukan Sengketa',
         message: 'Ada masalah dengan item ini? Dana <b class="text-slate-900">tetap ditahan escrow</b> sampai <b>pengawas</b> memutus (lepas ke penjual / refund). Lanjutkan?',
-        confirmText: 'Ya, ajukan', danger: true
+        confirmText: 'Ajukan sengketa', danger: true
     });
     if (!ok) return;
     btn.disabled = true;
@@ -234,7 +234,7 @@ async function submitReview() {
     try {
         const res = await fetch('/review', { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF_TOKEN}, body: JSON.stringify({ order_item_id: _reviewItemId, rating: _reviewRating, comment }) });
         const data = await res.json();
-        if (res.ok && data.success) { closeModal(); showToast('Ulasan terkirim ⭐', 'success'); setTimeout(()=>location.reload(), 700); }
+        if (res.ok && data.success) { closeModal(); showToast('Ulasan terkirim', 'success'); setTimeout(()=>location.reload(), 700); }
         else { showToast(data.message || 'Gagal mengirim ulasan', 'error'); }
     } catch (e) { showToast('Gagal mengirim ulasan', 'error'); }
 }

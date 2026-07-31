@@ -25,3 +25,6 @@ Thumbs.db
 
 # graphify knowledge-graph output (build artifact)
 /graphify-out
+
+# Impeccable design tool — installed via `npx impeccable install`, not vendored
+/.claude/skills/
