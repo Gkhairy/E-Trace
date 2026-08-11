@@ -7,8 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 class ShippingAddress extends Model
 {
     protected $fillable = [
-        'user_id', 'recipient_name', 'phone', 'address', 'city', 'postal_code', 'notes',
+        'user_id', 'label', 'recipient_name', 'phone', 'address', 'city', 'postal_code', 'notes', 'is_default',
     ];
+
+    protected $casts = ['is_default' => 'boolean'];
 
     public function user()
     {

@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\SepoliaVerifier;
 use Illuminate\Http\Request;
 
 class ProfileController extends Controller
 {
-    public function edit()
+    public function edit(SepoliaVerifier $verifier)
     {
-        return view('profile.edit', ['user' => auth()->user()]);
+        $user = auth()->user();
+        $balance = $user->wallet_address ? $verifier->tlkmBalance($user->wallet_address) : null;
+
+        return view('profile.edit', compact('user', 'balance'));
     }
 
     public function update(Request $req)

@@ -22,9 +22,11 @@ class CheckoutController extends Controller
 
         $total = $items->sum(fn ($it) => (float) $it->product->price_usdc * $it->quantity);
 
-        // Alamat terakhir (kalau ada) untuk prefill form.
-        $lastAddress = \App\Models\ShippingAddress::where('user_id', auth()->id())->latest()->first();
+        // Buku alamat: alamat tersimpan user (default dulu, lalu terbaru) untuk dipilih.
+        $addresses = \App\Models\ShippingAddress::where('user_id', auth()->id())
+            ->orderByDesc('is_default')->latest()->get();
+        $lastAddress = $addresses->first();
 
-        return view('checkout.index', compact('items', 'groups', 'total', 'lastAddress'));
+        return view('checkout.index', compact('items', 'groups', 'total', 'addresses', 'lastAddress'));
     }
 }

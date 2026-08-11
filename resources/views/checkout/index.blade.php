@@ -30,35 +30,65 @@
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     {{-- KIRI: alamat + ringkasan per penjual --}}
     <div class="lg:col-span-2 space-y-6">
-        {{-- FORM ALAMAT (wajib) --}}
+        {{-- ALAMAT: pilih tersimpan atau isi baru --}}
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
-            <h3 class="font-semibold text-slate-900 mb-1">Alamat Pengiriman</h3>
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="font-semibold text-slate-900">Alamat Pengiriman</h3>
+                <a href="/addresses" class="text-xs text-blue-600 hover:underline">Kelola alamat</a>
+            </div>
             <p class="text-xs text-slate-400 mb-4">Data pribadi ini disimpan di database, <b>tidak</b> masuk blockchain.</p>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            @if($addresses->isNotEmpty())
+                <div class="space-y-2 mb-4">
+                    @foreach($addresses as $a)
+                        <label data-addrcard class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-400 transition">
+                            <input type="radio" name="addr" value="{{ $a->id }}" class="mt-1 accent-blue-600" onchange="selectAddr(this)" @checked($loop->first)>
+                            <div class="min-w-0 text-sm">
+                                <p class="font-medium text-slate-800">{{ $a->recipient_name }} <span class="text-slate-400 font-normal">· {{ $a->phone }}</span>
+                                    @if($a->label)<span class="ml-1 text-[11px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">{{ $a->label }}</span>@endif
+                                    @if($a->is_default)<span class="ml-1 text-[11px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">Utama</span>@endif
+                                </p>
+                                <p class="text-xs text-slate-500 mt-0.5">{{ $a->address }}, {{ $a->city }} {{ $a->postal_code }}</p>
+                            </div>
+                        </label>
+                    @endforeach
+                    <label data-addrcard class="flex items-center gap-3 p-3 rounded-xl border border-dashed border-slate-300 cursor-pointer hover:border-blue-400 transition">
+                        <input type="radio" name="addr" value="new" class="accent-blue-600" onchange="selectAddr(this)">
+                        <span class="text-sm font-medium text-blue-600">+ Alamat baru</span>
+                    </label>
+                </div>
+            @endif
+
+            <div id="newAddrForm" class="{{ $addresses->isNotEmpty() ? 'hidden' : '' }} grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">Nama Penerima</label>
-                    <input id="recipient_name" value="{{ $lastAddress->recipient_name ?? '' }}" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
+                    <input id="recipient_name" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">No HP</label>
-                    <input id="phone" value="{{ $lastAddress->phone ?? '' }}" placeholder="0812…" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
+                    <input id="phone" placeholder="0812…" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
                 </div>
                 <div class="sm:col-span-2">
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">Alamat Lengkap</label>
-                    <textarea id="address" rows="2" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm resize-none">{{ $lastAddress->address ?? '' }}</textarea>
+                    <textarea id="address" rows="2" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm resize-none"></textarea>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">Kota</label>
-                    <input id="city" value="{{ $lastAddress->city ?? '' }}" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
+                    <input id="city" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">Kode Pos</label>
-                    <input id="postal_code" value="{{ $lastAddress->postal_code ?? '' }}" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
+                    <input id="postal_code" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Label (opsional)</label>
+                    <input id="addr_label" placeholder="Rumah / Kantor" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
                 </div>
                 <div class="sm:col-span-2">
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">Catatan (opsional)</label>
-                    <input id="notes" value="{{ $lastAddress->notes ?? '' }}" placeholder="Patokan, warna, dll" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
+                    <input id="notes" placeholder="Patokan, warna, dll" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
                 </div>
+                <p class="sm:col-span-2 text-[11px] text-slate-400">Alamat baru otomatis tersimpan ke buku alamat untuk pembelian berikutnya.</p>
             </div>
         </div>
 
@@ -134,22 +164,36 @@ const TOTAL = @json($totalStr);
 
 function val(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 
+function selectedAddr() {
+    const r = document.querySelector('input[name=addr]:checked');
+    return r ? r.value : 'new';   // tanpa alamat tersimpan -> selalu form baru
+}
+function selectAddr(radio) {
+    document.querySelectorAll('[data-addrcard]').forEach(l => l.classList.remove('border-blue-500', 'bg-blue-50/40'));
+    radio.closest('[data-addrcard]')?.classList.add('border-blue-500', 'bg-blue-50/40');
+    const form = document.getElementById('newAddrForm');
+    if (form) form.classList.toggle('hidden', radio.value !== 'new');
+}
+
 async function checkoutPay() {
-    const shipping = {
-        recipient_name: val('recipient_name'),
-        phone:          val('phone'),
-        address:        val('address'),
-        city:           val('city'),
-        postal_code:    val('postal_code'),
-        notes:          val('notes'),
-    };
-    // Validasi alamat wajib.
-    for (const k of ['recipient_name', 'phone', 'address', 'city', 'postal_code']) {
-        if (!shipping[k].trim()) {
-            showToast('Lengkapi alamat pengiriman dulu.', 'warn');
-            document.getElementById(k).focus();
-            return;
+    const sel = selectedAddr();
+    let shipping = null, shippingAddressId = null, addressLabel = null;
+
+    if (sel === 'new') {
+        shipping = {
+            recipient_name: val('recipient_name'), phone: val('phone'), address: val('address'),
+            city: val('city'), postal_code: val('postal_code'), notes: val('notes'),
+        };
+        for (const k of ['recipient_name', 'phone', 'address', 'city', 'postal_code']) {
+            if (!shipping[k].trim()) {
+                showToast('Lengkapi alamat pengiriman dulu.', 'warn');
+                document.getElementById(k)?.focus();
+                return;
+            }
         }
+        addressLabel = val('addr_label');
+    } else {
+        shippingAddressId = sel;
     }
     if (!window.ethereum) return uiAlert({ title: 'MetaMask dibutuhkan', message: 'Install ekstensi MetaMask untuk melanjutkan.', type: 'warn' });
     if (!LINES.length) return;
@@ -171,7 +215,8 @@ async function checkoutPay() {
 
     // Payload disiapkan; tx_hash diisi setelah bayar. items minimal (backend ambil dari chain).
     const payload = {
-        order_id: orderId, tx_hash: null, shipping,
+        order_id: orderId, tx_hash: null,
+        shipping_address_id: shippingAddressId, shipping, address_label: addressLabel,
         items: LINES.map(l => ({ product_id: l.db_product_id, item_index: l.index })),
     };
 

@@ -9,6 +9,10 @@ return [
     'gateway'  => env('PAYMENT_GATEWAY_ADDRESS', '0x0D6F824F6734B6369EdeBbfD6db37f965fa55f26'),
     'tlkm'     => env('TLKM_ADDRESS', '0xFbaa7F02bE3f151920D036cA4Eed2Fb1Ca3e0aEB'),
 
+    // Kotak donasi (DonationPool.sol) — isi setelah deploy di Remix. Placeholder =
+    // fitur donasi nonaktif di UI sampai alamat asli dipasang.
+    'donation_pool' => env('DONATION_POOL_ADDRESS', '0x0000000000000000000000000000000000000000'),
+
     // Konfirmasi: 1 = terdeteksi, >= paid_confirmations dianggap 'paid',
     // >= finalized_confirmations dianggap final (catatan audit).
     'paid_confirmations'      => (int) env('PAID_CONFIRMATIONS', 6),

@@ -27,6 +27,17 @@
   .lnk-cta:hover  { background: #1d4ed8 !important; color: #fff !important; }
   .btn-primary:hover { background: #1d4ed8 !important; }
   .btn-ghost:hover   { border-color: rgba(37,99,235,0.4) !important; }
+
+  /* Hero responsif — 3D tampil di semua ukuran. Di mobile: kristal jadi backdrop
+     ambient di paruh atas, teks turun ke bawah (satu kolom, tetap terbaca). */
+  #hero-canvas { transition: opacity .35s ease; }
+  /* Halaman ini pakai inline-style, jadi override mobile WAJIB !important. */
+  @media (max-width: 767px) {
+    #hero-canvas   { width: 100% !important; height: 54% !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: auto !important; opacity: 0.5 !important; }
+    #hero-content  { justify-content: flex-end !important; padding: 0 24px 96px !important; }
+    #hero-content h1 { font-size: clamp(2.1rem, 9vw, 3rem) !important; }
+    #hero-content p  { font-size: 16px !important; }
+  }
 </style>
 </head>
 <body>
@@ -46,12 +57,12 @@
     </div>
   </header>
 
-  <section id="hero" style="position:relative;height:100vh;min-height:640px;overflow:hidden;">
+  <section id="hero" style="position:relative;height:100vh;height:100dvh;min-height:640px;overflow:hidden;">
     <div style="position:absolute;inset:0;z-index:-1;background:radial-gradient(circle at 50% 45%, rgba(37,99,235,0.14), transparent 70%);"></div>
     <div id="hero-canvas" style="position:absolute;top:0;right:0;bottom:0;width:58%;z-index:0;"></div>
-    <div id="hero-fallback" style="position:absolute;inset:0;display:none;background:radial-gradient(circle at 50% 40%, rgba(37,99,235,0.14), transparent 60%), radial-gradient(circle at 70% 70%, rgba(168,85,247,0.14), transparent 55%);"></div>
+    <div id="hero-fallback" style="position:absolute;inset:0;display:none;background:radial-gradient(circle at 50% 38%, rgba(37,99,235,0.16), transparent 62%);"></div>
 
-    <div style="position:relative;z-index:10;max-width:1200px;margin:0 auto;height:100%;padding:0 40px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;">
+    <div id="hero-content" style="position:relative;z-index:10;max-width:1200px;margin:0 auto;height:100%;padding:0 40px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;">
       <div class="reveal" data-reveal="hero" style="display:inline-flex;align-items:center;gap:8px;padding:7px 16px;border-radius:999px;background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);font-size:13px;color:#2563eb;margin-bottom:28px;">
         <span style="width:6px;height:6px;border-radius:50%;background:#2563eb;display:inline-block;"></span>
         Escrow trustless &middot; Ethereum &middot; Token TLKM
@@ -271,8 +282,10 @@
     gsap.fromTo(el, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.7, delay: (i % 4) * 0.1, ease: 'power3.out', scrollTrigger: { trigger: el.closest('section'), start: 'top 75%' } });
   });
 
-  // ---- 3D hero (Three.js): kristal wireframe + jaringan node, di kanan 58% ----
-  var enable3D = !reduceMotion && !isMobile && typeof THREE !== 'undefined';
+  // ---- 3D hero (Three.js): kristal wireframe + jaringan node ----
+  // Desktop: di kanan 58%. Mobile: backdrop ambient full-width (lihat CSS @media).
+  // Dimatikan hanya untuk prefers-reduced-motion / WebGL tak tersedia.
+  var enable3D = !reduceMotion && typeof THREE !== 'undefined';
   var heroSection = document.getElementById('hero');
   var wrap = document.getElementById('hero-canvas');
   var fallback = document.getElementById('hero-fallback');
@@ -281,7 +294,7 @@
   var cyanHex = 0x2563eb, violetHex = 0x7c3aed;
   var width = wrap.clientWidth, height = wrap.clientHeight;
   var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
   renderer.setSize(width, height);
   wrap.appendChild(renderer.domElement);
 

@@ -12,6 +12,9 @@ use App\Http\Controllers\SupervisorController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ExplorerController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DonationController;
+use App\Http\Controllers\AddressController;
+use App\Http\Controllers\WalletController;
 
 // HOME / LANDING PAGE
 // Belum login -> landing page publik. Sudah login -> ke katalog produk.
@@ -38,6 +41,17 @@ Route::get('/api/ticker', [CryptoController::class, 'ticker']);
 Route::get('/explorer', [ExplorerController::class, 'index']);
 Route::get('/explorer/{address}', [ExplorerController::class, 'show'])->where('address', '0x[a-fA-F0-9]{40}');
 
+// DONASI berbasis campaign. Daftar & detail = publik; buat campaign & salurkan = pengawas.
+Route::get('/donate', [DonationController::class, 'index']);
+Route::get('/donate/create', [DonationController::class, 'create'])->middleware('auth');
+Route::post('/donate/campaigns', [DonationController::class, 'store'])->middleware('auth');
+Route::get('/donate/{slug}', [DonationController::class, 'show'])->where('slug', '[a-z0-9\-]+');
+Route::post('/donation/donate', [DonationController::class, 'donate'])->middleware('throttle:20,1');
+Route::post('/donation/disburse', [DonationController::class, 'disburse'])->middleware('auth');
+
+// BAYAR PERMINTAAN UANG (publik — siapa saja bisa membayar via link/QR).
+Route::get('/pay/{code}', [WalletController::class, 'pay'])->where('code', '[A-Za-z0-9]+');
+
 // PRODUCTS
 // Katalog & detail produk PUBLIK (bisa dilihat tanpa login).
 Route::get('/products', [ProductController::class, 'index']);
@@ -59,6 +73,16 @@ Route::middleware('auth')->group(function () {
     // PROFIL PUBLIK (semua user)
     Route::get('/profile', [ProfileController::class, 'edit']);
     Route::post('/profile', [ProfileController::class, 'update']);
+
+    // BUKU ALAMAT
+    Route::get('/addresses', [AddressController::class, 'index']);
+    Route::post('/addresses/default', [AddressController::class, 'setDefault']);
+    Route::post('/addresses/delete', [AddressController::class, 'destroy']);
+
+    // DOMPET (kirim TLKM & minta uang)
+    Route::get('/wallet', [WalletController::class, 'index']);
+    Route::post('/wallet/send', [WalletController::class, 'send'])->middleware('throttle:20,1');
+    Route::post('/wallet/requests', [WalletController::class, 'createRequest']);
 
     // DASHBOARD SELLER
     Route::get('/seller', [SellerController::class, 'dashboard']);

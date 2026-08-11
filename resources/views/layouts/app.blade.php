@@ -75,6 +75,7 @@
             <nav class="hidden lg:flex items-center gap-6 text-slate-600 text-sm font-medium shrink-0">
                 <a href="/products"  class="hover:text-blue-600 transition">Produk</a>
                 <a href="/explorer"  class="hover:text-blue-600 transition">Explorer</a>
+                <a href="/donate"    class="hover:text-blue-600 transition">Donasi</a>
                 @auth
                     @if(auth()->user()->isSeller())
                         <a href="/seller" class="hover:text-blue-600 transition inline-flex items-center gap-1">
@@ -92,6 +93,10 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3M17 13l2.3 2.3M9 20a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0z"/></svg>
                         Order
                     </a>
+                    <a href="/wallet"    class="hover:text-blue-600 transition inline-flex items-center gap-1">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 10h18M7 15h.01M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+                        Dompet
+                    </a>
                 @endauth
             </nav>
 
@@ -103,10 +108,11 @@
                     <span id="cartBadge" class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center {{ $cartCount > 0 ? '' : 'hidden' }}">{{ $cartCount }}</span>
                 </a>
 
-                <!-- WALLET PILL -->
-                <div id="walletPill" class="hidden md:flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-full px-3 py-2 text-xs shrink-0">
+                <!-- WALLET PILL (alamat + saldo TLKM) -->
+                <div id="walletPill" class="hidden md:flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-full pl-3 pr-1.5 py-1.5 text-xs shrink-0">
                     <span class="w-2 h-2 rounded-full bg-slate-400" id="walletDot"></span>
                     <span id="walletLabel" class="text-slate-600 font-mono">Wallet</span>
+                    <span id="walletBalance" class="hidden items-center gap-1 bg-white border border-slate-200 rounded-full px-2 py-1 font-semibold text-blue-600">—</span>
                 </div>
 
                 <!-- PROFIL -->
@@ -190,6 +196,7 @@
     // ---- KONFIGURASI KONTRAK (PaymentGateway v3, Sepolia) ----
     const TLKM_ADDRESS            = "0xFbaa7F02bE3f151920D036cA4Eed2Fb1Ca3e0aEB";
     const PAYMENT_GATEWAY_ADDRESS = "0x0D6F824F6734B6369EdeBbfD6db37f965fa55f26";
+    const DONATION_POOL_ADDRESS   = @json(config('chain.donation_pool'));
     const TOKEN_DECIMALS = 18;
     const PLATFORM_FEE_BPS = 100; // 1% — dipotong dari penjual saat dana dilepas
 
@@ -205,7 +212,8 @@
     const ERC20_ABI = [
         "function balanceOf(address owner) view returns (uint256)",
         "function approve(address spender, uint256 value) returns (bool)",
-        "function allowance(address owner, address spender) view returns (uint256)"
+        "function allowance(address owner, address spender) view returns (uint256)",
+        "function transfer(address to, uint256 value) returns (bool)"
     ];
     // ABI v3: token dikunci di kontrak -> payCart TIDAK menerima argumen token.
     const PAYMENT_ABI = [
@@ -215,6 +223,12 @@
         "function disputeItem(string orderId, uint256 index)",
         "function arbiterRelease(string orderId, uint256 index)",
         "function arbiterRefund(string orderId, uint256 index)"
+    ];
+    // ABI kotak donasi (DonationPool berbasis campaign).
+    const DONATION_ABI = [
+        "function donate(bytes32 campaignId, uint256 amount)",
+        "function disburse(bytes32 campaignId, address to)",
+        "function balance(bytes32) view returns (uint256)"
     ];
 
     // =========================================================
@@ -441,6 +455,39 @@
         return receipt.hash;
     }
 
+    // ===== DONASI (per-campaign) =====
+    // Donatur: approve TLKM ke pool -> donate(campaignId, amount). Nominal bebas.
+    async function donateCampaign(campaignId, amountToken) {
+        const { signer } = await connectWallet();
+        const token = new ethers.Contract(TLKM_ADDRESS, ERC20_ABI, signer);
+        const pool  = new ethers.Contract(DONATION_POOL_ADDRESS, DONATION_ABI, signer);
+        const amount = ethers.parseUnits(amountToken.toString(), TOKEN_DECIMALS);
+        const ap = await token.approve(DONATION_POOL_ADDRESS, amount);
+        await ap.wait();
+        const tx = await pool.donate(campaignId, amount);
+        const receipt = await tx.wait();
+        return receipt.hash;
+    }
+
+    // PENGAWAS (validator): salurkan SELURUH saldo campaign ke wallet penerima.
+    async function disburseCampaign(campaignId, toAddress) {
+        const { signer } = await connectWallet();
+        const pool = new ethers.Contract(DONATION_POOL_ADDRESS, DONATION_ABI, signer);
+        const tx = await pool.disburse(campaignId, toAddress);
+        const receipt = await tx.wait();
+        return receipt.hash;
+    }
+
+    // ===== KIRIM TLKM P2P (ERC20 transfer langsung) =====
+    async function sendTLKM(toAddress, amountToken) {
+        const { signer } = await connectWallet();
+        const token = new ethers.Contract(TLKM_ADDRESS, ERC20_ABI, signer);
+        const amount = ethers.parseUnits(amountToken.toString(), TOKEN_DECIMALS);
+        const tx = await token.transfer(toAddress, amount);
+        const receipt = await tx.wait();
+        return receipt.hash;
+    }
+
     function niceError(e) {
         if (!e) return 'Transaksi dibatalkan.';
         if (e.message === 'WALLET_MISMATCH') return 'Wallet MetaMask aktif tidak cocok dengan wallet akunmu. Ganti dulu ke wallet yang terdaftar di akun ini.';
@@ -514,9 +561,18 @@
         }
     }
 
+    // Baca saldo TLKM tanpa memicu popup MetaMask (provider read-only, bukan signer).
+    async function fetchTlkmBalance(address) {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const token = new ethers.Contract(TLKM_ADDRESS, ERC20_ABI, provider);
+        const bal = await token.balanceOf(address);
+        return ethers.formatUnits(bal, TOKEN_DECIMALS);
+    }
+
     async function refreshWalletPill() {
         const dot = document.getElementById('walletDot');
         const label = document.getElementById('walletLabel');
+        const balEl = document.getElementById('walletBalance');
         if (!window.ethereum || !dot || !label) return;   // guest: elemen wallet pill tidak dirender
         try {
             const accs = await window.ethereum.request({ method: 'eth_accounts' });
@@ -527,10 +583,20 @@
                     dot.className = 'w-2 h-2 rounded-full bg-red-500';
                     label.textContent = 'Wallet tidak cocok';
                     label.title = a;
+                    if (balEl) balEl.classList.add('hidden');
                 } else {
                     dot.className = 'w-2 h-2 rounded-full bg-green-500';
                     label.textContent = a.slice(0,6) + '…' + a.slice(-4);
                     label.title = '';
+                    // Saldo TLKM (live). Gagal diam-diam bila jaringan salah / RPC error.
+                    if (balEl) {
+                        try {
+                            const raw = await fetchTlkmBalance(a);
+                            balEl.textContent = Number(raw).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' TLKM';
+                            balEl.classList.remove('hidden');
+                            balEl.classList.add('inline-flex');
+                        } catch (_) { balEl.classList.add('hidden'); }
+                    }
                 }
             }
         } catch (_) {}

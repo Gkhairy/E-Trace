@@ -12,6 +12,17 @@
     <h1 class="text-2xl font-bold text-slate-900 mb-1">Profil Publik</h1>
     <p class="text-sm text-slate-500 mb-6">Atur bagaimana identitasmu tampil di <a href="/explorer" class="text-blue-600 hover:underline">Explorer</a> transparansi. Data pribadi (email, telepon, alamat) <b>tidak pernah</b> ditampilkan.</p>
 
+    @if($user->wallet_address)
+        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-6 flex items-center justify-between gap-4">
+            <div class="min-w-0">
+                <p class="text-xs text-slate-500">Saldo TLKM kamu</p>
+                <p class="text-2xl font-extrabold text-slate-900 mt-0.5">{{ $balance !== null ? rtrim(rtrim(number_format((float)$balance, 2), '0'), '.') : '—' }} <span class="text-sm text-blue-600">TLKM</span></p>
+                <p class="text-[11px] text-slate-400 mt-0.5 font-mono truncate">{{ substr($user->wallet_address, 0, 12) }}…{{ substr($user->wallet_address, -6) }}</p>
+            </div>
+            <a href="https://sepolia.etherscan.io/token/{{ config('chain.tlkm') }}?a={{ $user->wallet_address }}" target="_blank" rel="noopener" class="shrink-0 text-xs text-blue-600 hover:underline">Etherscan ↗</a>
+        </div>
+    @endif
+
     @if(session('success'))
         <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-6 text-sm">{{ session('success') }}</div>
     @endif

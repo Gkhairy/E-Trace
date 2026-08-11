@@ -36,12 +36,14 @@ class OrderController extends Controller
         $data = $req->validate([
             'order_id'               => 'required|string|max:80',
             'tx_hash'                => 'required|string|regex:/^0x[a-fA-F0-9]{64}$/',
-            'shipping.recipient_name'=> 'required|string|max:255',
-            'shipping.phone'         => 'required|string|max:20',
-            'shipping.address'       => 'required|string',
-            'shipping.city'          => 'required|string|max:255',
-            'shipping.postal_code'   => 'required|string|max:10',
+            'shipping_address_id'    => 'nullable|integer|exists:shipping_addresses,id',
+            'shipping.recipient_name'=> 'required_without:shipping_address_id|string|max:255',
+            'shipping.phone'         => 'required_without:shipping_address_id|string|max:20',
+            'shipping.address'       => 'required_without:shipping_address_id|string',
+            'shipping.city'          => 'required_without:shipping_address_id|string|max:255',
+            'shipping.postal_code'   => 'required_without:shipping_address_id|string|max:10',
             'shipping.notes'         => 'nullable|string|max:255',
+            'address_label'          => 'nullable|string|max:40',
             'items'                  => 'required|array|min:1',
             'items.*.product_id'     => 'required|exists:products,id',
             'items.*.item_index'     => 'required|integer|min:0',
@@ -86,15 +88,25 @@ class OrderController extends Controller
         try {
         $order = DB::transaction(function () use ($data, $expected, $vr, $totalTlkm, $headerStatus) {
             // 1) Alamat pengiriman (data pribadi, di DB saja).
-            $addr = ShippingAddress::create([
-                'user_id'        => auth()->id(),
-                'recipient_name' => $data['shipping']['recipient_name'],
-                'phone'          => $data['shipping']['phone'],
-                'address'        => $data['shipping']['address'],
-                'city'           => $data['shipping']['city'],
-                'postal_code'    => $data['shipping']['postal_code'],
-                'notes'          => $data['shipping']['notes'] ?? null,
-            ]);
+            // Pakai alamat tersimpan bila dipilih & milik user; kalau tidak, pakai input baru.
+            $addr = null;
+            if (!empty($data['shipping_address_id'])) {
+                $addr = ShippingAddress::where('id', $data['shipping_address_id'])
+                    ->where('user_id', auth()->id())->first();
+            }
+            if (!$addr) {
+                $s = $data['shipping'] ?? [];
+                $addr = ShippingAddress::create([
+                    'user_id'        => auth()->id(),
+                    'label'          => $data['address_label'] ?? null,
+                    'recipient_name' => $s['recipient_name'] ?? '',
+                    'phone'          => $s['phone'] ?? '',
+                    'address'        => $s['address'] ?? '',
+                    'city'           => $s['city'] ?? '',
+                    'postal_code'    => $s['postal_code'] ?? '',
+                    'notes'          => $s['notes'] ?? null,
+                ]);
+            }
 
             // 2) Header order — nominal & status dari chain.
             $order = Order::create([

@@ -111,6 +111,197 @@ class SepoliaVerifier
         ];
     }
 
+    private function poolConfigured(): ?string
+    {
+        $pool = strtolower((string) config('chain.donation_pool'));
+        return (!$pool || preg_match('/^0x0+$/', $pool)) ? null : $pool;
+    }
+
+    // Saldo campaign yang belum disalurkan (balance[campaignId]) on-chain, dalam TLKM.
+    public function campaignBalanceOnChain(string $campaignIdHex): ?string
+    {
+        $pool = $this->poolConfigured();
+        if (!$pool) {
+            return null;
+        }
+        $sel = substr(Keccak::hash('balance(bytes32)', 256), 0, 8);
+        $arg = substr($campaignIdHex, 2);
+        $res = $this->rpc('eth_call', [['to' => $pool, 'data' => '0x' . $sel . $arg], 'latest']);
+        if (!$res || $res === '0x') {
+            return null;
+        }
+        return bcdiv(gmp_strval(gmp_init($res)), '1000000000000000000', 4);
+    }
+
+    /**
+     * Verifikasi donasi ke sebuah campaign. Cek: sukses, tujuan = kontrak pool,
+     * dan event Donated dengan campaignId yang cocok. Return donor + nominal.
+     */
+    public function verifyDonation(string $txHash, string $expectedIdHex): array
+    {
+        $pool = $this->poolConfigured();
+        if (!$pool) {
+            return ['ok' => false, 'reason' => 'Kontrak donasi belum dikonfigurasi.'];
+        }
+
+        $receipt = $this->getReceipt($txHash);
+        if (!$receipt) {
+            return ['ok' => false, 'reason' => 'Transaksi belum ditemukan / belum ter-mine.'];
+        }
+        if (($receipt['status'] ?? '') !== '0x1') {
+            return ['ok' => false, 'reason' => 'Transaksi gagal (reverted) di blockchain.'];
+        }
+        if (strtolower($receipt['to'] ?? '') !== $pool) {
+            return ['ok' => false, 'reason' => 'Transaksi bukan ke kontrak donasi.'];
+        }
+
+        // Donated(bytes32 indexed campaignId, address indexed donor, uint256 amount, uint256 ts)
+        $topic0 = '0x' . Keccak::hash('Donated(bytes32,address,uint256,uint256)', 256);
+        $eid    = strtolower($expectedIdHex);
+        $donor = null; $amtWei = null;
+        foreach (($receipt['logs'] ?? []) as $log) {
+            if (strtolower($log['address'] ?? '') !== $pool) {
+                continue;
+            }
+            $topics = $log['topics'] ?? [];
+            if (count($topics) < 3 || strtolower($topics[0]) !== strtolower($topic0)) {
+                continue;
+            }
+            if (strtolower($topics[1]) !== $eid) {
+                continue; // campaign lain
+            }
+            $donor  = '0x' . substr($topics[2], -40);                 // indexed donor
+            $amtWei = gmp_strval(gmp_init('0x' . substr(substr($log['data'] ?? '0x', 2), 0, 64)));
+            break;
+        }
+
+        if ($donor === null || $amtWei === null) {
+            return ['ok' => false, 'reason' => 'Event donasi untuk campaign ini tidak ditemukan.'];
+        }
+
+        $block = isset($receipt['blockNumber']) ? hexdec($receipt['blockNumber']) : null;
+
+        return [
+            'ok'           => true,
+            'donor'        => strtolower($donor),
+            'amount_wei'   => $amtWei,
+            'amount_tlkm'  => bcdiv($amtWei, '1000000000000000000', 6),
+            'block_number' => $block,
+        ];
+    }
+
+    /**
+     * Verifikasi penyaluran (Disbursed) sebuah campaign oleh validator.
+     * Cek campaignId cocok; return alamat tujuan (to), pemicu (by), nominal.
+     */
+    public function verifyDisbursement(string $txHash, string $expectedIdHex): array
+    {
+        $pool = $this->poolConfigured();
+        if (!$pool) {
+            return ['ok' => false, 'reason' => 'Kontrak donasi belum dikonfigurasi.'];
+        }
+
+        $receipt = $this->getReceipt($txHash);
+        if (!$receipt) {
+            return ['ok' => false, 'reason' => 'Transaksi belum ditemukan / belum ter-mine.'];
+        }
+        if (($receipt['status'] ?? '') !== '0x1') {
+            return ['ok' => false, 'reason' => 'Transaksi gagal (reverted) di blockchain.'];
+        }
+        if (strtolower($receipt['to'] ?? '') !== $pool) {
+            return ['ok' => false, 'reason' => 'Transaksi bukan ke kontrak donasi.'];
+        }
+
+        // Disbursed(bytes32 indexed campaignId, address indexed to, uint256 amount, address by, uint256 ts)
+        $topic0 = '0x' . Keccak::hash('Disbursed(bytes32,address,uint256,address,uint256)', 256);
+        $eid    = strtolower($expectedIdHex);
+        $by = null; $to = null; $amtWei = null;
+        foreach (($receipt['logs'] ?? []) as $log) {
+            if (strtolower($log['address'] ?? '') !== $pool) {
+                continue;
+            }
+            $topics = $log['topics'] ?? [];
+            if (count($topics) < 3 || strtolower($topics[0]) !== strtolower($topic0)) {
+                continue;
+            }
+            if (strtolower($topics[1]) !== $eid) {
+                continue;
+            }
+            $to     = '0x' . substr($topics[2], -40);
+            $data   = substr($log['data'] ?? '0x', 2);
+            $amtWei = gmp_strval(gmp_init('0x' . substr($data, 0, 64)));   // word0 = amount
+            $by     = '0x' . substr(substr($data, 64, 64), -40);          // word1 = by (address)
+            break;
+        }
+
+        if ($to === null || $amtWei === null) {
+            return ['ok' => false, 'reason' => 'Event penyaluran untuk campaign ini tidak ditemukan.'];
+        }
+
+        $block = isset($receipt['blockNumber']) ? hexdec($receipt['blockNumber']) : null;
+
+        return [
+            'ok'           => true,
+            'by'           => strtolower($by),
+            'to'           => strtolower($to),
+            'amount_wei'   => $amtWei,
+            'amount_tlkm'  => bcdiv($amtWei, '1000000000000000000', 6),
+            'block_number' => $block,
+        ];
+    }
+
+    /**
+     * Verifikasi transfer TLKM P2P (ERC20 transfer). Cek from cocok, ambil to + nominal.
+     * Return ['ok'=>bool,'reason'=>?, 'from'=>?, 'to'=>?, 'amount_wei'=>?, 'amount_tlkm'=>?, 'block_number'=>?]
+     */
+    public function verifyTransfer(string $txHash, string $expectedFrom): array
+    {
+        $tlkm = strtolower((string) config('chain.tlkm'));
+        $from = strtolower($expectedFrom);
+
+        $receipt = $this->getReceipt($txHash);
+        if (!$receipt) {
+            return ['ok' => false, 'reason' => 'Transaksi belum ditemukan / belum ter-mine.'];
+        }
+        if (($receipt['status'] ?? '') !== '0x1') {
+            return ['ok' => false, 'reason' => 'Transaksi gagal (reverted) di blockchain.'];
+        }
+
+        // Transfer(address indexed from, address indexed to, uint256 value)
+        $topic0 = '0x' . Keccak::hash('Transfer(address,address,uint256)', 256);
+        $to = null; $amtWei = null;
+        foreach (($receipt['logs'] ?? []) as $log) {
+            if (strtolower($log['address'] ?? '') !== $tlkm) {
+                continue;
+            }
+            $topics = $log['topics'] ?? [];
+            if (count($topics) < 3 || strtolower($topics[0]) !== strtolower($topic0)) {
+                continue;
+            }
+            if (strtolower('0x' . substr($topics[1], -40)) !== $from) {
+                continue; // pengirim tidak cocok
+            }
+            $to     = '0x' . substr($topics[2], -40);
+            $amtWei = gmp_strval(gmp_init('0x' . substr($log['data'] ?? '0x', 2, 64)));
+            break;
+        }
+
+        if ($to === null || $amtWei === null) {
+            return ['ok' => false, 'reason' => 'Event transfer TLKM tidak ditemukan / pengirim tidak cocok.'];
+        }
+
+        $block = isset($receipt['blockNumber']) ? hexdec($receipt['blockNumber']) : null;
+
+        return [
+            'ok'           => true,
+            'from'         => $from,
+            'to'           => strtolower($to),
+            'amount_wei'   => $amtWei,
+            'amount_tlkm'  => bcdiv($amtWei, '1000000000000000000', 6),
+            'block_number' => $block,
+        ];
+    }
+
     /**
      * Verifikasi hybrid sebuah pembayaran cart.
      * $expected: array[ item_index => ['product_id_uuid'=>..,'seller_wallet'=>..] ]
