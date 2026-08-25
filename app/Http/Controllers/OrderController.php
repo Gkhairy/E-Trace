@@ -20,7 +20,7 @@ class OrderController extends Controller
         $orders = Order::with(['items.product', 'items.review', 'shippingAddress'])
             ->where('user_id', auth()->id())
             ->latest()
-            ->get();
+            ->paginate(10);
 
         return view('orders.index', compact('orders'));
     }

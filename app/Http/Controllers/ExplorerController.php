@@ -9,32 +9,37 @@ use App\Models\User;
 use App\Models\WalletLabel;
 use App\Support\Identity;
 use App\Services\SepoliaVerifier;
+use Illuminate\Support\Facades\Cache;
 
 class ExplorerController extends Controller
 {
-    // Overview transparansi publik.
+    // Overview transparansi publik. Agregat di-cache 2 menit (anti-berat di skala besar).
     public function index()
     {
-        $totals = [
+        $totals = Cache::remember('explorer:totals', 120, fn () => [
             'volume'      => (float) Order::sum('total'),
             'tx'          => Order::count(),
             'escrow_held' => (float) OrderItem::where('status', 'paid')->sum('amount'),
             'stores'      => Store::count(),
             'labels'      => WalletLabel::count(),
-        ];
-
-        // Entitas: label terverifikasi + toko (dengan ringkasan penjualan).
-        $labels = WalletLabel::latest()->get()->map(fn ($l) => [
-            'address' => $l->address, 'name' => $l->label, 'category' => $l->category, 'verified' => $l->verified,
         ]);
 
-        $stores = Store::withCount('products')->get()->map(function ($s) {
-            $sold = OrderItem::where('seller_wallet', $s->payout_wallet)->where('status', 'completed')->sum('amount');
-            return ['address' => $s->payout_wallet, 'name' => $s->name, 'products' => $s->products_count, 'sold' => (float) $sold];
-        })->sortByDesc('sold')->values();
+        $labels = Cache::remember('explorer:labels', 120, fn () => WalletLabel::latest()->get()->map(fn ($l) => [
+            'address' => $l->address, 'name' => $l->label, 'category' => $l->category, 'verified' => $l->verified,
+        ]));
 
-        // Transaksi terbaru (item) — identitas dipublikkan lewat resolver.
-        $recent = OrderItem::with(['order.user', 'product'])->latest()->limit(15)->get()->map(function ($it) {
+        // Ringkasan penjualan per toko dihitung sekali dari agregat (bukan query per-baris).
+        $stores = Cache::remember('explorer:stores', 120, function () {
+            $sold = OrderItem::where('status', 'completed')
+                ->selectRaw('seller_wallet, SUM(amount) t')->groupBy('seller_wallet')->pluck('t', 'seller_wallet');
+            return Store::withCount('products')->get()->map(fn ($s) => [
+                'address' => $s->payout_wallet, 'name' => $s->name,
+                'products' => $s->products_count, 'sold' => (float) ($sold[$s->payout_wallet] ?? 0),
+            ])->sortByDesc('sold')->values();
+        });
+
+        // Transaksi terbaru (item) — paginasi + identitas via resolver.
+        $recent = OrderItem::with(['order.user', 'product'])->latest()->paginate(20)->through(function ($it) {
             $buyerAddr = strtolower(optional($it->order->user)->wallet_address ?? '');
             return [
                 'tx'      => $it->order->tx_hash,
@@ -61,7 +66,8 @@ class ExplorerController extends Controller
         }
 
         $identity = Identity::resolve($addr);
-        $balance  = (new SepoliaVerifier())->tlkmBalance($addr); // saldo TLKM live (bisa null bila RPC gagal)
+        // Saldo TLKM via RPC — cache 2 menit per alamat agar tak panggil RPC tiap request.
+        $balance  = Cache::remember("explorer:bal:{$addr}", 120, fn () => (new SepoliaVerifier())->tlkmBalance($addr));
 
         // Sebagai pembeli.
         $user = User::where('wallet_address', $addr)->first();

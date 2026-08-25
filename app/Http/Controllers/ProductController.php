@@ -11,7 +11,8 @@ class ProductController extends Controller
     public function index()
     {
         return view('products.index', [
-            'products' => Product::with('store')->latest()->get()
+            // Paginasi + eager-load store (hindari N+1).
+            'products' => Product::with('store')->latest()->paginate(16),
         ]);
     }
 

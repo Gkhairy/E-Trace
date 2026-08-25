@@ -80,7 +80,7 @@
 {{-- ===== HEADER KATALOG ===== --}}
 <div id="katalog" class="mb-6 scroll-mt-28">
     <h2 class="text-2xl font-bold text-slate-900">Katalog Produk</h2>
-    <p class="text-sm text-slate-500">{{ $products->count() }} produk tersedia</p>
+    <p class="text-sm text-slate-500">{{ $products->total() }} produk tersedia</p>
 </div>
 
 @if(session('success'))
@@ -154,6 +154,8 @@
             </div>
         @endforeach
     </div>
+
+    <div class="mt-8">{{ $products->links() }}</div>
 @endif
 
 @endsection
