@@ -115,6 +115,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/pin/checkout', [\App\Http\Controllers\PinTxController::class, 'checkout'])->middleware('throttle:15,1');
     Route::post('/pin/community',[\App\Http\Controllers\PinTxController::class, 'community'])->middleware('throttle:15,1');
 
+    // BAYAR QRIS pakai stablecoin — PROTOTIPE (receipt simulasi, tanpa settlement nyata)
+    Route::post('/qris/pay', [\App\Http\Controllers\QrisController::class, 'pay'])->middleware('throttle:15,1');
+
     // DOMPET KOMUNITAS (Fase F)
     Route::get('/community', [CommunityWalletController::class, 'index']);
     Route::get('/community/create', [CommunityWalletController::class, 'create']);

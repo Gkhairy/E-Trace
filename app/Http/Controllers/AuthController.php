@@ -34,13 +34,12 @@ class AuthController extends Controller
             'email'    => 'required|email|unique:users',
             'phone'    => 'required|string|regex:/^[0-9]+$/|min:8|max:15',
             'password' => 'required|min:8|confirmed',
+            'pin'      => 'required|digits:6|confirmed', // PIN WAJIB semua akun (login & bayar)
         ];
         if ($usesMetamask) {
             $rules['wallet_address'] = 'required|string|regex:/^0x[a-fA-F0-9]{40}$/|unique:users';
             $rules['signature']      = 'required|string';
             $rules['sig_timestamp']  = 'required|numeric';
-        } else {
-            $rules['pin'] = 'required|digits:6|confirmed'; // butuh pin_confirmation
         }
 
         $request->validate($rules, [
@@ -54,9 +53,11 @@ class AuthController extends Controller
             'pin.confirmed'        => 'Konfirmasi PIN tidak cocok.',
         ]);
 
-        $embedded = [];
+        // PIN hash disimpan untuk SEMUA akun (login + konfirmasi bayar QRIS/aksi).
+        $extra = ['pin_hash' => Hash::make($request->pin)];
         if ($usesMetamask) {
             // BUKTI KEPEMILIKAN WALLET: signature harus cocok dg wallet_address.
+            // (MetaMask: PIN hanya untuk login/konfirmasi app; penandatanganan on-chain tetap via MetaMask.)
             $wallet = strtolower($request->wallet_address);
             $ts = (int) $request->sig_timestamp;
             if (abs(time() - $ts) > 600) {
@@ -70,11 +71,8 @@ class AuthController extends Controller
             // Buat embedded wallet otomatis, enkripsi private key dengan PIN.
             $ew = new EmbeddedWallet();
             $w  = $ew->generate();
-            $wallet   = $w['address'];
-            $embedded = $ew->encrypt($w['private'], $request->pin) + [
-                'is_embedded' => true,
-                'pin_hash'    => Hash::make($request->pin),
-            ];
+            $wallet = $w['address'];
+            $extra  = $ew->encrypt($w['private'], $request->pin) + ['is_embedded' => true] + $extra;
         }
 
         $user = User::create([
@@ -85,7 +83,7 @@ class AuthController extends Controller
             'nonce' => Str::random(20),
             'password' => Hash::make($request->password),
             // email_verified_at sengaja NULL: akun aktif setelah OTP diverifikasi.
-        ] + $embedded);
+        ] + $extra);
 
         if (!$usesMetamask) {
             GasDrip::dispatch($user->id); // kirim sedikit ETH Sepolia untuk gas
@@ -219,8 +217,8 @@ class AuthController extends Controller
         ]);
 
         $user = User::where('email', $data['email'])->first();
-        if (!$user || !$user->is_embedded || !$user->pin_hash) {
-            return back()->withErrors(['pin' => 'Akun ini tidak memakai PIN. Coba login email/password atau MetaMask.'])->withInput();
+        if (!$user || !$user->pin_hash) {
+            return back()->withErrors(['pin' => 'Akun ini belum punya PIN. Coba login email/password atau MetaMask.'])->withInput();
         }
         if ($user->pinLocked()) {
             return back()->withErrors(['pin' => 'PIN terkunci sementara karena terlalu banyak percobaan. Coba lagi nanti.'])->withInput();

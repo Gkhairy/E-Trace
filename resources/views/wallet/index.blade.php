@@ -4,7 +4,22 @@
 @php $fmt = fn($n) => rtrim(rtrim(number_format((float)$n, 2), '0'), '.'); @endphp
 
 <h1 class="text-2xl font-bold text-slate-900 mb-1">Dompet TLKM</h1>
-<p class="text-sm text-slate-500 mb-6">Kirim TLKM ke siapa saja, atau buat permintaan uang (link &amp; QR) agar orang lain bisa membayarmu.</p>
+<p class="text-sm text-slate-500 mb-6">Kirim TLKM, minta uang (link &amp; QR), atau <b>bayar QRIS pakai stablecoin</b>.</p>
+
+{{-- ===== BAYAR QRIS (PROTOTIPE) ===== --}}
+<div class="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl shadow-sm p-5 mb-6 flex items-center justify-between gap-4">
+    <div class="min-w-0">
+        <div class="flex items-center gap-2">
+            <h2 class="font-bold text-white">Bayar QRIS pakai Stablecoin</h2>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/90 text-slate-900 font-bold">PROTOTIPE</span>
+        </div>
+        <p class="text-xs text-slate-300 mt-1">Scan QRIS/GPN, masukkan nominal, konfirmasi PIN — dibayar dari saldo stablecoin (USDC). <b>Simulasi</b>: belum settlement nyata.</p>
+    </div>
+    <button onclick="qrisStart()" class="shrink-0 bg-white text-slate-900 hover:bg-slate-100 px-4 py-2.5 rounded-xl text-sm font-bold transition inline-flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 3h3m0 0h3m-3 0v3m0-3v-3"/></svg>
+        Scan &amp; Bayar
+    </button>
+</div>
 
 @if(session('success'))
     <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-6 text-sm">{{ session('success') }}</div>
@@ -138,6 +153,108 @@ function shareReq(code, amountLabel) {
             <button onclick="closeModal()" class="mt-4 w-full py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-sm font-medium">Tutup</button>
         </div>`);
     setTimeout(() => { try { new QRCode(document.getElementById('qrBox'), { text: url, width: 180, height: 180, colorDark: '#0f172a', colorLight: '#ffffff' }); } catch(e){} }, 30);
+}
+</script>
+
+{{-- ===== BAYAR QRIS (PROTOTIPE) — scan → tinjau → PIN → receipt simulasi ===== --}}
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+const QRIS_RATE = 16000; // Rp per USDC (mock, harus sama dgn QrisController)
+let qrScanner = null, qrisMerchant = '', qrisCity = '';
+
+function stopScanner() { if (qrScanner) { try { qrScanner.stop().catch(()=>{}); } catch(e){} qrScanner = null; } }
+
+function qrisStart() {
+    openModal(`
+        <div class="p-5">
+            <h3 class="text-lg font-bold text-slate-900 mb-1">Scan QRIS / GPN</h3>
+            <p class="text-xs text-slate-500 mb-3">Arahkan kamera ke kode QRIS, tempel kodenya, atau pakai contoh demo.</p>
+            <div id="qrReader" class="rounded-xl overflow-hidden bg-slate-100 mb-3" style="min-height:200px"></div>
+            <textarea id="qrPaste" rows="2" placeholder="…atau tempel payload QRIS di sini" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs outline-none focus:border-blue-500 resize-none mb-2"></textarea>
+            <div class="flex gap-2">
+                <button onclick="qrisUseText()" class="flex-1 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold">Gunakan kode</button>
+                <button onclick="qrisDemo()" class="flex-1 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-sm font-medium">Pakai contoh</button>
+            </div>
+            <button onclick="stopScanner();closeModal()" class="mt-2 w-full py-2 text-slate-500 text-sm">Batal</button>
+        </div>`);
+    setTimeout(() => {
+        try {
+            qrScanner = new Html5Qrcode('qrReader');
+            qrScanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: 200 },
+                (txt) => { stopScanner(); qrisFromRaw(txt); }, () => {});
+        } catch (e) { document.getElementById('qrReader').innerHTML = '<p class="text-xs text-slate-400 p-4 text-center">Kamera tak tersedia — tempel kode atau pakai contoh.</p>'; }
+    }, 80);
+}
+function qrisUseText() { const v = (document.getElementById('qrPaste').value || '').trim(); if (!v) return showToast('Tempel kode QRIS dulu.', 'warn'); stopScanner(); qrisFromRaw(v); }
+function qrisDemo() { stopScanner(); qrisReview('WARUNG MADURA BAROKAH', 'JAKARTA'); }
+function qrisFromRaw(raw) { const p = parseQris(raw); qrisReview(p.merchant || 'Merchant QRIS', p.city || ''); }
+
+// Parser EMVCo QRIS sederhana (TLV): tag 59 = nama merchant, 60 = kota.
+function parseQris(s) {
+    const out = {}; let i = 0;
+    try { while (i < s.length - 4) { const tag = s.substr(i, 2); const len = parseInt(s.substr(i + 2, 2), 10); if (isNaN(len)) break; out[tag] = s.substr(i + 4, len); i += 4 + len; } } catch (e) {}
+    return { merchant: out['59'], city: out['60'] };
+}
+
+// Layar "Tinjau order" (mengikuti pola Bitget Pay).
+function qrisReview(merchant, city) {
+    qrisMerchant = merchant; qrisCity = city || '';
+    openModal(`
+        <div class="p-5">
+            <p class="text-xs text-slate-400">Tinjau order</p>
+            <div class="flex items-baseline gap-2 mt-1 mb-4">
+                <input id="qrisAmt" type="number" min="1" placeholder="0" class="text-3xl font-extrabold w-44 outline-none border-b border-slate-200 focus:border-blue-500">
+                <span class="text-lg text-slate-400 font-semibold">IDR</span>
+            </div>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm space-y-2.5">
+                <div class="flex justify-between gap-3"><span class="text-slate-500">Bayar ke</span><span class="font-semibold text-slate-800 text-right truncate">${merchant}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Jumlah pembayaran</span><span id="qrisUsdc" class="font-semibold text-blue-600">0 USDC</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Saldo</span><span class="text-slate-700">52.272277 USDC</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Biaya jaringan</span><span class="text-green-600 font-medium">Gratis</span></div>
+            </div>
+            <p class="text-[11px] text-amber-600 mt-3">Prototipe — pembayaran ini <b>simulasi</b>, belum ada settlement nyata ke merchant.</p>
+            <button onclick="qrisConfirm()" class="mt-4 w-full py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold">Konfirmasi pembayaran</button>
+            <button onclick="closeModal()" class="mt-2 w-full py-2 text-slate-500 text-sm">Batal</button>
+        </div>`);
+    const amt = document.getElementById('qrisAmt');
+    amt.oninput = () => { const v = parseFloat(amt.value) || 0; document.getElementById('qrisUsdc').textContent = (v / QRIS_RATE).toFixed(4) + ' USDC'; };
+    setTimeout(() => amt.focus(), 60);
+}
+
+async function qrisConfirm() {
+    const amt = parseFloat(document.getElementById('qrisAmt').value);
+    if (!amt || amt < 1) return showToast('Masukkan nominal (IDR).', 'warn');
+    const pin = await askPin('Bayar QRIS'); if (!pin) return;
+    txProgress.open('Membayar QRIS', ['Verifikasi PIN', 'Memproses (simulasi)']);
+    try {
+        txProgress.active(0);
+        const res = await fetch('/qris/pay', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN }, body: JSON.stringify({ pin, merchant: qrisMerchant, city: qrisCity, amount: amt }) });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) throw new Error(data.message || 'Pembayaran gagal.');
+        txProgress.done(0); txProgress.active(1); txProgress.done(1);
+        setTimeout(() => { txProgress.close(); qrisReceipt(data.receipt); }, 300);
+    } catch (e) { txProgress.close(); uiAlert({ title: 'Gagal', message: niceError(e), type: 'error' }); }
+}
+
+function qrisReceipt(r) {
+    openModal(`
+        <div class="p-6 text-center">
+            <div class="w-14 h-14 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto mb-3">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900">Pembayaran Berhasil</h3>
+            <span class="inline-block text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold mt-1">SIMULASI · PROTOTIPE</span>
+            <p class="text-3xl font-extrabold text-slate-900 mt-3">Rp ${Number(r.amount_idr).toLocaleString('id-ID')}</p>
+            <p class="text-sm text-slate-500">${r.stablecoin_amount} ${r.stablecoin} · kurs Rp${Number(r.rate).toLocaleString('id-ID')}</p>
+            <div class="text-left text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 mt-4 space-y-1.5">
+                <div class="flex justify-between gap-3"><span class="text-slate-500">Merchant</span><span class="font-medium text-right truncate">${r.merchant}</span></div>
+                ${r.city ? `<div class="flex justify-between"><span class="text-slate-500">Kota</span><span>${r.city}</span></div>` : ''}
+                <div class="flex justify-between"><span class="text-slate-500">Waktu</span><span>${r.time}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">No. Ref</span><span class="font-mono text-xs">${r.ref}</span></div>
+            </div>
+            <p class="text-[11px] text-amber-600 mt-3">Receipt simulasi untuk prototipe — <b>bukan</b> bukti pembayaran nyata.</p>
+            <button onclick="closeModal()" class="mt-4 w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">Selesai</button>
+        </div>`);
 }
 </script>
 @endsection

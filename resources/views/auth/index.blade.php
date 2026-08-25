@@ -127,7 +127,7 @@
         {{-- ===== DAFTAR ===== --}}
         <div class="form-col col-signup">
             <h1 class="text-2xl font-bold text-slate-900">Buat Akun</h1>
-            <p class="text-sm text-slate-500 mt-1 mb-4">Pakai <b>PIN 6 angka</b> (wallet dibuatkan otomatis) atau hubungkan MetaMask sendiri.</p>
+            <p class="text-sm text-slate-500 mt-1 mb-4"><b>PIN 6 angka</b> wajib untuk semua akun (login &amp; bayar). Pilih wallet: dibuatkan otomatis, atau hubungkan MetaMask.</p>
 
             @if($errors->any() && $startRegister)
                 <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 rounded-xl mb-3 text-sm">
@@ -135,10 +135,10 @@
                 </div>
             @endif
 
-            {{-- Pilih metode --}}
+            {{-- Pilih metode wallet (PIN tetap wajib di kedua mode) --}}
             <div class="flex gap-2 mb-3 text-sm">
-                <button type="button" id="tabPin" onclick="regMode('pin')" class="flex-1 py-2 rounded-lg border border-blue-500 bg-blue-50 text-blue-700 font-medium">PIN (mudah)</button>
-                <button type="button" id="tabMm" onclick="regMode('mm')" class="flex-1 py-2 rounded-lg border border-slate-200 text-slate-600">MetaMask</button>
+                <button type="button" id="tabPin" onclick="regMode('pin')" class="flex-1 py-2 rounded-lg border border-blue-500 bg-blue-50 text-blue-700 font-medium">Wallet otomatis</button>
+                <button type="button" id="tabMm" onclick="regMode('mm')" class="flex-1 py-2 rounded-lg border border-slate-200 text-slate-600">Pakai MetaMask</button>
             </div>
 
             <div id="mmConnect" class="hidden mb-3">
@@ -202,18 +202,16 @@
     function toRegister() { authCard.classList.add('show-signup'); }
     function toLogin()    { authCard.classList.remove('show-signup'); }
 
-    // Metode daftar: PIN (embedded) vs MetaMask. Input non-aktif tidak ikut ter-submit.
+    // Metode wallet: 'pin' = wallet otomatis (embedded), 'mm' = MetaMask.
+    // PIN SELALU wajib di kedua mode; hanya field wallet yang di-enable/disable.
     function regMode(m) {
-        const pin = m === 'pin';
-        document.getElementById('pinBlock').classList.toggle('hidden', !pin);
-        document.getElementById('mmBlock').classList.toggle('hidden', pin);
-        document.getElementById('mmConnect').classList.toggle('hidden', pin);
-        document.getElementById('pin').disabled = !pin;
-        document.getElementById('pin_confirmation').disabled = !pin;
-        document.getElementById('wallet_address').disabled = pin;
-        document.getElementById('signature').disabled = pin;
-        document.getElementById('sig_timestamp').disabled = pin;
-        setTab('tabPin', pin); setTab('tabMm', !pin);
+        const embedded = m === 'pin';
+        document.getElementById('mmBlock').classList.toggle('hidden', embedded);
+        document.getElementById('mmConnect').classList.toggle('hidden', embedded);
+        document.getElementById('wallet_address').disabled = embedded;
+        document.getElementById('signature').disabled = embedded;
+        document.getElementById('sig_timestamp').disabled = embedded;
+        setTab('tabPin', embedded); setTab('tabMm', !embedded);
     }
     // Metode masuk: Password vs PIN.
     function loginMode(m) {
