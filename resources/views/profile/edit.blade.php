@@ -32,6 +32,36 @@
         </div>
     @endif
 
+    {{-- ===== 2FA (Autentikasi 2 Langkah) ===== --}}
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mb-6">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-2">
+                    <h2 class="font-bold text-slate-900">Autentikasi 2 Langkah (2FA)</h2>
+                    @if($user->hasTwoFactor())
+                        <span class="text-[11px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">Aktif</span>
+                    @else
+                        <span class="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">Nonaktif</span>
+                    @endif
+                </div>
+                <p class="text-sm text-slate-500 mt-1 max-w-md">Tambahan keamanan pakai aplikasi Authenticator (Google Authenticator/Authy). Diminta saat login.</p>
+            </div>
+        </div>
+
+        @if($user->hasTwoFactor())
+            <form action="/two-factor/disable" method="POST" class="mt-4 flex flex-wrap items-end gap-3" onsubmit="return confirm('Matikan 2FA?')">
+                @csrf
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Konfirmasi password untuk mematikan</label>
+                    <input type="password" name="password" required placeholder="Password" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
+                </div>
+                <button class="py-2.5 px-4 rounded-xl bg-white border border-red-300 text-red-700 hover:bg-red-50 text-sm font-semibold transition">Matikan 2FA</button>
+            </form>
+        @else
+            <a href="/two-factor/setup" class="inline-block mt-4 py-2.5 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm">Aktifkan 2FA</a>
+        @endif
+    </div>
+
     <form action="/profile" method="POST" class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-5">
         @csrf
 

@@ -31,7 +31,20 @@ class User extends Authenticatable
         'password',
         'nonce',
         'nonce_expires_at',
+        'otp_hash',
+        'otp_expires_at',
+        'otp_attempts',
+        'otp_sent_at',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+        'two_factor_confirmed_at',
     ];
+
+    /** 2FA TOTP aktif & sudah dikonfirmasi? */
+    public function hasTwoFactor(): bool
+    {
+        return $this->two_factor_confirmed_at !== null && $this->two_factor_secret !== null;
+    }
 
     public function store()
     {
@@ -71,6 +84,11 @@ class User extends Authenticatable
             'password' => 'hashed',
             'explorer_public' => 'boolean',
             'nonce_expires_at' => 'datetime',
+            'otp_expires_at' => 'datetime',
+            'otp_sent_at' => 'datetime',
+            'two_factor_confirmed_at' => 'datetime',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted',
         ];
     }
 }

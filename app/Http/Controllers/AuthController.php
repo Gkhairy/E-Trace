@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Jobs\SendOtp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use kornrunner\Keccak;  // hashing keccak256
 use Elliptic\EC;        // recovery public key dari signature (ecrecover)
@@ -58,16 +60,100 @@ class AuthController extends Controller
             ])->withInput();
         }
 
-        User::create([
+        $user = User::create([
             'name'     => $request->name,
             'email'    => $request->email,
             'phone'    => $request->phone,
             'wallet_address' => strtolower($request->wallet_address),
             'nonce' => Str::random(20),
             'password' => Hash::make($request->password),
+            // email_verified_at sengaja NULL: akun aktif setelah OTP diverifikasi.
         ]);
 
-        return redirect('/login')->with('success', 'Akun berhasil dibuat!');
+        $this->sendOtp($user);
+        session(['otp_user_id' => $user->id]);
+
+        return redirect('/verify-otp')->with('success', 'Kode OTP dikirim ke ' . $user->email . '. Cek email kamu.');
+    }
+
+    // ============================
+    // OTP EMAIL (verifikasi registrasi)
+    // ============================
+
+    /** Generate OTP 6 digit, simpan HASH-nya, kirim via queue. */
+    private function sendOtp(User $user): void
+    {
+        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $user->forceFill([
+            'otp_hash'       => Hash::make($code),
+            'otp_expires_at' => now()->addMinutes(10),
+            'otp_attempts'   => 0,
+            'otp_sent_at'    => now(),
+        ])->save();
+
+        SendOtp::dispatch($user->id, $code); // RabbitMQ — tidak memblok request
+    }
+
+    public function verifyOtpForm(Request $request)
+    {
+        $user = User::find(session('otp_user_id'));
+        if (!$user) {
+            return redirect('/login');
+        }
+        if ($user->email_verified_at) {
+            session()->forget('otp_user_id');
+            return redirect('/login')->with('success', 'Akun sudah terverifikasi. Silakan login.');
+        }
+        return view('auth.verify-otp', ['email' => $user->email]);
+    }
+
+    public function verifyOtp(Request $request)
+    {
+        $request->validate(['code' => 'required|digits:6']);
+
+        $user = User::find(session('otp_user_id'));
+        if (!$user) {
+            return redirect('/login')->withErrors(['code' => 'Sesi verifikasi berakhir. Silakan login/daftar lagi.']);
+        }
+
+        if (!$user->otp_hash || !$user->otp_expires_at || now()->greaterThan($user->otp_expires_at)) {
+            return back()->withErrors(['code' => 'Kode kadaluarsa. Klik "Kirim ulang".']);
+        }
+        if ($user->otp_attempts >= 5) {
+            return back()->withErrors(['code' => 'Terlalu banyak percobaan. Klik "Kirim ulang" untuk kode baru.']);
+        }
+
+        if (!Hash::check($request->code, $user->otp_hash)) {
+            $user->increment('otp_attempts');
+            return back()->withErrors(['code' => 'Kode salah. Sisa percobaan: ' . max(0, 5 - $user->otp_attempts) . '.']);
+        }
+
+        // Sukses: aktifkan akun, hapus OTP (sekali pakai).
+        $user->forceFill([
+            'email_verified_at' => now(),
+            'otp_hash' => null, 'otp_expires_at' => null, 'otp_attempts' => 0,
+        ])->save();
+
+        session()->forget('otp_user_id');
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return redirect()->intended('/products')->with('success', 'Akun terverifikasi. Selamat datang di E-Trace!');
+    }
+
+    public function resendOtp(Request $request)
+    {
+        $user = User::find(session('otp_user_id'));
+        if (!$user) {
+            return redirect('/login');
+        }
+        // Cooldown 60 detik antar kirim.
+        if ($user->otp_sent_at && $user->otp_sent_at->diffInSeconds(now()) < 60) {
+            $wait = 60 - $user->otp_sent_at->diffInSeconds(now());
+            return back()->withErrors(['code' => "Tunggu {$wait} detik sebelum kirim ulang."]);
+        }
+        $this->sendOtp($user);
+        return back()->with('success', 'Kode OTP baru dikirim.');
     }
 
     // ============================
@@ -89,20 +175,34 @@ class AuthController extends Controller
 
     public function loginStore(Request $request)
     {
-        $credentials = $request->validate([
+        $data = $request->validate([
             'email'    => 'required|email',
             'password' => 'required'
         ]);
 
-        if (Auth::attempt($credentials)) {
-            $request->session()->regenerate();
-            // Kembali ke intended URL (mis. halaman produk), default ke katalog /products.
-            return redirect()->intended('/products');
+        // Cek kredensial TANPA langsung login (agar bisa sisipkan OTP/2FA).
+        $user = User::where('email', $data['email'])->first();
+        if (!$user || !Hash::check($data['password'], $user->password)) {
+            return back()->withErrors(['email' => 'Email atau password salah.']);
         }
 
-        return back()->withErrors([
-            'email' => 'Email atau password salah.',
-        ]);
+        // 1) Email belum terverifikasi → kirim OTP & minta verifikasi dulu.
+        if (is_null($user->email_verified_at)) {
+            $this->sendOtp($user);
+            session(['otp_user_id' => $user->id]);
+            return redirect('/verify-otp')->with('success', 'Akun belum terverifikasi. Kode OTP baru dikirim ke email kamu.');
+        }
+
+        // 2) 2FA aktif → tantang kode TOTP sebelum menyelesaikan login.
+        if ($user->hasTwoFactor()) {
+            session(['2fa:user:id' => $user->id]);
+            return redirect('/two-factor-challenge');
+        }
+
+        // 3) Normal.
+        Auth::login($user, $request->boolean('remember'));
+        $request->session()->regenerate();
+        return redirect()->intended('/products');
     }
 
     // Validasi URL "next" agar hanya path internal (cegah open redirect).
@@ -181,6 +281,12 @@ class AuthController extends Controller
         $user->nonce = Str::random(24);
         $user->nonce_expires_at = null;
         $user->save();
+
+        // 2FA aktif → jangan langsung login; arahkan ke tantangan TOTP.
+        if ($user->hasTwoFactor()) {
+            session(['2fa:user:id' => $user->id]);
+            return response()->json(['success' => true, 'redirect' => url('/two-factor-challenge')]);
+        }
 
         Auth::login($user);
         $request->session()->regenerate();   // cegah session fixation

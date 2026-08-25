@@ -32,6 +32,15 @@ Route::post('/login', [AuthController::class, 'loginStore'])->middleware('thrott
 Route::get('/api/get-nonce', [AuthController::class, 'getNonce'])->middleware('throttle:20,1');
 Route::post('/login-wallet', [AuthController::class, 'loginWithWallet'])->middleware('throttle:12,1');
 
+// OTP VERIFIKASI EMAIL (berbasis sesi, sebelum login penuh)
+Route::get('/verify-otp', [AuthController::class, 'verifyOtpForm']);
+Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->middleware('throttle:10,1');
+Route::post('/resend-otp', [AuthController::class, 'resendOtp'])->middleware('throttle:5,1');
+
+// 2FA — tantangan saat login (berbasis sesi)
+Route::get('/two-factor-challenge', [\App\Http\Controllers\TwoFactorController::class, 'challenge']);
+Route::post('/two-factor-challenge', [\App\Http\Controllers\TwoFactorController::class, 'verify'])->middleware('throttle:10,1');
+
 // LOGOUT
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth');
 
@@ -77,6 +86,11 @@ Route::middleware('auth')->group(function () {
     // PROFIL PUBLIK (semua user)
     Route::get('/profile', [ProfileController::class, 'edit']);
     Route::post('/profile', [ProfileController::class, 'update']);
+
+    // 2FA (opsional) — kelola dari profil
+    Route::get('/two-factor/setup', [\App\Http\Controllers\TwoFactorController::class, 'setup']);
+    Route::post('/two-factor/confirm', [\App\Http\Controllers\TwoFactorController::class, 'confirm']);
+    Route::post('/two-factor/disable', [\App\Http\Controllers\TwoFactorController::class, 'disable']);
 
     // BUKU ALAMAT
     Route::get('/addresses', [AddressController::class, 'index']);
