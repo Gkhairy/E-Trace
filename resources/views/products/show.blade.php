@@ -56,10 +56,15 @@
         <div class="space-y-3 text-sm">
             <div class="flex items-center justify-between">
                 <span class="text-slate-500">Toko</span>
-                <span class="font-medium text-slate-800 flex items-center gap-1">
-                    <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7l2-4h14l2 4M3 7h18M3 7v13a1 1 0 001 1h16a1 1 0 001-1V7"/></svg>
-                    {{ $product->store->name ?? 'Toko' }}
-                </span>
+                @if($product->store)
+                    <a href="/store/{{ $product->store->slug }}" class="font-medium text-blue-600 hover:underline flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7l2-4h14l2 4M3 7h18M3 7v13a1 1 0 001 1h16a1 1 0 001-1V7"/></svg>
+                        {{ $product->store->name }}
+                        <span class="text-slate-400">›</span>
+                    </a>
+                @else
+                    <span class="font-medium text-slate-800">Toko</span>
+                @endif
             </div>
             <div class="flex items-center justify-between">
                 <span class="text-slate-500">Wallet penjual</span>

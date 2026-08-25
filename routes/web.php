@@ -15,6 +15,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DonationController;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\WalletController;
+use App\Http\Controllers\StoreController;
 
 // HOME / LANDING PAGE
 // Belum login -> landing page publik. Sudah login -> ke katalog produk.
@@ -51,6 +52,9 @@ Route::post('/donation/disburse', [DonationController::class, 'disburse'])->midd
 
 // BAYAR PERMINTAAN UANG (publik — siapa saja bisa membayar via link/QR).
 Route::get('/pay/{code}', [WalletController::class, 'pay'])->where('code', '[A-Za-z0-9]+');
+
+// TOKO (profil publik + produk yang dijual)
+Route::get('/store/{slug}', [StoreController::class, 'show'])->where('slug', '[a-z0-9\-]+');
 
 // PRODUCTS
 // Katalog & detail produk PUBLIK (bisa dilihat tanpa login).

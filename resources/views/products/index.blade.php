@@ -22,6 +22,38 @@
     </div>
 </section>
 
+{{-- ===== PINTASAN IKON (ala Shopee) ===== --}}
+@php
+    $u = auth()->user();
+    $sc = [
+        ['/explorer', 'Explorer', 'bg-indigo-50 text-indigo-600', 'M11 3a8 8 0 105.29 14.29l4.7 4.71 1.42-1.42-4.71-4.7A8 8 0 0011 3zm0 2a6 6 0 110 12 6 6 0 010-12z'],
+        ['/donate', 'Donasi', 'bg-rose-50 text-rose-600', 'M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 10-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z'],
+    ];
+    if ($u) {
+        $sc[] = ['/wallet', 'Dompet', 'bg-blue-50 text-blue-600', 'M3 10h18M7 15h.01M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z'];
+        $sc[] = ['/orders', 'Order', 'bg-amber-50 text-amber-600', 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2'];
+        $sc[] = ['/addresses', 'Alamat', 'bg-emerald-50 text-emerald-600', 'M12 21s-6-5.686-6-10a6 6 0 1112 0c0 4.314-6 10-6 10zM12 11a2 2 0 100-4 2 2 0 000 4z'];
+        if ($u->isSeller())     $sc[] = ['/seller', 'Toko Saya', 'bg-orange-50 text-orange-600', 'M3 7l2-4h14l2 4M3 7h18M3 7v13a1 1 0 001 1h16a1 1 0 001-1V7'];
+        if ($u->isSupervisor()) $sc[] = ['/supervisor/disputes', 'Pengawas', 'bg-violet-50 text-violet-600', 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'];
+        $sc[] = ['/profile', 'Profil', 'bg-slate-100 text-slate-600', 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'];
+    } else {
+        $sc[] = ['/login', 'Masuk', 'bg-blue-50 text-blue-600', 'M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1'];
+        $sc[] = ['/register', 'Daftar', 'bg-emerald-50 text-emerald-600', 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h9m5-3h-4m2-2v4'];
+    }
+@endphp
+<div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-8">
+    <div class="flex flex-wrap justify-center gap-x-6 sm:gap-x-10 gap-y-5">
+        @foreach($sc as $s)
+            <a href="{{ $s[0] }}" class="group flex flex-col items-center gap-2 text-center w-16">
+                <span class="w-12 h-12 rounded-2xl {{ $s[2] }} flex items-center justify-center group-hover:scale-105 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="{{ $s[3] }}"/></svg>
+                </span>
+                <span class="text-[11px] text-slate-600 leading-tight">{{ $s[1] }}</span>
+            </a>
+        @endforeach
+    </div>
+</div>
+
 {{-- ===== TRUST STRIP ===== --}}
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
     @php

@@ -17,7 +17,7 @@ class AuthController extends Controller
     // ============================
     public function register()
     {
-        return view('auth.register');
+        return view('auth.index', ['mode' => 'register']);
     }
 
     public function registerStore(Request $request)
@@ -84,7 +84,7 @@ class AuthController extends Controller
             }
         }
 
-        return view('auth.login');
+        return view('auth.index', ['mode' => 'login']);
     }
 
     public function loginStore(Request $request)

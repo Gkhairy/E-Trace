@@ -71,33 +71,10 @@
                     class="w-full bg-slate-100 focus:bg-white text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none text-slate-800 placeholder-slate-400 border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition">
             </div>
 
-            <!-- NAV (desktop) -->
+            <!-- NAV (desktop) — ringkas; pintasan fitur ada sebagai ikon di halaman /products -->
             <nav class="hidden lg:flex items-center gap-6 text-slate-600 text-sm font-medium shrink-0">
-                <a href="/products"  class="hover:text-blue-600 transition">Produk</a>
-                <a href="/explorer"  class="hover:text-blue-600 transition">Explorer</a>
-                <a href="/donate"    class="hover:text-blue-600 transition">Donasi</a>
-                @auth
-                    @if(auth()->user()->isSeller())
-                        <a href="/seller" class="hover:text-blue-600 transition inline-flex items-center gap-1">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7l2-4h14l2 4M3 7h18M3 7v13a1 1 0 001 1h16a1 1 0 001-1V7"/></svg>
-                            Toko Saya
-                        </a>
-                    @endif
-                    @if(auth()->user()->isSupervisor())
-                        <a href="/supervisor/disputes" class="hover:text-blue-600 transition inline-flex items-center gap-1">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-                            Pengawas
-                        </a>
-                    @endif
-                    <a href="/orders"    class="hover:text-blue-600 transition inline-flex items-center gap-1">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3M17 13l2.3 2.3M9 20a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0z"/></svg>
-                        Order
-                    </a>
-                    <a href="/wallet"    class="hover:text-blue-600 transition inline-flex items-center gap-1">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 10h18M7 15h.01M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
-                        Dompet
-                    </a>
-                @endauth
+                <a href="/products" class="hover:text-blue-600 transition">Produk</a>
+                <a href="/explorer" class="hover:text-blue-600 transition">Explorer</a>
             </nav>
 
             @auth
