@@ -53,12 +53,14 @@
         if (!amt || amt <= 0) { showToast('Masukkan nominal yang valid.', 'warn'); return; }
         const ok = await uiConfirm({ title: 'Bayar Permintaan', message: `Kirim <b class="text-blue-600">${amt} TLKM</b> ke penerima?`, confirmText: 'Ya, bayar' });
         if (!ok) return;
+        let pin = null;
+        if (IS_EMBEDDED) { pin = await askPin('Bayar Permintaan'); if (!pin) return; }
         const btn = document.getElementById('payBtn'); btn.disabled = true;
-        txProgress.open('Membayar', ['Memeriksa jaringan', 'Konfirmasi di MetaMask', 'Mencatat']);
+        txProgress.open('Membayar', ['Memeriksa jaringan', IS_EMBEDDED ? 'Tanda tangan dengan PIN' : 'Konfirmasi di MetaMask', 'Mencatat']);
         try {
-            txProgress.active(0); await checkNetwork(); txProgress.done(0);
-            txProgress.active(1, 'Konfirmasi transfer di MetaMask…');
-            const hash = await sendTLKM(RECIPIENT, amt);
+            txProgress.active(0); if (!IS_EMBEDDED) await checkNetwork(); txProgress.done(0);
+            txProgress.active(1, IS_EMBEDDED ? 'Menandatangani & menyiarkan…' : 'Konfirmasi transfer di MetaMask…');
+            const hash = IS_EMBEDDED ? await pinTx('/pin/transfer', { pin, to: RECIPIENT, amount: amt }) : await sendTLKM(RECIPIENT, amt);
             txProgress.done(1);
             txProgress.active(2, 'Verifikasi on-chain…');
             await fetch('/wallet/send', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN }, body: JSON.stringify({ tx_hash: hash, request_id: REQUEST_ID }) });

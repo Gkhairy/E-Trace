@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Jobs\SendOtp;
+use App\Jobs\GasDrip;
+use App\Services\EmbeddedWallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -24,51 +26,70 @@ class AuthController extends Controller
 
     public function registerStore(Request $request)
     {
-        $request->validate([
+        // Dua jalur: (1) MetaMask (wallet+signature) ATAU (2) embedded wallet (PIN 6 angka).
+        $usesMetamask = $request->filled('wallet_address') && $request->filled('signature');
+
+        $rules = [
             'name'     => 'required',
             'email'    => 'required|email|unique:users',
             'phone'    => 'required|string|regex:/^[0-9]+$/|min:8|max:15',
-            'wallet_address' => 'required|string|regex:/^0x[a-fA-F0-9]{40}$/|unique:users',
             'password' => 'required|min:8|confirmed',
-            'signature'     => 'required|string',
-            'sig_timestamp' => 'required|numeric',
-        ], [
+        ];
+        if ($usesMetamask) {
+            $rules['wallet_address'] = 'required|string|regex:/^0x[a-fA-F0-9]{40}$/|unique:users';
+            $rules['signature']      = 'required|string';
+            $rules['sig_timestamp']  = 'required|numeric';
+        } else {
+            $rules['pin'] = 'required|digits:6|confirmed'; // butuh pin_confirmation
+        }
+
+        $request->validate($rules, [
             'phone.regex'          => 'Nomor telepon hanya boleh berisi angka.',
             'phone.max'            => 'Nomor telepon maksimal 15 digit.',
             'phone.min'            => 'Nomor telepon minimal 8 digit.',
-            'wallet_address.regex' => 'Alamat wallet tidak valid (harus 0x + 40 karakter hex).',
-            'wallet_address.unique'=> 'Alamat wallet ini sudah terdaftar.',
             'email.unique'         => 'Email ini sudah terdaftar.',
             'password.min'         => 'Password minimal 8 karakter.',
             'password.confirmed'   => 'Konfirmasi password tidak cocok.',
-            'signature.required'   => 'Hubungkan & tanda tangani wallet dulu (klik Connect Wallet).',
+            'pin.digits'           => 'PIN harus 6 angka.',
+            'pin.confirmed'        => 'Konfirmasi PIN tidak cocok.',
         ]);
 
-        // BUKTI KEPEMILIKAN WALLET: signature harus cocok dg wallet_address.
-        $wallet = strtolower($request->wallet_address);
-        $ts = (int) $request->sig_timestamp;
-        if (abs(time() - $ts) > 600) { // maks 10 menit
-            return back()->withErrors([
-                'wallet_address' => 'Tanda tangan wallet kadaluarsa. Klik Connect Wallet lagi.',
-            ])->withInput();
-        }
-        $message = "E-Trace register\nWallet: {$wallet}\nWaktu: {$ts}";
-        $recovered = $this->recoverSigner($message, $request->signature);
-        if (!$recovered || strtolower($recovered) !== $wallet) {
-            return back()->withErrors([
-                'wallet_address' => 'Bukti kepemilikan wallet tidak valid. Pastikan menandatangani dengan wallet yang benar.',
-            ])->withInput();
+        $embedded = [];
+        if ($usesMetamask) {
+            // BUKTI KEPEMILIKAN WALLET: signature harus cocok dg wallet_address.
+            $wallet = strtolower($request->wallet_address);
+            $ts = (int) $request->sig_timestamp;
+            if (abs(time() - $ts) > 600) {
+                return back()->withErrors(['wallet_address' => 'Tanda tangan wallet kadaluarsa. Klik Connect Wallet lagi.'])->withInput();
+            }
+            $recovered = $this->recoverSigner("E-Trace register\nWallet: {$wallet}\nWaktu: {$ts}", $request->signature);
+            if (!$recovered || strtolower($recovered) !== $wallet) {
+                return back()->withErrors(['wallet_address' => 'Bukti kepemilikan wallet tidak valid.'])->withInput();
+            }
+        } else {
+            // Buat embedded wallet otomatis, enkripsi private key dengan PIN.
+            $ew = new EmbeddedWallet();
+            $w  = $ew->generate();
+            $wallet   = $w['address'];
+            $embedded = $ew->encrypt($w['private'], $request->pin) + [
+                'is_embedded' => true,
+                'pin_hash'    => Hash::make($request->pin),
+            ];
         }
 
         $user = User::create([
             'name'     => $request->name,
             'email'    => $request->email,
             'phone'    => $request->phone,
-            'wallet_address' => strtolower($request->wallet_address),
+            'wallet_address' => $wallet,
             'nonce' => Str::random(20),
             'password' => Hash::make($request->password),
             // email_verified_at sengaja NULL: akun aktif setelah OTP diverifikasi.
-        ]);
+        ] + $embedded);
+
+        if (!$usesMetamask) {
+            GasDrip::dispatch($user->id); // kirim sedikit ETH Sepolia untuk gas
+        }
 
         $this->sendOtp($user);
         session(['otp_user_id' => $user->id]);
@@ -186,21 +207,50 @@ class AuthController extends Controller
             return back()->withErrors(['email' => 'Email atau password salah.']);
         }
 
-        // 1) Email belum terverifikasi → kirim OTP & minta verifikasi dulu.
+        return $this->finishLogin($user, $request, $request->boolean('remember'));
+    }
+
+    /** LOGIN dengan PIN (embedded wallet) — email + PIN 6 angka. */
+    public function loginWithPin(Request $request)
+    {
+        $data = $request->validate([
+            'email' => 'required|email',
+            'pin'   => 'required|digits:6',
+        ]);
+
+        $user = User::where('email', $data['email'])->first();
+        if (!$user || !$user->is_embedded || !$user->pin_hash) {
+            return back()->withErrors(['pin' => 'Akun ini tidak memakai PIN. Coba login email/password atau MetaMask.'])->withInput();
+        }
+        if ($user->pinLocked()) {
+            return back()->withErrors(['pin' => 'PIN terkunci sementara karena terlalu banyak percobaan. Coba lagi nanti.'])->withInput();
+        }
+        if (!Hash::check($data['pin'], $user->pin_hash)) {
+            $user->increment('pin_attempts');
+            if ($user->pin_attempts >= 5) {
+                $user->forceFill(['pin_locked_until' => now()->addMinutes(15), 'pin_attempts' => 0])->save();
+                return back()->withErrors(['pin' => 'PIN salah 5×. Akun dikunci 15 menit.'])->withInput();
+            }
+            return back()->withErrors(['pin' => 'PIN salah. Sisa percobaan: ' . max(0, 5 - $user->pin_attempts) . '.'])->withInput();
+        }
+
+        $user->forceFill(['pin_attempts' => 0, 'pin_locked_until' => null])->save();
+        return $this->finishLogin($user, $request);
+    }
+
+    /** Cabang setelah kredensial benar: OTP verifikasi → 2FA → login normal. */
+    private function finishLogin(User $user, Request $request, bool $remember = false)
+    {
         if (is_null($user->email_verified_at)) {
             $this->sendOtp($user);
             session(['otp_user_id' => $user->id]);
             return redirect('/verify-otp')->with('success', 'Akun belum terverifikasi. Kode OTP baru dikirim ke email kamu.');
         }
-
-        // 2) 2FA aktif → tantang kode TOTP sebelum menyelesaikan login.
         if ($user->hasTwoFactor()) {
             session(['2fa:user:id' => $user->id]);
             return redirect('/two-factor-challenge');
         }
-
-        // 3) Normal.
-        Auth::login($user, $request->boolean('remember'));
+        Auth::login($user, $remember);
         $request->session()->regenerate();
         return redirect()->intended('/products');
     }

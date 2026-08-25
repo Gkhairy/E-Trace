@@ -167,8 +167,38 @@
     // CSRF token untuk request POST via fetch.
     const CSRF_TOKEN = "{{ csrf_token() }}";
 
+    // Modal input PIN (embedded wallet). Return Promise<string|null>.
+    function askPin(title = 'Masukkan PIN') {
+        return new Promise((resolve) => {
+            openModal(`
+                <div class="p-6">
+                    <h3 class="text-lg font-bold text-slate-900 mb-1">${title}</h3>
+                    <p class="text-sm text-slate-500 mb-4">Masukkan PIN 6 angka untuk menandatangani transaksi.</p>
+                    <input id="pinModalInput" inputmode="numeric" maxlength="6" autofocus class="w-full text-center tracking-[0.4em] text-xl font-bold px-4 py-3 rounded-xl bg-slate-100 border border-slate-200 focus:bg-white focus:border-blue-500 outline-none mb-4" placeholder="______">
+                    <div class="flex gap-3">
+                        <button id="pinCancel" class="flex-1 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-sm font-medium">Batal</button>
+                        <button id="pinOk" class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">Konfirmasi</button>
+                    </div>
+                </div>`);
+            const done = (v) => { closeModal(); resolve(v); };
+            document.getElementById('pinCancel').onclick = () => done(null);
+            const ok = () => { const v = (document.getElementById('pinModalInput').value || '').trim(); if (/^\d{6}$/.test(v)) done(v); else showToast('PIN harus 6 angka', 'warn'); };
+            document.getElementById('pinOk').onclick = ok;
+            document.getElementById('pinModalInput').onkeydown = (e) => { if (e.key === 'Enter') ok(); };
+        });
+    }
+
+    // Helper: POST JSON ke endpoint PIN, kembalikan tx_hash (lempar pesan bila gagal).
+    async function pinTx(url, body) {
+        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN }, body: JSON.stringify(body) });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.tx_hash) { throw new Error(data.message || 'Transaksi PIN gagal.'); }
+        return data.tx_hash;
+    }
+
     // Wallet yang TERIKAT ke akun login (lowercase) — untuk guard wallet-mismatch.
     const ACCOUNT_WALLET = @json(auth()->check() ? strtolower(auth()->user()->wallet_address ?? '') : null);
+    const IS_EMBEDDED    = @json(auth()->check() ? (bool) auth()->user()->is_embedded : false);
 
     // ---- KONFIGURASI KONTRAK (PaymentGateway v3, Sepolia) ----
     const TLKM_ADDRESS            = "0xFbaa7F02bE3f151920D036cA4Eed2Fb1Ca3e0aEB";

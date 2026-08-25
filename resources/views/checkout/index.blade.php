@@ -195,7 +195,7 @@ async function checkoutPay() {
     } else {
         shippingAddressId = sel;
     }
-    if (!window.ethereum) return uiAlert({ title: 'MetaMask dibutuhkan', message: 'Install ekstensi MetaMask untuk melanjutkan.', type: 'warn' });
+    if (!IS_EMBEDDED && !window.ethereum) return uiAlert({ title: 'MetaMask dibutuhkan', message: 'Install ekstensi MetaMask untuk melanjutkan.', type: 'warn' });
     if (!LINES.length) return;
 
     const sellers    = LINES.map(l => l.seller);
@@ -210,6 +210,9 @@ async function checkoutPay() {
     });
     if (!ok) return;
 
+    let pin = null;
+    if (IS_EMBEDDED) { pin = await askPin('Bayar Belanja'); if (!pin) return; }
+
     const btn = document.getElementById('payBtn');
     btn.disabled = true;
 
@@ -220,25 +223,37 @@ async function checkoutPay() {
         items: LINES.map(l => ({ product_id: l.db_product_id, item_index: l.index })),
     };
 
-    txProgress.open('Memproses Pembayaran', ['Memeriksa jaringan', 'Menyetujui total (approve)', 'Membayar ke escrow', 'Verifikasi & simpan']);
+    txProgress.open('Memproses Pembayaran', IS_EMBEDDED
+        ? ['Tanda tangan dengan PIN', 'Verifikasi & simpan']
+        : ['Memeriksa jaringan', 'Menyetujui total (approve)', 'Membayar ke escrow', 'Verifikasi & simpan']);
 
     try {
-        txProgress.active(0); await checkNetwork(); txProgress.done(0);
-
-        txProgress.active(1, 'Setujui approve total di MetaMask…');
-        await approveToken(TOTAL);
-        txProgress.done(1);
-
-        txProgress.active(2, 'Konfirmasi pembayaran di MetaMask…');
-        const { txHash } = await payCart({ sellers, amounts, productIds, orderId });
-        payload.tx_hash = txHash;
-        // Jaring pengaman: simpan draft SEBELUM POST -> kalau simpan gagal, di-retry otomatis.
-        localStorage.setItem('pendingOrder:' + orderId, JSON.stringify(payload));
-        txProgress.done(2);
-
-        txProgress.active(3, 'Verifikasi on-chain & menyimpan…');
-        await submitOrder(payload);   // verifikasi backend + hapus draft bila sukses
-        txProgress.done(3);
+        let txHash;
+        if (IS_EMBEDDED) {
+            // Embedded: backend approve + payCart pakai PIN, kembalikan hash payCart.
+            txProgress.active(0, 'Approve + bayar via PIN…');
+            txHash = await pinTx('/pin/checkout', { pin, order_id: orderId, sellers, amounts, productIds });
+            payload.tx_hash = txHash;
+            localStorage.setItem('pendingOrder:' + orderId, JSON.stringify(payload));
+            txProgress.done(0);
+            txProgress.active(1, 'Verifikasi on-chain & menyimpan…');
+            await submitOrder(payload);
+            txProgress.done(1);
+        } else {
+            txProgress.active(0); await checkNetwork(); txProgress.done(0);
+            txProgress.active(1, 'Setujui approve total di MetaMask…');
+            await approveToken(TOTAL);
+            txProgress.done(1);
+            txProgress.active(2, 'Konfirmasi pembayaran di MetaMask…');
+            const r = await payCart({ sellers, amounts, productIds, orderId });
+            txHash = r.txHash;
+            payload.tx_hash = txHash;
+            localStorage.setItem('pendingOrder:' + orderId, JSON.stringify(payload));
+            txProgress.done(2);
+            txProgress.active(3, 'Verifikasi on-chain & menyimpan…');
+            await submitOrder(payload);
+            txProgress.done(3);
+        }
 
         setTimeout(() => {
             txProgress.close();

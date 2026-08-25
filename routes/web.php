@@ -32,6 +32,9 @@ Route::post('/login', [AuthController::class, 'loginStore'])->middleware('thrott
 Route::get('/api/get-nonce', [AuthController::class, 'getNonce'])->middleware('throttle:20,1');
 Route::post('/login-wallet', [AuthController::class, 'loginWithWallet'])->middleware('throttle:12,1');
 
+// LOGIN PIN (embedded wallet)
+Route::post('/login-pin', [AuthController::class, 'loginWithPin'])->middleware('throttle:8,1');
+
 // OTP VERIFIKASI EMAIL (berbasis sesi, sebelum login penuh)
 Route::get('/verify-otp', [AuthController::class, 'verifyOtpForm']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->middleware('throttle:10,1');
@@ -104,6 +107,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/wallet', [WalletController::class, 'index']);
     Route::post('/wallet/send', [WalletController::class, 'send'])->middleware('throttle:20,1');
     Route::post('/wallet/requests', [WalletController::class, 'createRequest']);
+
+    // PEMBAYARAN PAKAI PIN (embedded wallet) — tanda tangan tx di backend
+    Route::post('/pin/transfer', [\App\Http\Controllers\PinTxController::class, 'transfer'])->middleware('throttle:15,1');
+    Route::post('/pin/donate',   [\App\Http\Controllers\PinTxController::class, 'donate'])->middleware('throttle:15,1');
+    Route::post('/pin/checkout', [\App\Http\Controllers\PinTxController::class, 'checkout'])->middleware('throttle:15,1');
 
     // DASHBOARD SELLER
     Route::get('/seller', [SellerController::class, 'dashboard']);

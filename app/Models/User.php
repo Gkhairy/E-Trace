@@ -38,12 +38,33 @@ class User extends Authenticatable
         'two_factor_secret',
         'two_factor_recovery_codes',
         'two_factor_confirmed_at',
+        'is_embedded',
+        'wallet_enc',
+        'wallet_salt',
+        'wallet_iv',
+        'wallet_tag',
+        'pin_hash',
+        'pin_attempts',
+        'pin_locked_until',
+        'gas_dripped_at',
     ];
 
     /** 2FA TOTP aktif & sudah dikonfirmasi? */
     public function hasTwoFactor(): bool
     {
         return $this->two_factor_confirmed_at !== null && $this->two_factor_secret !== null;
+    }
+
+    /** Wallet dibuat & dikelola platform (embedded) — bisa bayar pakai PIN. */
+    public function isEmbedded(): bool
+    {
+        return (bool) $this->is_embedded;
+    }
+
+    /** PIN sedang terkunci (terlalu banyak salah)? */
+    public function pinLocked(): bool
+    {
+        return $this->pin_locked_until !== null && now()->lessThan($this->pin_locked_until);
     }
 
     public function store()
@@ -89,6 +110,9 @@ class User extends Authenticatable
             'two_factor_confirmed_at' => 'datetime',
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted',
+            'is_embedded' => 'boolean',
+            'pin_locked_until' => 'datetime',
+            'gas_dripped_at' => 'datetime',
         ];
     }
 }

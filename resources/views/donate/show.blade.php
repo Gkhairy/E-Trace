@@ -129,12 +129,14 @@
     async function doDonate() {
         const amt = parseFloat(document.getElementById('donAmount').value);
         if (!amt || amt <= 0) { showToast('Masukkan nominal donasi yang valid.', 'warn'); return; }
+        let pin = null;
+        if (IS_EMBEDDED) { pin = await askPin('Donasi'); if (!pin) return; }
         const btn = document.getElementById('donBtn'); btn.disabled = true;
-        txProgress.open('Donasi TLKM', ['Memeriksa jaringan', 'Approve & donasi di MetaMask', 'Mencatat donasi']);
+        txProgress.open('Donasi TLKM', ['Memeriksa jaringan', IS_EMBEDDED ? 'Tanda tangan dengan PIN' : 'Approve & donasi di MetaMask', 'Mencatat donasi']);
         try {
-            txProgress.active(0); await checkNetwork(); txProgress.done(0);
-            txProgress.active(1, 'Konfirmasi 2x di MetaMask (approve lalu donate)…');
-            const hash = await donateCampaign(CAMPAIGN_ID, amt);
+            txProgress.active(0); if (!IS_EMBEDDED) await checkNetwork(); txProgress.done(0);
+            txProgress.active(1, IS_EMBEDDED ? 'Menandatangani (approve + donate)…' : 'Konfirmasi 2x di MetaMask (approve lalu donate)…');
+            const hash = IS_EMBEDDED ? await pinTx('/pin/donate', { pin, slug: CAMPAIGN_SLUG, amount: amt }) : await donateCampaign(CAMPAIGN_ID, amt);
             txProgress.done(1);
             txProgress.active(2, 'Verifikasi on-chain…');
             await fetch('/donation/donate', {

@@ -94,17 +94,29 @@
                 Masuk dengan MetaMask
             </button>
 
-            <div class="flex items-center gap-3 my-2 mb-4">
+            <div class="flex items-center gap-3 my-2 mb-3">
                 <div class="h-px bg-slate-200 flex-1"></div>
-                <span class="text-xs text-slate-400">atau email &amp; password</span>
+                <span class="text-xs text-slate-400">atau</span>
                 <div class="h-px bg-slate-200 flex-1"></div>
             </div>
 
-            <form method="POST" action="/login" class="space-y-3">
+            <div class="flex gap-2 mb-3 text-sm">
+                <button type="button" id="ltabPass" onclick="loginMode('pass')" class="flex-1 py-2 rounded-lg border border-blue-500 bg-blue-50 text-blue-700 font-medium">Password</button>
+                <button type="button" id="ltabPin" onclick="loginMode('pin')" class="flex-1 py-2 rounded-lg border border-slate-200 text-slate-600">PIN</button>
+            </div>
+
+            <form method="POST" action="/login" id="loginPass" class="space-y-3">
                 @csrf
                 <input name="email" type="email" value="{{ !$startRegister ? old('email') : '' }}" required placeholder="Email" class="in-field">
                 <input name="password" type="password" required placeholder="Password" class="in-field">
                 <button class="w-full py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm mt-1">Masuk</button>
+            </form>
+
+            <form method="POST" action="/login-pin" id="loginPin" class="space-y-3 hidden">
+                @csrf
+                <input name="email" type="email" value="{{ old('email') }}" placeholder="Email" class="in-field">
+                <input name="pin" inputmode="numeric" maxlength="6" placeholder="PIN 6 angka" class="in-field">
+                <button class="w-full py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm mt-1">Masuk dengan PIN</button>
             </form>
 
             <p class="mobile-switch text-sm text-slate-500 text-center mt-5">
@@ -115,7 +127,7 @@
         {{-- ===== DAFTAR ===== --}}
         <div class="form-col col-signup">
             <h1 class="text-2xl font-bold text-slate-900">Buat Akun</h1>
-            <p class="text-sm text-slate-500 mt-1 mb-4">Hubungkan wallet lalu lengkapi data kamu.</p>
+            <p class="text-sm text-slate-500 mt-1 mb-4">Pakai <b>PIN 6 angka</b> (wallet dibuatkan otomatis) atau hubungkan MetaMask sendiri.</p>
 
             @if($errors->any() && $startRegister)
                 <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 rounded-xl mb-3 text-sm">
@@ -123,22 +135,40 @@
                 </div>
             @endif
 
-            <button type="button" onclick="connectWallet()"
-                class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold transition flex items-center justify-center gap-2 mb-3">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-                <span id="cwLabel">Connect Wallet</span>
-            </button>
+            {{-- Pilih metode --}}
+            <div class="flex gap-2 mb-3 text-sm">
+                <button type="button" id="tabPin" onclick="regMode('pin')" class="flex-1 py-2 rounded-lg border border-blue-500 bg-blue-50 text-blue-700 font-medium">PIN (mudah)</button>
+                <button type="button" id="tabMm" onclick="regMode('mm')" class="flex-1 py-2 rounded-lg border border-slate-200 text-slate-600">MetaMask</button>
+            </div>
+
+            <div id="mmConnect" class="hidden mb-3">
+                <button type="button" onclick="connectWallet()" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold transition flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                    <span id="cwLabel">Connect Wallet</span>
+                </button>
+            </div>
 
             <form method="POST" action="/register" class="space-y-3">
                 @csrf
                 <input name="name" value="{{ $startRegister ? old('name') : '' }}" required placeholder="Nama lengkap" class="in-field @error('name') !border-red-400 @enderror">
                 <input name="email" type="email" value="{{ $startRegister ? old('email') : '' }}" required placeholder="Email" class="in-field @error('email') !border-red-400 @enderror">
                 <input name="phone" type="text" value="{{ $startRegister ? old('phone') : '' }}" maxlength="15" required placeholder="No HP (08xxxx)" class="in-field @error('phone') !border-red-400 @enderror">
-                <input name="wallet_address" id="wallet_address" value="{{ old('wallet_address') }}" readonly required placeholder="Wallet — klik Connect Wallet" class="in-field font-mono text-slate-600 !bg-slate-100 cursor-not-allowed @error('wallet_address') !border-red-400 @enderror">
-                <input type="hidden" name="signature" id="signature" value="{{ old('signature') }}">
-                <input type="hidden" name="sig_timestamp" id="sig_timestamp" value="{{ old('sig_timestamp') }}">
                 <input name="password" type="password" required placeholder="Password (min 8 karakter)" class="in-field @error('password') !border-red-400 @enderror">
                 <input name="password_confirmation" type="password" required placeholder="Ulangi password" class="in-field">
+
+                {{-- Blok PIN (default) --}}
+                <div id="pinBlock" class="space-y-3">
+                    <input name="pin" id="pin" inputmode="numeric" maxlength="6" required placeholder="PIN 6 angka (untuk bayar & login)" class="in-field @error('pin') !border-red-400 @enderror">
+                    <input name="pin_confirmation" id="pin_confirmation" inputmode="numeric" maxlength="6" required placeholder="Ulangi PIN" class="in-field">
+                </div>
+
+                {{-- Blok MetaMask --}}
+                <div id="mmBlock" class="hidden">
+                    <input name="wallet_address" id="wallet_address" value="{{ old('wallet_address') }}" readonly disabled placeholder="Wallet — klik Connect Wallet" class="in-field font-mono text-slate-600 !bg-slate-100 cursor-not-allowed @error('wallet_address') !border-red-400 @enderror">
+                    <input type="hidden" name="signature" id="signature" value="{{ old('signature') }}" disabled>
+                    <input type="hidden" name="sig_timestamp" id="sig_timestamp" value="{{ old('sig_timestamp') }}" disabled>
+                </div>
+
                 <button class="w-full py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm mt-1">Buat Akun</button>
             </form>
 
@@ -171,6 +201,31 @@
     const authCard = document.getElementById('authCard');
     function toRegister() { authCard.classList.add('show-signup'); }
     function toLogin()    { authCard.classList.remove('show-signup'); }
+
+    // Metode daftar: PIN (embedded) vs MetaMask. Input non-aktif tidak ikut ter-submit.
+    function regMode(m) {
+        const pin = m === 'pin';
+        document.getElementById('pinBlock').classList.toggle('hidden', !pin);
+        document.getElementById('mmBlock').classList.toggle('hidden', pin);
+        document.getElementById('mmConnect').classList.toggle('hidden', pin);
+        document.getElementById('pin').disabled = !pin;
+        document.getElementById('pin_confirmation').disabled = !pin;
+        document.getElementById('wallet_address').disabled = pin;
+        document.getElementById('signature').disabled = pin;
+        document.getElementById('sig_timestamp').disabled = pin;
+        setTab('tabPin', pin); setTab('tabMm', !pin);
+    }
+    // Metode masuk: Password vs PIN.
+    function loginMode(m) {
+        const pass = m === 'pass';
+        document.getElementById('loginPass').classList.toggle('hidden', !pass);
+        document.getElementById('loginPin').classList.toggle('hidden', pass);
+        setTab('ltabPass', pass); setTab('ltabPin', !pass);
+    }
+    function setTab(id, active) {
+        const el = document.getElementById(id);
+        el.className = 'flex-1 py-2 rounded-lg border ' + (active ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium' : 'border-slate-200 text-slate-600');
+    }
 
     // ===== REGISTER: connect wallet + tanda tangan kepemilikan =====
     async function connectWallet() {
