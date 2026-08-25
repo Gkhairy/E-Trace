@@ -47,6 +47,9 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth');
 // TICKER HARGA CRYPTO (PUBLIK) — strip marquee di welcome & katalog.
 Route::get('/api/ticker', [CryptoController::class, 'ticker']);
 
+// CHATBOT AI (PUBLIK, rate-limited). API key OpenAI di backend (.env).
+Route::post('/chatbot', [\App\Http\Controllers\ChatbotController::class, 'chat'])->middleware('throttle:15,1');
+
 // EXPLORER TRANSPARANSI (PUBLIK)
 Route::get('/explorer', [ExplorerController::class, 'index']);
 Route::get('/explorer/{address}', [ExplorerController::class, 'show'])->where('address', '0x[a-fA-F0-9]{40}');

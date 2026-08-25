@@ -587,6 +587,71 @@
     }
     </script>
 
+    <!-- ================= CHATBOT WIDGET (mengambang) ================= -->
+    <div id="chatFab" onclick="toggleChat()" class="fixed bottom-5 right-5 z-50 w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg flex items-center justify-center cursor-pointer transition" title="Tanya Asisten E-Trace">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 10h.01M12 10h.01M16 10h.01M21 12a8 8 0 01-11.6 7.1L4 20l1-4.3A8 8 0 1121 12z"/></svg>
+    </div>
+    <div id="chatPanel" class="hidden fixed bottom-5 right-5 z-50 w-[92vw] max-w-sm h-[70vh] max-h-[560px] bg-white border border-slate-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+        <div class="bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-green-300"></span>
+                <span class="font-semibold text-sm">Asisten E-Trace</span>
+            </div>
+            <button onclick="toggleChat()" class="text-white/80 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        </div>
+        <div id="chatBody" class="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-50 text-sm">
+            <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-3 py-2 max-w-[85%] text-slate-700">Halo! Aku asisten E-Trace. Tanya soal cara belanja, TLKM, escrow, PIN, donasi, atau cari produk (mis. "cari sepatu").</div>
+        </div>
+        <div class="p-2.5 border-t border-slate-100 flex items-center gap-2">
+            <input id="chatInput" onkeydown="if(event.key==='Enter')sendChat()" placeholder="Tulis pesan…" class="flex-1 px-3 py-2 rounded-xl bg-slate-100 border border-slate-200 focus:bg-white focus:border-blue-500 outline-none text-sm">
+            <button onclick="sendChat()" class="w-9 h-9 rounded-xl bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shrink-0"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+        </div>
+    </div>
+    <script>
+        const chatHistory = [];
+        function toggleChat() {
+            document.getElementById('chatPanel').classList.toggle('hidden');
+            document.getElementById('chatFab').classList.toggle('hidden');
+            const i = document.getElementById('chatInput'); if (i && !document.getElementById('chatPanel').classList.contains('hidden')) i.focus();
+        }
+        function chatBubble(text, who) {
+            const body = document.getElementById('chatBody');
+            const mine = who === 'user';
+            const div = document.createElement('div');
+            div.className = 'max-w-[85%] px-3 py-2 rounded-2xl ' + (mine ? 'ml-auto bg-blue-600 text-white rounded-tr-sm' : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm');
+            div.innerHTML = text;
+            body.appendChild(div); body.scrollTop = body.scrollHeight;
+            return div;
+        }
+        async function sendChat() {
+            const input = document.getElementById('chatInput');
+            const msg = (input.value || '').trim();
+            if (!msg) return;
+            input.value = '';
+            chatBubble(msg.replace(/</g,'&lt;'), 'user');
+            chatHistory.push({ role: 'user', content: msg });
+            const typing = chatBubble('<span class="text-slate-400">mengetik…</span>', 'bot');
+            try {
+                const res = await fetch('/chatbot', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
+                    body: JSON.stringify({ message: msg, history: chatHistory.slice(-8) })
+                });
+                const data = await res.json();
+                let html = (data.reply || 'Maaf, terjadi kendala.').replace(/</g,'&lt;').replace(/\n/g,'<br>');
+                if (Array.isArray(data.products) && data.products.length) {
+                    html += '<div class="mt-2 space-y-1">' + data.products.map(p =>
+                        `<a href="${p.url}" class="block text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 hover:border-blue-400"><b>${(p.name||'').replace(/</g,'&lt;')}</b> · ${p.price} TLKM ↗</a>`
+                    ).join('') + '</div>';
+                }
+                typing.innerHTML = html;
+                chatHistory.push({ role: 'assistant', content: data.reply || '' });
+            } catch (e) {
+                typing.innerHTML = 'Maaf, gagal menghubungi asisten.';
+            }
+            document.getElementById('chatBody').scrollTop = 1e9;
+        }
+    </script>
+
     @yield('scripts')
 </body>
 </html>

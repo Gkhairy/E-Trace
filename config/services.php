@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    // Chatbot AI — API key WAJIB di backend (.env), jangan di frontend.
+    'openai' => [
+        'key'   => env('OPENAI_API_KEY'),
+        'model' => env('OPENAI_MODEL', 'gpt-4o-mini'), // paling ringan & murah
+    ],
+
 ];
