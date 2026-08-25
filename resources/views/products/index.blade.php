@@ -33,6 +33,7 @@
         $sc[] = ['/wallet', 'Dompet', 'bg-blue-50 text-blue-600', 'M3 10h18M7 15h.01M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z'];
         $sc[] = ['/orders', 'Order', 'bg-amber-50 text-amber-600', 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2'];
         $sc[] = ['/addresses', 'Alamat', 'bg-emerald-50 text-emerald-600', 'M12 21s-6-5.686-6-10a6 6 0 1112 0c0 4.314-6 10-6 10zM12 11a2 2 0 100-4 2 2 0 000 4z'];
+        $sc[] = ['/community', 'Komunitas', 'bg-violet-50 text-violet-600', 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4zm6-6a3 3 0 11-3 3'];
         if ($u->isSeller())     $sc[] = ['/seller', 'Toko Saya', 'bg-orange-50 text-orange-600', 'M3 7l2-4h14l2 4M3 7h18M3 7v13a1 1 0 001 1h16a1 1 0 001-1V7'];
         if ($u->isSupervisor()) $sc[] = ['/supervisor/disputes', 'Pengawas', 'bg-violet-50 text-violet-600', 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'];
         $sc[] = ['/profile', 'Profil', 'bg-slate-100 text-slate-600', 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'];

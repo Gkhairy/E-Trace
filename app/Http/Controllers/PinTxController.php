@@ -116,4 +116,41 @@ class PinTxController extends Controller
 
         return response()->json(['success' => true, 'tx_hash' => $hash]);
     }
+
+    /** Aksi dompet komunitas via PIN (whitelist metode). */
+    public function community(Request $req, ChainSigner $signer)
+    {
+        $data = $req->validate([
+            'pin'     => 'required|digits:6',
+            'address' => ['required', 'regex:/^0x[a-fA-F0-9]{40}$/'],
+            'method'  => 'required|string',
+            'args'    => 'nullable|array',
+        ]);
+
+        // Metode yang diizinkan + indeks argumen yang bernilai token (dikonversi ke wei).
+        $defs = [
+            'deposit'         => ['abi' => [['inputs' => [['name' => 'amount', 'type' => 'uint256']], 'name' => 'deposit', 'outputs' => [], 'type' => 'function']], 'wei' => [0], 'approve' => true],
+            'withdraw'        => ['abi' => [['inputs' => [['name' => 'amount', 'type' => 'uint256']], 'name' => 'withdraw', 'outputs' => [], 'type' => 'function']], 'wei' => [0]],
+            'setMember'       => ['abi' => [['inputs' => [['name' => 'm', 'type' => 'address'], ['name' => 'l', 'type' => 'uint256']], 'name' => 'setMember', 'outputs' => [], 'type' => 'function']], 'wei' => [1]],
+            'removeMember'    => ['abi' => [['inputs' => [['name' => 'm', 'type' => 'address']], 'name' => 'removeMember', 'outputs' => [], 'type' => 'function']], 'wei' => []],
+            'proposeTransfer' => ['abi' => [['inputs' => [['name' => 'to', 'type' => 'address'], ['name' => 'a', 'type' => 'uint256']], 'name' => 'proposeTransfer', 'outputs' => [['type' => 'uint256']], 'type' => 'function']], 'wei' => [1]],
+            'approve'         => ['abi' => [['inputs' => [['name' => 'id', 'type' => 'uint256']], 'name' => 'approve', 'outputs' => [], 'type' => 'function']], 'wei' => []],
+            'execute'         => ['abi' => [['inputs' => [['name' => 'id', 'type' => 'uint256']], 'name' => 'execute', 'outputs' => [], 'type' => 'function']], 'wei' => []],
+        ];
+
+        $method = $data['method'];
+        abort_unless(isset($defs[$method]), 422, 'Metode komunitas tidak diizinkan.');
+        $def  = $defs[$method];
+        $args = array_values($data['args'] ?? []);
+        foreach ($def['wei'] as $i) {
+            if (isset($args[$i])) $args[$i] = $signer->toWei($args[$i]);
+        }
+
+        $priv = $this->unlock($data['pin']);
+        if (!empty($def['approve']) && isset($args[0])) {
+            $this->ensureAllowance($signer, $priv, $data['address'], $args[0]); // deposit butuh allowance
+        }
+        $hash = $signer->sendContractCall($priv, $data['address'], $def['abi'], $method, $args);
+        return response()->json(['success' => true, 'tx_hash' => $hash]);
+    }
 }

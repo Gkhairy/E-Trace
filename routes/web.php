@@ -16,6 +16,7 @@ use App\Http\Controllers\DonationController;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\StoreController;
+use App\Http\Controllers\CommunityWalletController;
 
 // HOME / LANDING PAGE
 // Belum login -> landing page publik. Sudah login -> ke katalog produk.
@@ -112,6 +113,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/pin/transfer', [\App\Http\Controllers\PinTxController::class, 'transfer'])->middleware('throttle:15,1');
     Route::post('/pin/donate',   [\App\Http\Controllers\PinTxController::class, 'donate'])->middleware('throttle:15,1');
     Route::post('/pin/checkout', [\App\Http\Controllers\PinTxController::class, 'checkout'])->middleware('throttle:15,1');
+    Route::post('/pin/community',[\App\Http\Controllers\PinTxController::class, 'community'])->middleware('throttle:15,1');
+
+    // DOMPET KOMUNITAS (Fase F)
+    Route::get('/community', [CommunityWalletController::class, 'index']);
+    Route::get('/community/create', [CommunityWalletController::class, 'create']);
+    Route::post('/community', [CommunityWalletController::class, 'store']);
+    Route::get('/community/{id}', [CommunityWalletController::class, 'show'])->whereNumber('id');
 
     // DASHBOARD SELLER
     Route::get('/seller', [SellerController::class, 'dashboard']);
