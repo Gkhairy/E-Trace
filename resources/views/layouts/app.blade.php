@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title ?? 'MyCrypto Shop' }}</title>
+    <title>{{ $title ?? 'E-Trace' }}</title>
 
     <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -60,14 +60,14 @@
 
             <!-- LOGO -->
             <a href="/products" class="flex items-center gap-2 shrink-0">
-                <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-extrabold text-sm text-white">M</div>
-                <span class="text-lg font-bold tracking-tight text-slate-900 hidden sm:inline">MyCrypto<span class="text-blue-600">Shop</span></span>
+                <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-extrabold text-sm text-white">E</div>
+                <span class="text-lg font-bold tracking-tight text-slate-900 hidden sm:inline">E-<span class="text-blue-600">Trace</span></span>
             </a>
 
             <!-- SEARCH (lebar, tengah) -->
             <div class="relative flex-1 max-w-2xl">
                 <svg class="w-5 h-5 absolute left-3 top-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                <input type="text" placeholder="Cari produk di MyCryptoShop…"
+                <input type="text" placeholder="Cari produk di E-Trace…"
                     class="w-full bg-slate-100 focus:bg-white text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none text-slate-800 placeholder-slate-400 border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition">
             </div>
 
@@ -143,7 +143,7 @@
     <!-- ================= FOOTER ================= -->
     <footer class="border-t border-slate-200 bg-white mt-8">
         <div class="max-w-7xl mx-auto px-4 md:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-            <p>© {{ date('Y') }} MyCryptoShop — E-commerce berbasis blockchain.</p>
+            <p>© {{ date('Y') }} E-Trace — E-commerce berbasis blockchain.</p>
             <div class="flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-green-500"></span>
                 <span>Jaringan: Ethereum Sepolia (Testnet)</span>

@@ -50,7 +50,7 @@ class AuthController extends Controller
                 'wallet_address' => 'Tanda tangan wallet kadaluarsa. Klik Connect Wallet lagi.',
             ])->withInput();
         }
-        $message = "MyCryptoShop register\nWallet: {$wallet}\nWaktu: {$ts}";
+        $message = "E-Trace register\nWallet: {$wallet}\nWaktu: {$ts}";
         $recovered = $this->recoverSigner($message, $request->signature);
         if (!$recovered || strtolower($recovered) !== $wallet) {
             return back()->withErrors([

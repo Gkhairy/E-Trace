@@ -18,7 +18,7 @@ class ShippedMail extends Mailable
         $this->item->loadMissing(['order.shippingAddress', 'product']);
 
         return $this
-            ->subject('Pesananmu Dikirim 🚚 — MyCryptoShop')
+            ->subject('Pesananmu Dikirim 🚚 — E-Trace')
             ->view('emails.shipped')
             ->with(['item' => $this->item]);
     }

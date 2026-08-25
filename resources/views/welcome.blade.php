@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MyCryptoShop — Marketplace On-Chain yang Transparan Sepenuhnya</title>
-<meta name="description" content="MyCryptoShop: marketplace berbasis blockchain dengan escrow trustless, keranjang multi-penjual, dan transparansi on-chain penuh.">
+<title>E-Trace — Marketplace On-Chain yang Transparan Sepenuhnya</title>
+<meta name="description" content="E-Trace: marketplace berbasis blockchain dengan escrow trustless, keranjang multi-penjual, dan transparansi on-chain penuh.">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true">
@@ -48,7 +48,7 @@
     <div style="max-width:1200px;margin:0 auto;height:80px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;">
       <a href="/" style="display:flex;align-items:center;gap:9px;font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;">
         <span style="width:10px;height:10px;border-radius:50%;background:#2563eb;box-shadow:0 0 14px 3px rgba(37,99,235,0.6);display:inline-block;"></span>
-        MyCryptoShop
+        E-Trace
       </a>
       <div style="display:flex;align-items:center;gap:24px;">
         <a href="/products" style="font-size:14px;color:#475569;">Lihat Katalog</a>
@@ -103,7 +103,7 @@
         </div>
       </div>
       <div class="reveal" data-reveal="right" style="position:relative;background:#fff;border:1px solid #bfdbfe;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:44px;">
-        <p style="color:#2563eb;font-size:13px;margin:0 0 8px;position:relative;">Pendekatan MyCryptoShop</p>
+        <p style="color:#2563eb;font-size:13px;margin:0 0 8px;position:relative;">Pendekatan E-Trace</p>
         <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:22px;color:#0f172a;margin:0 0 22px;position:relative;">Smart contract memegang dana</h3>
         <div style="display:flex;flex-direction:column;gap:16px;color:#334155;font-size:15px;line-height:1.5;position:relative;">
           <div style="display:flex;gap:12px;"><span style="color:#2563eb;">✓</span>Dana ditahan escrow on-chain, dilepas hanya saat pembeli konfirmasi.</div>
@@ -218,7 +218,7 @@
 
   <footer style="border-top:1px solid rgba(15,23,42,0.08);padding:36px 40px;">
     <div style="max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;font-size:13px;color:#64748b;">
-      <p style="margin:0;">© {{ date('Y') }} MyCryptoShop. Marketplace berbasis blockchain.</p>
+      <p style="margin:0;">© {{ date('Y') }} E-Trace. Marketplace berbasis blockchain.</p>
       <div style="display:flex;gap:24px;">
         <a href="/products" style="color:#475569;">Katalog</a>
         <a href="/login" style="color:#475569;">Masuk</a>

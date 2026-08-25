@@ -2,7 +2,7 @@
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;color:#1e293b;">
     <div style="background:#4f46e5;color:#fff;padding:20px 24px;border-radius:12px 12px 0 0;">
         <h2 style="margin:0;font-size:18px;">Pesananmu Dikirim</h2>
-        <p style="margin:6px 0 0;font-size:13px;opacity:.85;">MyCryptoShop</p>
+        <p style="margin:6px 0 0;font-size:13px;opacity:.85;">E-Trace</p>
     </div>
     <div style="border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px;padding:24px;">
         <p style="margin:0 0 14px;">Kabar baik! Penjual sudah mengirim <b>{{ $item->product->name ?? 'produk' }}</b>.</p>

@@ -25,7 +25,7 @@ class SellerNewOrderMail extends Mailable
         $this->order->loadMissing('shippingAddress');
 
         return $this
-            ->subject('Pesanan Baru Masuk — MyCryptoShop')
+            ->subject('Pesanan Baru Masuk — E-Trace')
             ->view('emails.seller_new_order')
             ->with([
                 'order'       => $this->order,

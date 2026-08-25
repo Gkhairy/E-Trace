@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ ($mode ?? 'login') === 'register' ? 'Daftar' : 'Masuk' }} — MyCryptoShop</title>
+    <title>{{ ($mode ?? 'login') === 'register' ? 'Daftar' : 'Masuk' }} — E-Trace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.1/dist/ethers.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -73,8 +73,8 @@
 
 <div class="w-full max-w-[820px]">
     <div class="flex items-center justify-center gap-2 mb-6">
-        <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center font-extrabold text-white">M</div>
-        <span class="text-xl font-bold tracking-tight">MyCrypto<span class="text-blue-600">Shop</span></span>
+        <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center font-extrabold text-white">E</div>
+        <span class="text-xl font-bold tracking-tight">E-<span class="text-blue-600">Trace</span></span>
     </div>
 
     <div class="auth-card {{ $startRegister ? 'show-signup' : '' }}" id="authCard">
@@ -179,7 +179,7 @@
             const accounts = await ethereum.request({ method: "eth_requestAccounts" });
             const wallet = accounts[0];
             const ts = Math.floor(Date.now() / 1000);
-            const message = "MyCryptoShop register\nWallet: " + wallet.toLowerCase() + "\nWaktu: " + ts;
+            const message = "E-Trace register\nWallet: " + wallet.toLowerCase() + "\nWaktu: " + ts;
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
             const signature = await signer.signMessage(message);

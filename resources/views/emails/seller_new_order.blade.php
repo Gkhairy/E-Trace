@@ -2,7 +2,7 @@
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;color:#1e293b;">
     <div style="background:#0f172a;color:#fff;padding:20px 24px;border-radius:12px 12px 0 0;">
         <h2 style="margin:0;font-size:18px;">Pesanan Baru Masuk</h2>
-        <p style="margin:6px 0 0;font-size:13px;opacity:.85;">MyCryptoShop — segera siapkan pengiriman</p>
+        <p style="margin:6px 0 0;font-size:13px;opacity:.85;">E-Trace — segera siapkan pengiriman</p>
     </div>
     <div style="border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px;padding:24px;">
         <p style="margin:0 0 14px;">Ada pembeli memesan produk kamu. Dana ditahan escrow dan akan dilepas setelah pembeli konfirmasi barang diterima.</p>
@@ -48,6 +48,6 @@
             <p style="margin:0;"><b>Bukti on-chain:</b> <a href="{{ $expl }}" style="color:#2563eb;">Lihat transaksi di Etherscan ↗</a></p>
         </div>
 
-        <p style="font-size:12px;color:#94a3b8;margin:20px 0 0;">Email ini dikirim otomatis oleh MyCryptoShop.</p>
+        <p style="font-size:12px;color:#94a3b8;margin:20px 0 0;">Email ini dikirim otomatis oleh E-Trace.</p>
     </div>
 </div>

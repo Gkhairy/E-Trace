@@ -18,7 +18,7 @@ class OrderReceiptMail extends Mailable
         $this->order->loadMissing(['items.product', 'shippingAddress']);
 
         return $this
-            ->subject('Struk Pembelian — MyCryptoShop')
+            ->subject('Struk Pembelian — E-Trace')
             ->view('emails.order_receipt')
             ->with(['order' => $this->order]);
     }
