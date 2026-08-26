@@ -196,6 +196,13 @@
         return data.tx_hash;
     }
 
+    // Wallet yang TERIKAT ke akun login (lowercase) — untuk guard wallet-mismatch.
+    // NOTE: dideklarasikan di ATAS pemakaian (mis. `if (NEEDS_PIN)`) agar tidak kena
+    // temporal-dead-zone ReferenceError yang bisa mematikan seluruh script.
+    const ACCOUNT_WALLET = @json(auth()->check() ? strtolower(auth()->user()->wallet_address ?? '') : null);
+    const IS_EMBEDDED    = @json(auth()->check() ? (bool) auth()->user()->is_embedded : false);
+    const NEEDS_PIN      = @json(auth()->check() ? empty(auth()->user()->pin_hash) : false);
+
     // Popup setup PIN untuk akun lama yang belum punya PIN.
     function promptPinSetup() {
         openModal(`
@@ -233,11 +240,6 @@
             if (!dismissed) setTimeout(promptPinSetup, 900);
         });
     }
-
-    // Wallet yang TERIKAT ke akun login (lowercase) — untuk guard wallet-mismatch.
-    const ACCOUNT_WALLET = @json(auth()->check() ? strtolower(auth()->user()->wallet_address ?? '') : null);
-    const IS_EMBEDDED    = @json(auth()->check() ? (bool) auth()->user()->is_embedded : false);
-    const NEEDS_PIN      = @json(auth()->check() ? empty(auth()->user()->pin_hash) : false);
 
     // ---- KONFIGURASI KONTRAK (PaymentGateway v3, Sepolia) ----
     const TLKM_ADDRESS            = "0xFbaa7F02bE3f151920D036cA4Eed2Fb1Ca3e0aEB";
