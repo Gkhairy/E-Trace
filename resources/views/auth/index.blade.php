@@ -137,7 +137,7 @@
                 </button>
             </div>
 
-            <form method="POST" action="/register" class="space-y-3">
+            <form method="POST" action="/register" id="regForm" class="space-y-3">
                 @csrf
                 <input name="name" value="{{ $startRegister ? old('name') : '' }}" required placeholder="Nama lengkap" class="in-field @error('name') !border-red-400 @enderror">
                 <input name="email" type="email" value="{{ $startRegister ? old('email') : '' }}" required placeholder="Email" class="in-field @error('email') !border-red-400 @enderror">
@@ -145,11 +145,9 @@
                 <input name="password" type="password" required placeholder="Password (min 8 karakter)" class="in-field @error('password') !border-red-400 @enderror">
                 <input name="password_confirmation" type="password" required placeholder="Ulangi password" class="in-field">
 
-                {{-- Blok PIN (default) --}}
-                <div id="pinBlock" class="space-y-3">
-                    <input name="pin" id="pin" type="password" inputmode="numeric" maxlength="6" required placeholder="PIN 6 angka (untuk bayar & login)" class="in-field @error('pin') !border-red-400 @enderror">
-                    <input name="pin_confirmation" id="pin_confirmation" type="password" inputmode="numeric" maxlength="6" required placeholder="Ulangi PIN" class="in-field">
-                </div>
+                {{-- PIN dikumpulkan lewat MODAL setelah klik Daftar (form tetap pendek). --}}
+                <input type="hidden" name="pin" id="pinHidden">
+                <input type="hidden" name="pin_confirmation" id="pinConfHidden">
 
                 {{-- Blok MetaMask --}}
                 <div id="mmBlock" class="hidden">
@@ -158,8 +156,26 @@
                     <input type="hidden" name="sig_timestamp" id="sig_timestamp" value="{{ old('sig_timestamp') }}" disabled>
                 </div>
 
-                <button class="w-full py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm mt-1">Buat Akun</button>
+                <button type="button" onclick="openPinModal()" class="w-full py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm mt-1">Buat Akun</button>
+                <p class="text-[11px] text-slate-400 text-center">Setelah ini kamu akan diminta membuat <b>PIN 6 angka</b>.</p>
             </form>
+
+            {{-- ===== MODAL SET PIN (muncul setelah klik "Buat Akun") ===== --}}
+            <div id="pinModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onclick="event.stopPropagation()">
+                    <h3 class="text-lg font-bold text-slate-900 mb-1">Buat PIN 6 Angka</h3>
+                    <p class="text-sm text-slate-500 mb-4">PIN dipakai untuk login &amp; konfirmasi pembayaran. Jangan bagikan ke siapa pun.</p>
+                    <div id="pinModalErr" class="hidden bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm mb-3"></div>
+                    <input id="mPin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="••••••"
+                        class="w-full text-center tracking-[0.5em] text-xl font-bold px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 outline-none focus:bg-white focus:border-blue-500 mb-2">
+                    <input id="mPin2" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="Ulangi PIN"
+                        class="w-full text-center tracking-[0.5em] text-xl font-bold px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 outline-none focus:bg-white focus:border-blue-500 mb-4">
+                    <div class="flex gap-3">
+                        <button type="button" onclick="closePinModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-sm font-medium">Kembali</button>
+                        <button type="button" onclick="confirmPinAndRegister()" class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">Konfirmasi &amp; Daftar</button>
+                    </div>
+                </div>
+            </div>
 
             <p class="mobile-switch text-sm text-slate-500 text-center mt-5">
                 Sudah punya akun? <button type="button" onclick="toLogin()" class="text-blue-600 font-medium">Masuk</button>
@@ -206,6 +222,40 @@
         const el = document.getElementById(id);
         el.className = 'flex-1 py-2 rounded-lg border ' + (active ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium' : 'border-slate-200 text-slate-600');
     }
+
+    // ===== MODAL SET PIN (langkah terakhir daftar) =====
+    const regForm = document.getElementById('regForm');
+    function isMetamaskMode() { return !document.getElementById('mmBlock').classList.contains('hidden'); }
+
+    function openPinModal() {
+        // Validasi field wajib dulu (nama/email/HP/password) sebelum minta PIN.
+        if (!regForm.reportValidity()) return;
+        // Mode MetaMask: pastikan wallet sudah terhubung.
+        if (isMetamaskMode() && !document.getElementById('wallet_address').value) {
+            alert('Hubungkan MetaMask dulu (klik "Connect Wallet").');
+            return;
+        }
+        document.getElementById('pinModalErr').classList.add('hidden');
+        document.getElementById('mPin').value = '';
+        document.getElementById('mPin2').value = '';
+        document.getElementById('pinModal').classList.remove('hidden');
+        setTimeout(() => document.getElementById('mPin').focus(), 50);
+    }
+    function closePinModal() { document.getElementById('pinModal').classList.add('hidden'); }
+
+    function confirmPinAndRegister() {
+        const pin = (document.getElementById('mPin').value || '').trim();
+        const pin2 = (document.getElementById('mPin2').value || '').trim();
+        const err = (m) => { const e = document.getElementById('pinModalErr'); e.textContent = m; e.classList.remove('hidden'); };
+        if (!/^\d{6}$/.test(pin)) return err('PIN harus 6 angka.');
+        if (pin !== pin2) return err('Konfirmasi PIN tidak cocok.');
+        document.getElementById('pinHidden').value = pin;
+        document.getElementById('pinConfHidden').value = pin2;
+        regForm.submit();
+    }
+    // Klik area gelap menutup modal; Enter di input kedua = konfirmasi.
+    document.getElementById('pinModal').addEventListener('click', closePinModal);
+    document.getElementById('mPin2').addEventListener('keydown', (e) => { if (e.key === 'Enter') confirmPinAndRegister(); });
 
     // ===== REGISTER: connect wallet + tanda tangan kepemilikan =====
     async function connectWallet() {

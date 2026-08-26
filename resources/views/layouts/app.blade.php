@@ -609,24 +609,53 @@
         }
     }
 
-    // Baca saldo TLKM tanpa memicu popup MetaMask (provider read-only, bukan signer).
+    // Provider read-only untuk baca saldo tanpa popup MetaMask.
+    // Embedded wallet (tanpa MetaMask) tetap bisa baca lewat RPC publik.
+    function readProvider() {
+        if (window.ethereum) return new ethers.BrowserProvider(window.ethereum);
+        return new ethers.JsonRpcProvider(TARGET_NETWORK.rpcUrls[0]);
+    }
     async function fetchTlkmBalance(address) {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const token = new ethers.Contract(TLKM_ADDRESS, ERC20_ABI, provider);
+        const token = new ethers.Contract(TLKM_ADDRESS, ERC20_ABI, readProvider());
         const bal = await token.balanceOf(address);
         return ethers.formatUnits(bal, TOKEN_DECIMALS);
+    }
+
+    // Tampilkan saldo TLKM di pill untuk sebuah alamat (best-effort).
+    async function showPillBalance(address) {
+        const balEl = document.getElementById('walletBalance');
+        if (!balEl) return;
+        try {
+            const raw = await fetchTlkmBalance(address);
+            balEl.textContent = Number(raw).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' TLKM';
+            balEl.classList.remove('hidden');
+            balEl.classList.add('inline-flex');
+        } catch (_) { balEl.classList.add('hidden'); }
     }
 
     async function refreshWalletPill() {
         const dot = document.getElementById('walletDot');
         const label = document.getElementById('walletLabel');
         const balEl = document.getElementById('walletBalance');
-        if (!window.ethereum || !dot || !label) return;   // guest: elemen wallet pill tidak dirender
+        if (!dot || !label) return;   // guest: elemen wallet pill tidak dirender
+
+        // EMBEDDED WALLET: dompet bawaan akun. Wallet aktif = wallet akun,
+        // jadi TIDAK PERNAH "tidak cocok" — cek kecocokan hanya relevan untuk MetaMask.
+        if (IS_EMBEDDED) {
+            if (!ACCOUNT_WALLET) return;
+            dot.className = 'w-2 h-2 rounded-full bg-green-500';
+            label.textContent = ACCOUNT_WALLET.slice(0,6) + '…' + ACCOUNT_WALLET.slice(-4);
+            label.title = 'Dompet bawaan akun (embedded)';
+            showPillBalance(ACCOUNT_WALLET);
+            return;
+        }
+
+        // METAMASK: bandingkan wallet aktif dengan wallet terverifikasi akun.
+        if (!window.ethereum) return;
         try {
             const accs = await window.ethereum.request({ method: 'eth_accounts' });
             if (accs && accs.length) {
                 const a = accs[0];
-                // Tandai merah "tidak cocok" bila wallet aktif ≠ wallet akun.
                 if (ACCOUNT_WALLET && a.toLowerCase() !== ACCOUNT_WALLET) {
                     dot.className = 'w-2 h-2 rounded-full bg-red-500';
                     label.textContent = 'Wallet tidak cocok';
@@ -636,15 +665,7 @@
                     dot.className = 'w-2 h-2 rounded-full bg-green-500';
                     label.textContent = a.slice(0,6) + '…' + a.slice(-4);
                     label.title = '';
-                    // Saldo TLKM (live). Gagal diam-diam bila jaringan salah / RPC error.
-                    if (balEl) {
-                        try {
-                            const raw = await fetchTlkmBalance(a);
-                            balEl.textContent = Number(raw).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' TLKM';
-                            balEl.classList.remove('hidden');
-                            balEl.classList.add('inline-flex');
-                        } catch (_) { balEl.classList.add('hidden'); }
-                    }
+                    showPillBalance(a);
                 }
             }
         } catch (_) {}

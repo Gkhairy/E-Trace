@@ -145,6 +145,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/seller/store', [SellerController::class, 'updateStore']);
     Route::post('/seller/fulfill', [SellerController::class, 'fulfill']);
 
+    // LAPORAN PENJUALAN (Excel/PDF, harian & bulanan) — hanya pemilik toko.
+    Route::get('/seller/reports/download', [\App\Http\Controllers\SellerReportController::class, 'download'])
+        ->middleware('throttle:20,1');
+
     // ULASAN (pembeli)
     Route::post('/review', [ReviewController::class, 'store']);
 

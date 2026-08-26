@@ -82,6 +82,47 @@
     @endforeach
 </div>
 
+{{-- ===== LAPORAN PENJUALAN (Excel/PDF) ===== --}}
+<div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-8">
+    <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
+        <div>
+            <h2 class="text-lg font-bold text-slate-900">Laporan Penjualan</h2>
+            <p class="text-sm text-slate-500 mt-0.5">Unduh otomatis dari transaksi toko. Pilih rentang tanggal, lalu unduh Excel/PDF.</p>
+        </div>
+        <svg class="w-6 h-6 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M9 17v-6h6v6M5 3h9l5 5v13a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z"/></svg>
+    </div>
+
+    <div class="flex flex-wrap items-end gap-3">
+        <div>
+            <label class="block text-xs font-medium text-slate-500 mb-1">Dari tanggal</label>
+            <input type="date" id="repFrom" value="{{ now()->startOfMonth()->format('Y-m-d') }}" class="px-3 py-2 rounded-xl border border-slate-300 focus:border-blue-500 outline-none text-sm">
+        </div>
+        <div>
+            <label class="block text-xs font-medium text-slate-500 mb-1">Ke tanggal</label>
+            <input type="date" id="repTo" value="{{ now()->format('Y-m-d') }}" class="px-3 py-2 rounded-xl border border-slate-300 focus:border-blue-500 outline-none text-sm">
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5">
+        <div class="border border-slate-200 rounded-xl p-4">
+            <p class="text-sm font-semibold text-slate-800 mb-0.5">Laporan Harian</p>
+            <p class="text-xs text-slate-500 mb-3">Rincian per transaksi (tanggal, no. order, produk/pembeli, nilai, status).</p>
+            <div class="flex gap-2">
+                <button type="button" onclick="dlReport('daily','xlsx')" class="flex-1 text-sm font-medium px-3 py-2 rounded-lg bg-green-50 hover:bg-green-100 border border-green-200 text-green-700 transition">⬇ Excel</button>
+                <button type="button" onclick="dlReport('daily','pdf')" class="flex-1 text-sm font-medium px-3 py-2 rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 transition">⬇ PDF</button>
+            </div>
+        </div>
+        <div class="border border-slate-200 rounded-xl p-4">
+            <p class="text-sm font-semibold text-slate-800 mb-0.5">Laporan Bulanan</p>
+            <p class="text-xs text-slate-500 mb-3">Rekap per bulan (bulan, tahun, total penjualan, jumlah transaksi).</p>
+            <div class="flex gap-2">
+                <button type="button" onclick="dlReport('monthly','xlsx')" class="flex-1 text-sm font-medium px-3 py-2 rounded-lg bg-green-50 hover:bg-green-100 border border-green-200 text-green-700 transition">⬇ Excel</button>
+                <button type="button" onclick="dlReport('monthly','pdf')" class="flex-1 text-sm font-medium px-3 py-2 rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 transition">⬇ PDF</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- ===== ORDER MASUK ===== --}}
 <h2 class="text-lg font-bold text-slate-900 mb-3">Order Masuk</h2>
 @if($items->isEmpty())
@@ -174,4 +215,16 @@
     </div>
 @endif
 
+@endsection
+
+@section('scripts')
+<script>
+    // Unduh laporan penjualan sesuai rentang tanggal yang dipilih.
+    function dlReport(type, format) {
+        const from = document.getElementById('repFrom').value;
+        const to   = document.getElementById('repTo').value;
+        const q = new URLSearchParams({ type, format, from, to });
+        window.location = '/seller/reports/download?' + q.toString();
+    }
+</script>
 @endsection

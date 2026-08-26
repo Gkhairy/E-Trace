@@ -31,10 +31,39 @@
 
             <form method="POST" action="/resend-otp" class="mt-4 text-center">
                 @csrf
-                <button class="text-sm text-blue-600 hover:underline">Tidak menerima kode? Kirim ulang</button>
+                <button id="resendBtn" type="submit"
+                    class="text-sm text-blue-600 hover:underline disabled:text-slate-400 disabled:no-underline disabled:cursor-not-allowed">
+                    Tidak menerima kode? Kirim ulang
+                </button>
+                <p id="resendTimer" class="text-xs text-slate-400 mt-1 hidden">Kirim ulang dalam <span id="resendSecs">0</span> detik</p>
             </form>
         </div>
         <p class="text-center text-xs text-slate-400 mt-4">Kode berlaku 10 menit. <a href="/login" class="text-blue-600 hover:underline">Kembali ke login</a></p>
     </div>
+
+    <script>
+        // Cooldown "kirim ulang" yang TERLIHAT: hitung mundur dari sisa detik server.
+        (function () {
+            let remaining = {{ (int) ($cooldown ?? 0) }};
+            const btn = document.getElementById('resendBtn');
+            const timer = document.getElementById('resendTimer');
+            const secs = document.getElementById('resendSecs');
+            if (!btn) return;
+
+            function tick() {
+                if (remaining <= 0) {
+                    btn.disabled = false;
+                    timer.classList.add('hidden');
+                    return;
+                }
+                btn.disabled = true;
+                timer.classList.remove('hidden');
+                secs.textContent = remaining;
+                remaining -= 1;
+                setTimeout(tick, 1000);
+            }
+            tick();
+        })();
+    </script>
 </body>
 </html>

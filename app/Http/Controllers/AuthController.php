@@ -123,7 +123,12 @@ class AuthController extends Controller
             session()->forget('otp_user_id');
             return redirect('/login')->with('success', 'Akun sudah terverifikasi. Silakan login.');
         }
-        return view('auth.verify-otp', ['email' => $user->email]);
+        // Sisa cooldown "kirim ulang" (60 dtk sejak OTP terakhir dikirim) untuk countdown di UI.
+        $cooldown = 0;
+        if ($user->otp_sent_at) {
+            $cooldown = max(0, 60 - (int) $user->otp_sent_at->diffInSeconds(now()));
+        }
+        return view('auth.verify-otp', ['email' => $user->email, 'cooldown' => $cooldown]);
     }
 
     public function verifyOtp(Request $request)
@@ -199,12 +204,30 @@ class AuthController extends Controller
             'password' => 'required'
         ]);
 
+        // Proteksi brute force: kunci per (email + IP) setelah 5x gagal.
+        $throttleKey = 'login:' . Str::lower($data['email']) . '|' . $request->ip();
+        $maxAttempts = 5;
+        $lockSeconds = 300; // 5 menit
+
+        if (RateLimiter::tooManyAttempts($throttleKey, $maxAttempts)) {
+            $secs = RateLimiter::availableIn($throttleKey);
+            $mins = (int) ceil($secs / 60);
+            return back()->withErrors([
+                'email' => "Terlalu banyak percobaan login yang gagal. Akun/IP ini dikunci sementara. Coba lagi dalam {$mins} menit ({$secs} detik).",
+            ])->withInput($request->only('email'));
+        }
+
         // Cek kredensial TANPA langsung login (agar bisa sisipkan OTP/2FA).
         $user = User::where('email', $data['email'])->first();
         if (!$user || !Hash::check($data['password'], $user->password)) {
-            return back()->withErrors(['email' => 'Email atau password salah.']);
+            RateLimiter::hit($throttleKey, $lockSeconds); // catat kegagalan (kedaluwarsa 5 menit)
+            $left = RateLimiter::remaining($throttleKey, $maxAttempts);
+            $suffix = $left > 0 ? " Sisa percobaan: {$left}." : ' Akun dikunci sementara.';
+            return back()->withErrors(['email' => 'Email atau password salah.' . $suffix])
+                ->withInput($request->only('email'));
         }
 
+        RateLimiter::clear($throttleKey); // sukses → reset penghitung kegagalan
         return $this->finishLogin($user, $request, $request->boolean('remember'));
     }
 

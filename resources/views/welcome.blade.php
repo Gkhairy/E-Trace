@@ -98,7 +98,7 @@
         <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:22px;color:#475569;margin:0 0 22px;">Perantara memegang dana</h3>
         <div style="display:flex;flex-direction:column;gap:16px;color:#475569;font-size:15px;line-height:1.5;">
           <div style="display:flex;gap:12px;"><span style="color:#475569;">—</span>Dana pembeli dipegang platform, prosesnya tidak terlihat.</div>
-          <div style="display:flex;gap:12px;"><span style="color:#475569;">—</span>Sengketa diselesaikan lewat tiket &amp; kebijakan sepihak.</div>
+          <div style="display:flex;gap:12px;"><span style="color:#475569;">—</span>Sengketa bergantung keputusan sepihak platform, tanpa bukti terbuka.</div>
           <div style="display:flex;gap:12px;"><span style="color:#475569;">—</span>Tidak ada cara publik memverifikasi transaksi terjadi.</div>
         </div>
       </div>
@@ -107,7 +107,7 @@
         <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:22px;color:#0f172a;margin:0 0 22px;position:relative;">Smart contract memegang dana</h3>
         <div style="display:flex;flex-direction:column;gap:16px;color:#334155;font-size:15px;line-height:1.5;position:relative;">
           <div style="display:flex;gap:12px;"><span style="color:#2563eb;">✓</span>Dana ditahan escrow on-chain, dilepas hanya saat pembeli konfirmasi.</div>
-          <div style="display:flex;gap:12px;"><span style="color:#2563eb;">✓</span>Tidak diterima barang → refund, bukan keluhan berlarut.</div>
+          <div style="display:flex;gap:12px;"><span style="color:#2563eb;">✓</span>Ada masalah? Ajukan sengketa dengan bukti — diputus pengawas, bukan refund otomatis.</div>
           <div style="display:flex;gap:12px;"><span style="color:#2563eb;">✓</span>Setiap transaksi tercatat &amp; terbuka di block explorer.</div>
         </div>
       </div>
@@ -135,8 +135,40 @@
       <div class="reveal" data-reveal="step" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
         <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:46px;color:transparent;-webkit-text-stroke:1.5px rgba(15,23,42,0.4);display:block;margin-bottom:20px;">03</span>
         <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:20px;color:#0f172a;margin:0 0 10px;">Konfirmasi &amp; Dana Lepas</h3>
-        <p style="color:#475569;line-height:1.6;margin:0;">Barang diterima, Anda konfirmasi — escrow melepas dana ke penjual. Bermasalah? Ajukan refund.</p>
+        <p style="color:#475569;line-height:1.6;margin:0;">Barang diterima, Anda konfirmasi — escrow melepas dana ke penjual. Bermasalah? Ajukan sengketa dengan bukti; pengawas yang memutus.</p>
       </div>
+    </div>
+  </section>
+
+  <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(148,163,184,0.3),transparent);max-width:1200px;margin:0 auto;"></div>
+
+  {{-- ===== SENGKETA YANG ADIL (melindungi kedua pihak) ===== --}}
+  <section id="sengketa" style="position:relative;padding:130px 40px;max-width:1200px;margin:0 auto;">
+    <div class="reveal" data-reveal="fade" style="max-width:720px;margin-bottom:52px;">
+      <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">Penyelesaian Sengketa</p>
+      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0 0 16px;">Adil untuk pembeli <span style="color:#2563eb;">dan</span> penjual.</h2>
+      <p style="color:#475569;font-size:17px;line-height:1.65;margin:0;">Escrow menahan dana sampai transaksi selesai. Jika ada masalah, keputusan tidak diambil sepihak — sengketa diputus berdasarkan <b>bukti</b>, bukan sekadar komplain.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;margin-bottom:32px;">
+      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
+        <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:40px;color:transparent;-webkit-text-stroke:1.5px rgba(37,99,235,0.5);display:block;margin-bottom:16px;">01</span>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Dana ditahan escrow</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Pembayaran dikunci di smart contract. Penjual tidak bisa kabur membawa uang, pembeli tidak bisa menahan barang tanpa bayar.</p>
+      </div>
+      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
+        <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:40px;color:transparent;-webkit-text-stroke:1.5px rgba(37,99,235,0.5);display:block;margin-bottom:16px;">02</span>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Ajukan sengketa + bukti</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Pembeli maupun penjual melampirkan bukti: nomor resi/tracking pengiriman, foto barang, dan kronologi. Semua tercatat.</p>
+      </div>
+      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #bfdbfe;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
+        <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:40px;color:transparent;-webkit-text-stroke:1.5px rgba(37,99,235,0.5);display:block;margin-bottom:16px;">03</span>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Pengawas memutus</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Pengawas (supervisor) meninjau bukti kedua pihak dan memutuskan. Dana dilepas ke pihak yang benar — <b>bukan refund otomatis</b> hanya karena komplain.</p>
+      </div>
+    </div>
+    <div class="reveal" data-reveal="fade" style="display:flex;gap:12px;align-items:flex-start;background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:18px 22px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" style="flex-shrink:0;margin-top:1px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+      <p style="color:#1e3a8a;font-size:14px;line-height:1.6;margin:0;"><b>Melindungi kedua belah pihak:</b> pembeli tidak bisa asal klaim untuk menahan uang, dan penjual tidak bisa kabur dengan dana. Keputusan berbasis bukti dan tercatat on-chain.</p>
     </div>
   </section>
 
@@ -178,6 +210,61 @@
       </div>
     </div>
   </section>
+
+  <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(148,163,184,0.3),transparent);max-width:1200px;margin:0 auto;"></div>
+
+  {{-- ===== FITUR UNGGULAN E-TRACE (kapabilitas tambahan) ===== --}}
+  <section style="position:relative;padding:130px 40px;max-width:1200px;margin:0 auto;">
+    <div class="reveal" data-reveal="fade" style="max-width:680px;margin-bottom:52px;">
+      <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">Lebih dari Marketplace</p>
+      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0;">Ekosistem keuangan yang transparan &amp; bisa diaudit.</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;">
+
+      {{-- Dompet Bersama + Multisig --}}
+      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:34px;">
+        <div style="width:42px;height:42px;border-radius:11px;background:#f5f3ff;border:1px solid #ddd6fe;display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        </div>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Dompet Bersama + Multisig</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Dana komunitas yang butuh persetujuan beberapa orang (<b>M dari N</b>) sebelum dicairkan. Setiap usulan &amp; persetujuan tercatat dan bisa diaudit publik.</p>
+      </div>
+
+      {{-- E-Wallet Crypto (QRIS: rencana) --}}
+      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:34px;">
+        <div style="width:42px;height:42px;border-radius:11px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><path d="M2 10h20"></path></svg>
+        </div>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">E-Wallet Crypto</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 12px;">Dompet dalam aplikasi untuk menyimpan &amp; mengirim TLKM/stablecoin, dilindungi PIN.</p>
+        <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:5px 11px;border-radius:999px;background:#fef9c3;color:#854d0e;border:1px solid #fde68a;">
+          <span style="width:6px;height:6px;border-radius:50%;background:#ca8a04;display:inline-block;"></span>
+          Dukungan pembayaran QRIS sedang dikembangkan
+        </span>
+      </div>
+
+      {{-- Laporan Otomatis Penjual --}}
+      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:34px;">
+        <div style="width:42px;height:42px;border-radius:11px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8M8 17h5"></path></svg>
+        </div>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Laporan Otomatis Penjual</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Penjual mengunduh laporan penjualan <b>Excel &amp; PDF</b> otomatis — harian (rincian transaksi) dan bulanan (rekap) — langsung dari transaksi di aplikasi.</p>
+      </div>
+
+      {{-- Donasi Transparan & Anti-Beku --}}
+      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:34px;">
+        <div style="width:42px;height:42px;border-radius:11px;background:#fef2f2;border:1px solid #fecaca;display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+        </div>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Donasi Transparan &amp; Anti-Beku</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Donasi tercatat on-chain dan tersalur lewat smart contract — tidak bisa dibekukan sepihak. Belajar dari kasus donasi yang pernah dibekukan di Indonesia: transparansi &amp; desentralisasi menjaga dana tetap sampai ke tujuan.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(148,163,184,0.3),transparent);max-width:1200px;margin:0 auto;"></div>
 
   <section style="position:relative;padding:130px 40px;max-width:1200px;margin:0 auto;overflow:hidden;">
     <div style="position:relative;display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:56px;align-items:center;">
