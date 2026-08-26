@@ -113,8 +113,8 @@ class TwoFactorController extends Controller
         }
 
         session()->forget('2fa:user:id');
-        Auth::login($user);
-        $request->session()->regenerate();
-        return redirect()->intended('/products');
+        // Lanjut ke PIN gate (masukkan/atau buat PIN) sebelum sesi aktif.
+        session(['pin:user:id' => $user->id]);
+        return redirect('/pin-challenge');
     }
 }

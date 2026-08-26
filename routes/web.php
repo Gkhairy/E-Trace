@@ -34,8 +34,10 @@ Route::post('/login', [AuthController::class, 'loginStore'])->middleware('thrott
 Route::get('/api/get-nonce', [AuthController::class, 'getNonce'])->middleware('throttle:20,1');
 Route::post('/login-wallet', [AuthController::class, 'loginWithWallet'])->middleware('throttle:12,1');
 
-// LOGIN PIN (embedded wallet)
-Route::post('/login-pin', [AuthController::class, 'loginWithPin'])->middleware('throttle:8,1');
+// PIN GATE (setelah password/MetaMask; berbasis sesi, sebelum login penuh)
+Route::get('/pin-challenge', [AuthController::class, 'pinChallengeForm']);
+Route::post('/pin-challenge', [AuthController::class, 'pinChallenge'])->middleware('throttle:10,1');
+Route::post('/pin-create', [AuthController::class, 'pinCreate'])->middleware('throttle:10,1');
 
 // OTP VERIFIKASI EMAIL (berbasis sesi, sebelum login penuh)
 Route::get('/verify-otp', [AuthController::class, 'verifyOtpForm']);

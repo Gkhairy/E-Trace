@@ -208,32 +208,64 @@ class AuthController extends Controller
         return $this->finishLogin($user, $request, $request->boolean('remember'));
     }
 
-    /** LOGIN dengan PIN (embedded wallet) — email + PIN 6 angka. */
-    public function loginWithPin(Request $request)
+    // ============================
+    // PIN GATE — setelah login primer (password/MetaMask), minta PIN.
+    // Kalau akun belum punya PIN, minta buat PIN baru dulu.
+    // ============================
+    public function pinChallengeForm()
     {
-        $data = $request->validate([
-            'email' => 'required|email',
-            'pin'   => 'required|digits:6',
-        ]);
+        $user = User::find(session('pin:user:id'));
+        if (!$user) {
+            return redirect('/login');
+        }
+        return $user->pin_hash ? view('auth.pin-challenge') : view('auth.pin-create');
+    }
 
-        $user = User::where('email', $data['email'])->first();
-        if (!$user || !$user->pin_hash) {
-            return back()->withErrors(['pin' => 'Akun ini belum punya PIN. Coba login email/password atau MetaMask.'])->withInput();
+    /** Verifikasi PIN yang sudah ada, lalu selesaikan login. */
+    public function pinChallenge(Request $request)
+    {
+        $request->validate(['pin' => 'required|digits:6']);
+        $user = User::find(session('pin:user:id'));
+        if (!$user) {
+            return redirect('/login');
+        }
+        if (!$user->pin_hash) {
+            return redirect('/pin-challenge'); // belum ada PIN → form buat PIN
         }
         if ($user->pinLocked()) {
-            return back()->withErrors(['pin' => 'PIN terkunci sementara karena terlalu banyak percobaan. Coba lagi nanti.'])->withInput();
+            return back()->withErrors(['pin' => 'PIN terkunci sementara. Coba lagi nanti.']);
         }
-        if (!Hash::check($data['pin'], $user->pin_hash)) {
+        if (!Hash::check($request->pin, $user->pin_hash)) {
             $user->increment('pin_attempts');
             if ($user->pin_attempts >= 5) {
                 $user->forceFill(['pin_locked_until' => now()->addMinutes(15), 'pin_attempts' => 0])->save();
-                return back()->withErrors(['pin' => 'PIN salah 5×. Akun dikunci 15 menit.'])->withInput();
+                return back()->withErrors(['pin' => 'PIN salah 5×. Dikunci 15 menit.']);
             }
-            return back()->withErrors(['pin' => 'PIN salah. Sisa percobaan: ' . max(0, 5 - $user->pin_attempts) . '.'])->withInput();
+            return back()->withErrors(['pin' => 'PIN salah. Sisa percobaan: ' . max(0, 5 - $user->pin_attempts) . '.']);
         }
-
         $user->forceFill(['pin_attempts' => 0, 'pin_locked_until' => null])->save();
-        return $this->finishLogin($user, $request);
+        return $this->completeLoginFromGate($user, $request);
+    }
+
+    /** Buat PIN baru (akun yang belum punya) lalu selesaikan login. */
+    public function pinCreate(Request $request)
+    {
+        $request->validate(['pin' => 'required|digits:6|confirmed']);
+        $user = User::find(session('pin:user:id'));
+        if (!$user) {
+            return redirect('/login');
+        }
+        $user->forceFill(['pin_hash' => Hash::make($request->pin)])->save();
+        return $this->completeLoginFromGate($user, $request);
+    }
+
+    private function completeLoginFromGate(User $user, Request $request)
+    {
+        $remember = (bool) session('pin:remember', false);
+        session()->forget(['pin:user:id', 'pin:remember']);
+        Auth::login($user, $remember);
+        $request->session()->regenerate();
+        return redirect()->intended('/products');
     }
 
     /** Set PIN untuk user yang belum punya (mis. akun lama sebelum fitur PIN). */
@@ -263,9 +295,9 @@ class AuthController extends Controller
             session(['2fa:user:id' => $user->id]);
             return redirect('/two-factor-challenge');
         }
-        Auth::login($user, $remember);
-        $request->session()->regenerate();
-        return redirect()->intended('/products');
+        // Langkah terakhir: PIN (masukkan PIN, atau buat PIN baru bila belum ada).
+        session(['pin:user:id' => $user->id, 'pin:remember' => $remember]);
+        return redirect('/pin-challenge');
     }
 
     // Validasi URL "next" agar hanya path internal (cegah open redirect).
@@ -351,13 +383,9 @@ class AuthController extends Controller
             return response()->json(['success' => true, 'redirect' => url('/two-factor-challenge')]);
         }
 
-        Auth::login($user);
-        $request->session()->regenerate();   // cegah session fixation
-
-        // Kembali ke intended URL (mis. halaman produk) kalau ada, default katalog /products.
-        $redirect = $request->session()->pull('url.intended', url('/products'));
-
-        return response()->json(['success' => true, 'redirect' => $redirect]);
+        // Langkah terakhir: PIN (masukkan PIN, atau buat PIN baru bila belum ada).
+        session(['pin:user:id' => $user->id]);
+        return response()->json(['success' => true, 'redirect' => url('/pin-challenge')]);
     }
 
     // ecrecover: kembalikan alamat penanda tangan dari pesan personal_sign, atau null.

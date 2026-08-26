@@ -100,24 +100,13 @@
                 <div class="h-px bg-slate-200 flex-1"></div>
             </div>
 
-            <div class="flex gap-2 mb-3 text-sm">
-                <button type="button" id="ltabPass" onclick="loginMode('pass')" class="flex-1 py-2 rounded-lg border border-blue-500 bg-blue-50 text-blue-700 font-medium">Password</button>
-                <button type="button" id="ltabPin" onclick="loginMode('pin')" class="flex-1 py-2 rounded-lg border border-slate-200 text-slate-600">PIN</button>
-            </div>
-
             <form method="POST" action="/login" id="loginPass" class="space-y-3">
                 @csrf
                 <input name="email" type="email" value="{{ !$startRegister ? old('email') : '' }}" required placeholder="Email" class="in-field">
                 <input name="password" type="password" required placeholder="Password" class="in-field">
                 <button class="w-full py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm mt-1">Masuk</button>
             </form>
-
-            <form method="POST" action="/login-pin" id="loginPin" class="space-y-3 hidden">
-                @csrf
-                <input name="email" type="email" value="{{ old('email') }}" placeholder="Email" class="in-field">
-                <input name="pin" type="password" inputmode="numeric" maxlength="6" placeholder="PIN 6 angka" class="in-field">
-                <button class="w-full py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm mt-1">Masuk dengan PIN</button>
-            </form>
+            <p class="text-[11px] text-slate-400 text-center mt-2">Setelah password, kamu akan diminta memasukkan PIN.</p>
 
             <p class="mobile-switch text-sm text-slate-500 text-center mt-5">
                 Belum punya akun? <button type="button" onclick="toRegister()" class="text-blue-600 font-medium">Daftar</button>
@@ -212,13 +201,6 @@
         document.getElementById('signature').disabled = embedded;
         document.getElementById('sig_timestamp').disabled = embedded;
         setTab('tabPin', embedded); setTab('tabMm', !embedded);
-    }
-    // Metode masuk: Password vs PIN.
-    function loginMode(m) {
-        const pass = m === 'pass';
-        document.getElementById('loginPass').classList.toggle('hidden', !pass);
-        document.getElementById('loginPin').classList.toggle('hidden', pass);
-        setTab('ltabPass', pass); setTab('ltabPin', !pass);
     }
     function setTab(id, active) {
         const el = document.getElementById(id);
