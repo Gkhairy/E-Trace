@@ -78,10 +78,35 @@
     @endforeach
 </div>
 
+{{-- ===== KATEGORI (baris ikon, ala Tokopedia/Shopee) — G1 ===== --}}
+@if($categories->isNotEmpty())
+<div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-8">
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="text-sm font-bold text-slate-900">Kategori</h2>
+        @if($activeCategory)
+            <a href="/products" class="text-xs text-blue-600 hover:underline">Tampilkan semua</a>
+        @endif
+    </div>
+    <div class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 gap-3">
+        <a href="/products" class="group flex flex-col items-center gap-1.5 text-center">
+            <span class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition {{ !$activeCategory ? 'bg-blue-600 text-white' : 'bg-slate-100 group-hover:bg-blue-50' }}">🛍️</span>
+            <span class="text-[10px] leading-tight {{ !$activeCategory ? 'text-blue-600 font-semibold' : 'text-slate-600' }}">Semua</span>
+        </a>
+        @foreach($categories as $cat)
+            @php $on = $activeCategory && $activeCategory->id === $cat->id; @endphp
+            <a href="/products?category={{ $cat->slug }}" class="group flex flex-col items-center gap-1.5 text-center">
+                <span class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition {{ $on ? 'bg-blue-600' : 'bg-slate-100 group-hover:bg-blue-50' }}">{{ $cat->icon }}</span>
+                <span class="text-[10px] leading-tight {{ $on ? 'text-blue-600 font-semibold' : 'text-slate-600' }}">{{ $cat->name }}</span>
+            </a>
+        @endforeach
+    </div>
+</div>
+@endif
+
 {{-- ===== HEADER KATALOG ===== --}}
 <div id="katalog" class="mb-6 scroll-mt-28">
-    <h2 class="text-2xl font-bold text-slate-900">Katalog Produk</h2>
-    <p class="text-sm text-slate-500">{{ $products->total() }} produk tersedia</p>
+    <h2 class="text-2xl font-bold text-slate-900">{{ $activeCategory ? $activeCategory->icon.' '.$activeCategory->name : 'Katalog Produk' }}</h2>
+    <p class="text-sm text-slate-500">{{ $products->total() }} produk {{ $activeCategory ? 'di kategori ini' : 'tersedia' }}</p>
 </div>
 
 @if(session('success'))
