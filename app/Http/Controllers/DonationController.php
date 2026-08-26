@@ -28,14 +28,21 @@ class DonationController extends Controller
     {
         $configured = $this->configured();
 
-        // Total terkumpul per campaign dari donasi terverifikasi.
-        $raised = Donation::selectRaw('campaign_id, SUM(amount) t')->groupBy('campaign_id')->pluck('t', 'campaign_id');
+        // Total masuk & total disalurkan per campaign (dari catatan terverifikasi).
+        $raised    = Donation::selectRaw('campaign_id, SUM(amount) t')->groupBy('campaign_id')->pluck('t', 'campaign_id');
+        $disbursed = Disbursement::selectRaw('campaign_id, SUM(amount) t')->groupBy('campaign_id')->pluck('t', 'campaign_id');
 
-        $campaigns = Campaign::latest()->get()->map(fn ($c) => [
-            'model'     => $c,
-            'raised'    => (float) ($raised[$c->id] ?? 0),
-            'recipient' => Identity::resolve($c->recipient_wallet),
-        ]);
+        $campaigns = Campaign::latest()->get()->map(function ($c) use ($raised, $disbursed) {
+            $in  = (float) ($raised[$c->id] ?? 0);
+            $out = (float) ($disbursed[$c->id] ?? 0);
+            return [
+                'model'     => $c,
+                'raised'    => $in,                       // total masuk
+                'disbursed' => $out,                      // sudah disalurkan
+                'balance'   => max(0, $in - $out),        // saldo saat ini
+                'recipient' => Identity::resolve($c->recipient_wallet),
+            ];
+        });
 
         return view('donate.index', compact('campaigns', 'configured'));
     }
@@ -57,6 +64,7 @@ class DonationController extends Controller
             'description'      => 'nullable|string|max:2000',
             'recipient_wallet' => ['required', 'regex:/^0x[a-fA-F0-9]{40}$/'],
             'goal_amount'      => 'nullable|numeric|min:0',
+            'closes_at'        => 'nullable|date|after:today',
             'image'            => 'nullable|image|mimes:jpg,jpeg,png,webp|max:3072',
         ]);
 
@@ -75,6 +83,7 @@ class DonationController extends Controller
             'image'            => $imageName,
             'recipient_wallet' => strtolower($data['recipient_wallet']),
             'goal_amount'      => $data['goal_amount'] ?? null,
+            'closes_at'        => $data['closes_at'] ?? null,
             'status'           => 'active',
             'created_by'       => auth()->id(),
         ]);
@@ -87,7 +96,9 @@ class DonationController extends Controller
     {
         $campaign = Campaign::where('slug', $slug)->firstOrFail();
 
-        $raised = (float) Donation::where('campaign_id', $campaign->id)->sum('amount');
+        $raised    = (float) Donation::where('campaign_id', $campaign->id)->sum('amount');
+        $disbursed = (float) Disbursement::where('campaign_id', $campaign->id)->sum('amount');
+        $balance   = max(0, $raised - $disbursed); // saldo saat ini = masuk - disalurkan (E2)
         $donors = (int) Donation::where('campaign_id', $campaign->id)->distinct('donor_wallet')->count('donor_wallet');
 
         $recent = Donation::where('campaign_id', $campaign->id)->latest()->limit(15)->get()->map(fn ($d) => [
@@ -105,7 +116,7 @@ class DonationController extends Controller
             ? $verifier->campaignBalanceOnChain($campaign->chainId())
             : null;
 
-        return view('donate.show', compact('campaign', 'raised', 'donors', 'recent', 'disbursements', 'poolBalance') + [
+        return view('donate.show', compact('campaign', 'raised', 'disbursed', 'balance', 'donors', 'recent', 'disbursements', 'poolBalance') + [
             'configured' => $this->configured(),
         ]);
     }

@@ -4,18 +4,34 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Review;
 use App\Models\Store;
 use App\Models\User;
 use App\Models\WalletLabel;
 use App\Support\Identity;
 use App\Services\SepoliaVerifier;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class ExplorerController extends Controller
 {
     // Overview transparansi publik. Agregat di-cache 2 menit (anti-berat di skala besar).
-    public function index()
+    public function index(Request $request)
     {
+        // D1: filter waktu transaksi — harian/mingguan/bulanan/semua.
+        $range = in_array($request->query('range'), ['day', 'week', 'month', 'all'], true)
+            ? $request->query('range') : 'all';
+        $since = match ($range) {
+            'day'   => now()->subDay(),
+            'week'  => now()->subWeek(),
+            'month' => now()->subMonth(),
+            default => null,
+        };
+
+        // D4: urutan toko — paling banyak terjual / rating tertinggi.
+        $storeSort = in_array($request->query('store_sort'), ['sold', 'rating'], true)
+            ? $request->query('store_sort') : 'sold';
+
         $totals = Cache::remember('explorer:totals', 120, fn () => [
             'volume'      => (float) Order::sum('total'),
             'tx'          => Order::count(),
@@ -28,33 +44,45 @@ class ExplorerController extends Controller
             'address' => $l->address, 'name' => $l->label, 'category' => $l->category, 'verified' => $l->verified,
         ]));
 
-        // Ringkasan penjualan per toko dihitung sekali dari agregat (bukan query per-baris).
-        $stores = Cache::remember('explorer:stores', 120, function () {
+        // Ringkasan penjualan + rating per toko (cache per mode urutan), ambil TOP 4.
+        $stores = Cache::remember("explorer:stores:{$storeSort}", 120, function () use ($storeSort) {
             $sold = OrderItem::where('status', 'completed')
                 ->selectRaw('seller_wallet, SUM(amount) t')->groupBy('seller_wallet')->pluck('t', 'seller_wallet');
-            return Store::withCount('products')->get()->map(fn ($s) => [
-                'address' => $s->payout_wallet, 'name' => $s->name,
-                'products' => $s->products_count, 'sold' => (float) ($sold[$s->payout_wallet] ?? 0),
-            ])->sortByDesc('sold')->values();
+            $ratings = Review::selectRaw('store_id, AVG(rating) avg, COUNT(*) c')->groupBy('store_id')->get()->keyBy('store_id');
+
+            $mapped = Store::withCount('products')->get()->map(function ($s) use ($sold, $ratings) {
+                $r = $ratings[$s->id] ?? null;
+                return [
+                    'address' => $s->payout_wallet, 'name' => $s->name,
+                    'products' => $s->products_count, 'sold' => (float) ($sold[$s->payout_wallet] ?? 0),
+                    'rating' => $r ? round((float) $r->avg, 1) : null, 'reviews' => $r ? (int) $r->c : 0,
+                ];
+            });
+            $sorted = $storeSort === 'rating'
+                ? $mapped->sortByDesc(fn ($s) => [$s['rating'] ?? -1, $s['reviews']])
+                : $mapped->sortByDesc('sold');
+            return $sorted->values()->take(4);
         });
 
-        // Transaksi terbaru (item) — paginasi + identitas via resolver.
-        $recent = OrderItem::with(['order.user', 'product'])->latest()->paginate(20)->through(function ($it) {
-            $buyerAddr = strtolower(optional($it->order->user)->wallet_address ?? '');
-            return [
-                'tx'      => $it->order->tx_hash,
-                'buyer'   => $buyerAddr,
-                'buyerId' => $buyerAddr ? Identity::resolve($buyerAddr) : ['name' => '—', 'verified' => false],
-                'seller'  => $it->seller_wallet,
-                'sellerId'=> Identity::resolve($it->seller_wallet),
-                'product' => $it->product->name ?? '—',
-                'amount'  => (float) $it->amount,
-                'status'  => $it->status,
-                'time'    => $it->created_at,
-            ];
-        });
+        // Transaksi terbaru (item), difilter waktu (D1) — paginasi + identitas via resolver.
+        $recent = OrderItem::with(['order.user', 'product'])
+            ->when($since, fn ($q) => $q->where('created_at', '>=', $since))
+            ->latest()->paginate(20)->withQueryString()->through(function ($it) {
+                $buyerAddr = strtolower(optional($it->order->user)->wallet_address ?? '');
+                return [
+                    'tx'      => $it->order->tx_hash,
+                    'buyer'   => $buyerAddr,
+                    'buyerId' => $buyerAddr ? Identity::resolve($buyerAddr) : ['name' => '—', 'verified' => false],
+                    'seller'  => $it->seller_wallet,
+                    'sellerId'=> Identity::resolve($it->seller_wallet),
+                    'product' => $it->product->name ?? '—',
+                    'amount'  => (float) $it->amount,
+                    'status'  => $it->status,
+                    'time'    => $it->created_at,
+                ];
+            });
 
-        return view('explorer.index', compact('totals', 'labels', 'stores', 'recent'));
+        return view('explorer.index', compact('totals', 'labels', 'stores', 'recent', 'range', 'storeSort'));
     }
 
     // Profil satu wallet/entitas.

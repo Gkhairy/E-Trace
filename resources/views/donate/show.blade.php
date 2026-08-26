@@ -60,8 +60,27 @@
     <div class="lg:col-span-1">
         <div class="lg:sticky lg:top-28 space-y-6">
             <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
-                <p class="text-xs text-slate-400">Terkumpul</p>
-                <p class="text-3xl font-extrabold text-green-600 mt-0.5">{{ $fmt($raised) }} <span class="text-base font-semibold">TLKM</span></p>
+                {{-- Status donasi + batas waktu (E1/E3) --}}
+                @php $closed = $campaign->isClosed(); @endphp
+                <div class="flex items-center gap-2 mb-3">
+                    @if($closed)
+                        <span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">● Donasi ditutup</span>
+                    @else
+                        <span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-green-50 text-green-700 border border-green-200">● Donasi dibuka</span>
+                    @endif
+                </div>
+                @if($campaign->closes_at)
+                    <p class="text-xs {{ $closed ? 'text-slate-500' : 'text-slate-600' }} mb-3">
+                        {{ $closed ? 'Donasi ditutup pada' : 'Batas donasi' }}: <b>{{ $campaign->closes_at->translatedFormat('d F Y') }}</b>
+                        @unless($closed) <span class="text-slate-400">({{ $campaign->closes_at->diffForHumans() }})</span> @endunless
+                    </p>
+                @else
+                    <p class="text-xs text-slate-400 mb-3">Tanpa batas waktu.</p>
+                @endif
+
+                {{-- Saldo saat ini = total masuk - sudah disalurkan (E2) --}}
+                <p class="text-xs text-slate-400">Saldo saat ini</p>
+                <p class="text-3xl font-extrabold text-green-600 mt-0.5">{{ $fmt($balance) }} <span class="text-base font-semibold">TLKM</span></p>
                 @if($pct !== null)
                     <div class="mt-3 h-2.5 rounded-full bg-slate-100 overflow-hidden">
                         <div class="h-full bg-green-500 rounded-full" style="width: {{ $pct }}%"></div>
@@ -69,12 +88,24 @@
                     <p class="text-xs text-slate-400 mt-1.5">{{ $pct }}% dari target {{ $fmt($goal) }} TLKM</p>
                 @endif
 
+                {{-- Rincian angka yang jelas --}}
+                <div class="grid grid-cols-2 gap-2 mt-4 text-center">
+                    <div class="rounded-xl bg-slate-50 border border-slate-100 py-2">
+                        <p class="text-[11px] text-slate-400">Total masuk</p>
+                        <p class="text-sm font-bold text-slate-800">{{ $fmt($raised) }}</p>
+                    </div>
+                    <div class="rounded-xl bg-slate-50 border border-slate-100 py-2">
+                        <p class="text-[11px] text-slate-400">Sudah disalurkan</p>
+                        <p class="text-sm font-bold text-slate-800">{{ $fmt($disbursed) }}</p>
+                    </div>
+                </div>
+
                 <div class="mt-4 pt-4 border-t border-slate-100 text-xs text-slate-500">
                     Penerima:
                     <a href="/explorer/{{ $campaign->recipient_wallet }}" class="font-mono text-blue-600 hover:underline">{{ substr($campaign->recipient_wallet, 0, 10) }}…{{ substr($campaign->recipient_wallet, -6) }}</a>
                 </div>
 
-                @if($configured)
+                @if($configured && !$closed)
                     <div class="grid grid-cols-4 gap-2 mt-5 mb-3">
                         @foreach([10, 50, 100, 500] as $preset)
                             <button type="button" onclick="setDon({{ $preset }})" class="py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:border-blue-500 hover:text-blue-600 transition">{{ $preset }}</button>
@@ -84,6 +115,8 @@
                         class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm mb-3">
                     <button id="donBtn" onclick="doDonate()" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm">Donasi sekarang</button>
                     <p class="text-[11px] text-slate-400 mt-3">2 konfirmasi MetaMask: <b>approve</b> lalu <b>donate</b>. Tanpa biaya platform.</p>
+                @elseif($closed)
+                    <p class="mt-5 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl p-3">Donasi untuk campaign ini sudah <b>ditutup</b>{{ $campaign->closes_at ? ' pada '.$campaign->closes_at->translatedFormat('d F Y') : '' }}. Terima kasih atas dukungannya.</p>
                 @else
                     <p class="mt-5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-3">Donasi belum bisa diproses — kontrak belum aktif.</p>
                 @endif

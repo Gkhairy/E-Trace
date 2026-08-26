@@ -46,22 +46,48 @@
     </div>
 @endif
 
-{{-- ===== TOKO ===== --}}
+{{-- ===== TOKO (Top 4, bisa diurutkan) ===== --}}
 @if($stores->isNotEmpty())
-    <h2 class="text-lg font-bold text-slate-900 mb-3">Toko</h2>
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <div class="flex items-center gap-2">
+            <h2 class="text-lg font-bold text-slate-900">Toko Teratas</h2>
+            <span class="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200" title="Menampilkan 4 toko teratas. Statistik total toko ada di kartu ringkasan di atas.">Top 4</span>
+        </div>
+        {{-- D4: pilih urutan --}}
+        <div class="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 text-xs">
+            <a href="?store_sort=sold{{ $range!=='all' ? '&range='.$range : '' }}" title="Toko dengan total penjualan (TLKM) terbesar"
+               class="px-3 py-1.5 rounded-md font-medium transition {{ $storeSort==='sold' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:text-blue-600' }}">Paling Laris</a>
+            <a href="?store_sort=rating{{ $range!=='all' ? '&range='.$range : '' }}" title="Toko dengan rata-rata rating ulasan tertinggi"
+               class="px-3 py-1.5 rounded-md font-medium transition {{ $storeSort==='rating' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:text-blue-600' }}">Rating Tertinggi</a>
+        </div>
+    </div>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         @foreach($stores as $s)
             <a href="/explorer/{{ $s['address'] }}" class="bg-white border border-slate-200 rounded-2xl p-4 hover:border-blue-400 hover:shadow-md transition">
                 <p class="font-semibold text-slate-900 truncate">🏪 {{ $s['name'] }}</p>
                 <p class="text-xs text-slate-500 mt-1">{{ $s['products'] }} produk</p>
-                <p class="text-xs text-green-600 font-medium mt-0.5">Terjual {{ $fmt($s['sold']) }} TLKM</p>
+                <div class="flex items-center justify-between mt-1">
+                    <p class="text-xs text-green-600 font-medium">Terjual {{ $fmt($s['sold']) }} TLKM</p>
+                    @if($s['rating'] !== null)
+                        <span class="text-xs text-amber-500 font-medium whitespace-nowrap" title="{{ $s['reviews'] }} ulasan">★ {{ $s['rating'] }}</span>
+                    @endif
+                </div>
             </a>
         @endforeach
     </div>
 @endif
 
-{{-- ===== TRANSAKSI TERBARU ===== --}}
-<h2 class="text-lg font-bold text-slate-900 mb-3">Transaksi Terbaru</h2>
+{{-- ===== TRANSAKSI TERBARU (dengan filter waktu D1) ===== --}}
+<div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+    <h2 class="text-lg font-bold text-slate-900">Transaksi Terbaru</h2>
+    <div class="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 text-xs" role="group" aria-label="Filter waktu transaksi">
+        @php $ranges = ['all'=>['Semua','Semua transaksi'],'day'=>['Hari ini','24 jam terakhir'],'week'=>['Minggu','7 hari terakhir'],'month'=>['Bulan','30 hari terakhir']]; @endphp
+        @foreach($ranges as $key => $r)
+            <a href="?range={{ $key }}{{ $storeSort!=='sold' ? '&store_sort='.$storeSort : '' }}" title="{{ $r[1] }}"
+               class="px-3 py-1.5 rounded-md font-medium transition {{ $range===$key ? 'bg-blue-600 text-white' : 'text-slate-600 hover:text-blue-600' }}">{{ $r[0] }}</a>
+        @endforeach
+    </div>
+</div>
 <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
     <div class="overflow-x-auto">
         <table class="w-full text-left text-sm">

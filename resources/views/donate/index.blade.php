@@ -44,6 +44,16 @@
                     @endif
                 </div>
                 <div class="p-5 flex flex-col flex-1">
+                    <div class="flex items-center gap-2 mb-1.5">
+                        @if($m->isClosed())
+                            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">Ditutup</span>
+                        @else
+                            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">Dibuka</span>
+                        @endif
+                        @if($m->closes_at)
+                            <span class="text-[10px] text-slate-400">{{ $m->isClosed() ? 'ditutup' : 'batas' }} {{ $m->closes_at->translatedFormat('d M Y') }}</span>
+                        @endif
+                    </div>
                     <h3 class="font-bold text-slate-900 leading-snug line-clamp-2">{{ $m->title }}</h3>
                     @if($m->description)
                         <p class="text-sm text-slate-500 mt-1.5 line-clamp-2 flex-1">{{ $m->description }}</p>
@@ -66,15 +76,16 @@
 
                     <div class="mt-2.5 flex items-end justify-between">
                         <div>
-                            <p class="text-[11px] text-slate-400">Terkumpul</p>
-                            <p class="font-extrabold text-green-600">{{ $fmt($c['raised']) }} <span class="text-xs font-semibold">TLKM</span></p>
+                            <p class="text-[11px] text-slate-400">Saldo saat ini</p>
+                            <p class="font-extrabold text-green-600">{{ $fmt($c['balance']) }} <span class="text-xs font-semibold">TLKM</span></p>
                         </div>
                         @if($goal > 0)
-                            <p class="text-xs text-slate-400">dari {{ $fmt($goal) }}</p>
+                            <p class="text-xs text-slate-400">target {{ $fmt($goal) }}</p>
                         @else
                             <span class="text-slate-300 text-xl leading-none">∞</span>
                         @endif
                     </div>
+                    <p class="text-[11px] text-slate-400 mt-1">Masuk {{ $fmt($c['raised']) }} · Disalurkan {{ $fmt($c['disbursed']) }} TLKM</p>
                 </div>
             </a>
         @endforeach
