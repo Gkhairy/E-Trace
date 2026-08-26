@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Transfer;
 use App\Models\PaymentRequest;
+use App\Models\User;
 use App\Support\Identity;
 use App\Services\SepoliaVerifier;
 use Illuminate\Http\Request;
@@ -11,6 +12,39 @@ use Illuminate\Support\Str;
 
 class WalletController extends Controller
 {
+    /** Cari penerima via No HP / email / wallet → nama + wallet (untuk kirim). */
+    public function lookup(Request $req)
+    {
+        $q = trim((string) $req->input('q'));
+        if ($q === '') {
+            return response()->json(['found' => false]);
+        }
+
+        $user = null;
+        if (preg_match('/^0x[a-fA-F0-9]{40}$/', $q)) {
+            $user = User::where('wallet_address', strtolower($q))->first();
+            if (!$user) {
+                // Wallet valid tapi bukan user terdaftar — tetap boleh kirim (nama tak diketahui).
+                return response()->json(['found' => true, 'name' => null, 'wallet' => strtolower($q)]);
+            }
+        } else {
+            $user = User::where('phone', $q)->orWhere('email', $q)->first();
+        }
+
+        if (!$user || !$user->wallet_address) {
+            return response()->json(['found' => false]);
+        }
+        if ($user->id === auth()->id()) {
+            return response()->json(['found' => false, 'self' => true]);
+        }
+
+        return response()->json([
+            'found'  => true,
+            'name'   => $user->public_name ?: $user->name,
+            'wallet' => strtolower($user->wallet_address),
+        ]);
+    }
+
     /** Dompet: kirim TLKM, minta uang, riwayat. */
     public function index()
     {

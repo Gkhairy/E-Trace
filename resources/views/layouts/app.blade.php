@@ -174,7 +174,7 @@
                 <div class="p-6">
                     <h3 class="text-lg font-bold text-slate-900 mb-1">${title}</h3>
                     <p class="text-sm text-slate-500 mb-4">Masukkan PIN 6 angka untuk menandatangani transaksi.</p>
-                    <input id="pinModalInput" inputmode="numeric" maxlength="6" autofocus class="w-full text-center tracking-[0.4em] text-xl font-bold px-4 py-3 rounded-xl bg-slate-100 border border-slate-200 focus:bg-white focus:border-blue-500 outline-none mb-4" placeholder="______">
+                    <input id="pinModalInput" type="password" inputmode="numeric" maxlength="6" autofocus class="w-full text-center tracking-[0.4em] text-xl font-bold px-4 py-3 rounded-xl bg-slate-100 border border-slate-200 focus:bg-white focus:border-blue-500 outline-none mb-4" placeholder="••••••">
                     <div class="flex gap-3">
                         <button id="pinCancel" class="flex-1 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-sm font-medium">Batal</button>
                         <button id="pinOk" class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">Konfirmasi</button>
@@ -196,9 +196,48 @@
         return data.tx_hash;
     }
 
+    // Popup setup PIN untuk akun lama yang belum punya PIN.
+    function promptPinSetup() {
+        openModal(`
+            <div class="p-6">
+                <h3 class="text-lg font-bold text-slate-900 mb-1">Buat PIN Transaksi</h3>
+                <p class="text-sm text-slate-500 mb-4">Akunmu belum punya PIN. Buat PIN 6 angka untuk login cepat &amp; konfirmasi pembayaran.</p>
+                <div id="pinSetupErr" class="hidden bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm mb-3"></div>
+                <input id="psPin" type="password" inputmode="numeric" maxlength="6" placeholder="PIN 6 angka" class="w-full text-center tracking-[0.4em] text-lg font-bold px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 outline-none focus:bg-white focus:border-blue-500 mb-2">
+                <input id="psPin2" type="password" inputmode="numeric" maxlength="6" placeholder="Ulangi PIN" class="w-full text-center tracking-[0.4em] text-lg font-bold px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 outline-none focus:bg-white focus:border-blue-500 mb-2">
+                <input id="psPass" type="password" placeholder="Password akun (konfirmasi)" class="w-full px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 outline-none focus:bg-white focus:border-blue-500 text-sm mb-4">
+                <div class="flex gap-3">
+                    <button onclick="try{sessionStorage.setItem('pinPromptDismissed','1')}catch(e){}; closeModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-sm font-medium">Nanti saja</button>
+                    <button id="psOk" class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">Set PIN</button>
+                </div>
+            </div>`);
+        document.getElementById('psOk').onclick = async () => {
+            const pin = (document.getElementById('psPin').value || '').trim();
+            const pin2 = (document.getElementById('psPin2').value || '').trim();
+            const pass = document.getElementById('psPass').value || '';
+            const err = (m) => { const e = document.getElementById('pinSetupErr'); e.textContent = m; e.classList.remove('hidden'); };
+            if (!/^\d{6}$/.test(pin)) return err('PIN harus 6 angka.');
+            if (pin !== pin2) return err('Konfirmasi PIN tidak cocok.');
+            if (!pass) return err('Masukkan password akun.');
+            try {
+                const res = await fetch('/pin/setup', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN }, body: JSON.stringify({ pin, pin_confirmation: pin2, password: pass }) });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.success) return err(data.message || 'Gagal set PIN.');
+                closeModal(); showToast('PIN berhasil dibuat.', 'success');
+            } catch (e) { err('Terjadi kendala. Coba lagi.'); }
+        };
+    }
+    if (NEEDS_PIN) {
+        window.addEventListener('DOMContentLoaded', () => {
+            let dismissed = false; try { dismissed = sessionStorage.getItem('pinPromptDismissed') === '1'; } catch (e) {}
+            if (!dismissed) setTimeout(promptPinSetup, 900);
+        });
+    }
+
     // Wallet yang TERIKAT ke akun login (lowercase) — untuk guard wallet-mismatch.
     const ACCOUNT_WALLET = @json(auth()->check() ? strtolower(auth()->user()->wallet_address ?? '') : null);
     const IS_EMBEDDED    = @json(auth()->check() ? (bool) auth()->user()->is_embedded : false);
+    const NEEDS_PIN      = @json(auth()->check() ? empty(auth()->user()->pin_hash) : false);
 
     // ---- KONFIGURASI KONTRAK (PaymentGateway v3, Sepolia) ----
     const TLKM_ADDRESS            = "0xFbaa7F02bE3f151920D036cA4Eed2Fb1Ca3e0aEB";

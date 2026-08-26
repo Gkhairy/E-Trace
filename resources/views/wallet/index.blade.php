@@ -32,8 +32,10 @@
     {{-- KIRIM --}}
     <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
         <h2 class="font-bold text-slate-900 mb-4">Kirim TLKM</h2>
-        <label class="block text-sm font-medium text-slate-700 mb-1.5">Wallet tujuan</label>
-        <input id="sendTo" type="text" placeholder="0x…" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm font-mono mb-4">
+        <label class="block text-sm font-medium text-slate-700 mb-1.5">No HP atau wallet tujuan</label>
+        <input id="sendTo" type="text" oninput="onSendToInput()" placeholder="08xxxx  atau  0x…" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm mb-1.5">
+        <p id="sendResolved" class="hidden text-xs mb-3 px-1"></p>
+        <div class="mb-4"></div>
         <label class="block text-sm font-medium text-slate-700 mb-1.5">Nominal (TLKM)</label>
         <input id="sendAmount" type="number" min="0" step="any" placeholder="mis. 100" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm mb-4">
         <label class="block text-sm font-medium text-slate-700 mb-1.5">Catatan (opsional)</label>
@@ -111,13 +113,47 @@
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script>
+// Cari penerima via No HP / wallet → tampilkan namanya.
+let _lookupTimer = null;
+async function lookupRecipient(q) {
+    const res = await fetch('/wallet/lookup', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN }, body: JSON.stringify({ q }) });
+    return await res.json().catch(() => ({ found: false }));
+}
+function onSendToInput() {
+    const el = document.getElementById('sendResolved');
+    const q = (document.getElementById('sendTo').value || '').trim();
+    el.classList.add('hidden');
+    if (q.length < 5) return;
+    clearTimeout(_lookupTimer);
+    _lookupTimer = setTimeout(async () => {
+        const r = await lookupRecipient(q);
+        if (r.self) { el.textContent = 'Itu wallet kamu sendiri.'; el.className = 'text-xs mb-3 px-1 text-amber-600'; }
+        else if (r.found && r.name) { el.innerHTML = '→ <b class="text-slate-700">' + r.name + '</b> <span class="font-mono text-slate-400">' + r.wallet.slice(0,6) + '…' + r.wallet.slice(-4) + '</span>'; el.className = 'text-xs mb-3 px-1 text-green-600'; }
+        else if (r.found) { el.textContent = '→ Wallet valid (bukan pengguna terdaftar)'; el.className = 'text-xs mb-3 px-1 text-slate-500'; }
+        else { el.textContent = 'Penerima tidak ditemukan.'; el.className = 'text-xs mb-3 px-1 text-red-500'; }
+        el.classList.remove('hidden');
+    }, 400);
+}
+
 async function doSend() {
-    const to = (document.getElementById('sendTo').value || '').trim();
+    const input = (document.getElementById('sendTo').value || '').trim();
     const amt = parseFloat(document.getElementById('sendAmount').value);
     const note = (document.getElementById('sendNote').value || '').trim();
-    if (!/^0x[a-fA-F0-9]{40}$/.test(to)) { showToast('Wallet tujuan tidak valid.', 'warn'); return; }
     if (!amt || amt <= 0) { showToast('Masukkan nominal yang valid.', 'warn'); return; }
-    const ok = await uiConfirm({ title: 'Kirim TLKM', message: `Kirim <b class="text-blue-600">${amt} TLKM</b> ke:<br><span class="font-mono text-xs break-all">${to}</span>`, confirmText: 'Ya, kirim' });
+
+    // Resolusi penerima: No HP → wallet+nama; atau langsung 0x.
+    let to = input, name = null;
+    if (!/^0x[a-fA-F0-9]{40}$/.test(input)) {
+        const r = await lookupRecipient(input);
+        if (r.self) { showToast('Tidak bisa kirim ke wallet sendiri.', 'warn'); return; }
+        if (!r.found || !r.wallet) { showToast('Penerima (No HP/wallet) tidak ditemukan.', 'warn'); return; }
+        to = r.wallet; name = r.name;
+    } else {
+        const r = await lookupRecipient(input); if (r.found) name = r.name;
+    }
+
+    const who = name ? `<b class="text-slate-900">${name}</b><br><span class="font-mono text-xs break-all text-slate-400">${to}</span>` : `<span class="font-mono text-xs break-all">${to}</span>`;
+    const ok = await uiConfirm({ title: 'Kirim TLKM', message: `Kirim <b class="text-blue-600">${amt} TLKM</b> ke:<br>${who}`, confirmText: 'Ya, kirim' });
     if (!ok) return;
     let pin = null;
     if (IS_EMBEDDED) { pin = await askPin('Kirim TLKM'); if (!pin) return; }

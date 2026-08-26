@@ -94,6 +94,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit']);
     Route::post('/profile', [ProfileController::class, 'update']);
 
+    // SET PIN (user lama yang belum punya PIN)
+    Route::post('/pin/setup', [AuthController::class, 'setupPin'])->middleware('throttle:8,1');
+
     // 2FA (opsional) — kelola dari profil
     Route::get('/two-factor/setup', [\App\Http\Controllers\TwoFactorController::class, 'setup']);
     Route::post('/two-factor/confirm', [\App\Http\Controllers\TwoFactorController::class, 'confirm']);
@@ -107,6 +110,7 @@ Route::middleware('auth')->group(function () {
     // DOMPET (kirim TLKM & minta uang)
     Route::get('/wallet', [WalletController::class, 'index']);
     Route::post('/wallet/send', [WalletController::class, 'send'])->middleware('throttle:20,1');
+    Route::post('/wallet/lookup', [WalletController::class, 'lookup'])->middleware('throttle:30,1');
     Route::post('/wallet/requests', [WalletController::class, 'createRequest']);
 
     // PEMBAYARAN PAKAI PIN (embedded wallet) — tanda tangan tx di backend

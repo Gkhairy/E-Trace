@@ -236,6 +236,21 @@ class AuthController extends Controller
         return $this->finishLogin($user, $request);
     }
 
+    /** Set PIN untuk user yang belum punya (mis. akun lama sebelum fitur PIN). */
+    public function setupPin(Request $request)
+    {
+        $data = $request->validate([
+            'pin'      => 'required|digits:6|confirmed',
+            'password' => 'required',
+        ]);
+        $user = auth()->user();
+        if (!\Illuminate\Support\Facades\Hash::check($data['password'], $user->password)) {
+            return response()->json(['success' => false, 'message' => 'Password salah.'], 422);
+        }
+        $user->forceFill(['pin_hash' => \Illuminate\Support\Facades\Hash::make($data['pin'])])->save();
+        return response()->json(['success' => true]);
+    }
+
     /** Cabang setelah kredensial benar: OTP verifikasi → 2FA → login normal. */
     private function finishLogin(User $user, Request $request, bool $remember = false)
     {

@@ -115,7 +115,7 @@
             <form method="POST" action="/login-pin" id="loginPin" class="space-y-3 hidden">
                 @csrf
                 <input name="email" type="email" value="{{ old('email') }}" placeholder="Email" class="in-field">
-                <input name="pin" inputmode="numeric" maxlength="6" placeholder="PIN 6 angka" class="in-field">
+                <input name="pin" type="password" inputmode="numeric" maxlength="6" placeholder="PIN 6 angka" class="in-field">
                 <button class="w-full py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm mt-1">Masuk dengan PIN</button>
             </form>
 
@@ -158,8 +158,8 @@
 
                 {{-- Blok PIN (default) --}}
                 <div id="pinBlock" class="space-y-3">
-                    <input name="pin" id="pin" inputmode="numeric" maxlength="6" required placeholder="PIN 6 angka (untuk bayar & login)" class="in-field @error('pin') !border-red-400 @enderror">
-                    <input name="pin_confirmation" id="pin_confirmation" inputmode="numeric" maxlength="6" required placeholder="Ulangi PIN" class="in-field">
+                    <input name="pin" id="pin" type="password" inputmode="numeric" maxlength="6" required placeholder="PIN 6 angka (untuk bayar & login)" class="in-field @error('pin') !border-red-400 @enderror">
+                    <input name="pin_confirmation" id="pin_confirmation" type="password" inputmode="numeric" maxlength="6" required placeholder="Ulangi PIN" class="in-field">
                 </div>
 
                 {{-- Blok MetaMask --}}
