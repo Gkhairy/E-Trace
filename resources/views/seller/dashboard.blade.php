@@ -82,6 +82,34 @@
     @endforeach
 </div>
 
+{{-- ===== RINCIAN BIAYA & PAJAK (khusus penjual — H8/H9) ===== --}}
+<div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-8">
+    <div class="flex items-center gap-2 mb-1">
+        <h2 class="text-lg font-bold text-slate-900">Rincian Biaya &amp; Pajak</h2>
+        <span class="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">khusus penjual</span>
+    </div>
+    <p class="text-sm text-slate-500 mb-4">Dihitung dari penjualan <b>selesai</b>. Fee &amp; pajak ini <b>tidak</b> ditampilkan ke pembeli — pembeli hanya membayar harga produk.</p>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="rounded-xl border border-slate-100 bg-slate-50 p-4">
+            <p class="text-xs text-slate-500">Penjualan bruto</p>
+            <p class="text-lg font-extrabold text-slate-900 mt-0.5">{{ $fmt($stats['gross']) }} <span class="text-xs text-blue-600">TLKM</span></p>
+        </div>
+        <div class="rounded-xl border border-slate-100 bg-slate-50 p-4">
+            <p class="text-xs text-slate-500">Fee platform ({{ rtrim(rtrim(number_format($stats['fee_pct'],2),'0'),'.') }}%)</p>
+            <p class="text-lg font-extrabold text-amber-600 mt-0.5">−{{ $fmt($stats['fee']) }} <span class="text-xs">TLKM</span></p>
+        </div>
+        <div class="rounded-xl border border-slate-100 bg-slate-50 p-4">
+            <p class="text-xs text-slate-500">PPN {{ rtrim(rtrim(number_format($stats['vat_pct'],2),'0'),'.') }}% <span class="text-slate-400">(atas fee)</span></p>
+            <p class="text-lg font-extrabold text-slate-700 mt-0.5">{{ $fmt($stats['vat']) }} <span class="text-xs">TLKM</span></p>
+        </div>
+        <div class="rounded-xl border border-green-100 bg-green-50 p-4">
+            <p class="text-xs text-green-700">Diterima (on-chain)</p>
+            <p class="text-lg font-extrabold text-green-700 mt-0.5">{{ $fmt($stats['released_net']) }} <span class="text-xs">TLKM</span></p>
+        </div>
+    </div>
+    <p class="text-[11px] text-slate-400 mt-3">Fee platform dipotong otomatis on-chain saat dana dilepas. PPN 11% dihitung atas fee jasa platform (untuk pelaporan pajak) dan ditanggung penjual.</p>
+</div>
+
 {{-- ===== LAPORAN PENJUALAN (Excel/PDF) ===== --}}
 <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-8">
     <div class="flex flex-wrap items-start justify-between gap-3 mb-4">

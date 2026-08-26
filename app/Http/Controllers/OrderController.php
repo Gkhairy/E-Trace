@@ -26,6 +26,30 @@ class OrderController extends Controller
     }
 
     /**
+     * H3: sinyal ringan untuk auto-refresh. Kembalikan "signature" dari state order
+     * user (jumlah + status header & item + status logistik). Frontend polling:
+     * kalau signature berubah -> muat ulang sekali (menangkap order/item baru).
+     */
+    public function updates()
+    {
+        $rows = Order::where('user_id', auth()->id())
+            ->with(['items:id,order_ref_id,item_index,status,fulfillment_status'])
+            ->get(['id', 'order_id', 'status']);
+
+        $parts = [];
+        foreach ($rows as $o) {
+            $parts[] = $o->order_id . ':' . $o->status;
+            foreach ($o->items as $it) {
+                $parts[] = $it->item_index . '=' . $it->status . '/' . ($it->fulfillment_status ?? '');
+            }
+        }
+        return response()->json([
+            'count' => $rows->count(),
+            'sig'   => md5(implode('|', $parts)),
+        ]);
+    }
+
+    /**
      * Simpan order dari cart SETELAH pembayaran on-chain (payCart) sukses.
      * Membuat: alamat pengiriman + order (header) + order_items (per penjual),
      * lalu mengosongkan cart. Dijalankan dalam transaksi.
@@ -63,6 +87,9 @@ class OrderController extends Controller
         $expected = [];
         foreach ($data['items'] as $it) {
             $product = \App\Models\Product::find($it['product_id']);
+            if (!$product) {
+                continue; // produk terhapus -> lewati, jangan gagalkan seluruh order
+            }
             $expected[(int) $it['item_index']] = [
                 'product_id_uuid' => $product->product_id,
                 'seller_wallet'   => strtolower($product->seller_wallet),
@@ -71,8 +98,42 @@ class OrderController extends Controller
             ];
         }
 
+        $verifier = new \App\Services\SepoliaVerifier();
+
+        // ===== H2: pastikan JUMLAH item cocok dengan yang dibayar on-chain =====
+        // Kalau browser mengirim lebih sedikit item dari yang tercatat di kontrak,
+        // lengkapi dari chain (map productId->Product) supaya tak ada item yang hilang.
+        $onChainCount = $verifier->itemCount($data['order_id']);
+        if ($onChainCount !== null && $onChainCount > count($expected)) {
+            for ($i = 0; $i < $onChainCount; $i++) {
+                if (isset($expected[$i])) {
+                    continue;
+                }
+                $chainItem = $verifier->getItem($data['order_id'], $i);
+                if (!$chainItem || empty($chainItem['productId'])) {
+                    continue;
+                }
+                $product = \App\Models\Product::where('product_id', $chainItem['productId'])->first();
+                if (!$product) {
+                    Log::warning("Order {$data['order_id']}: item on-chain #$i (produk {$chainItem['productId']}) tak dikenal, dilewati.");
+                    continue;
+                }
+                $expected[$i] = [
+                    'product_id_uuid' => $product->product_id,
+                    'seller_wallet'   => strtolower($product->seller_wallet),
+                    'db_product_id'   => $product->id,
+                    'price'           => (float) $product->price_usdc,
+                ];
+            }
+            ksort($expected);
+        }
+
+        if (empty($expected)) {
+            return response()->json(['success' => false, 'message' => 'Tidak ada item valid untuk disimpan.'], 422);
+        }
+
         // ===== VERIFIKASI ON-CHAIN (sumber kebenaran) =====
-        $vr = (new \App\Services\SepoliaVerifier())
+        $vr = $verifier
             ->verifyCart($data['order_id'], $data['tx_hash'], $user->wallet_address, $expected);
         if (!($vr['ok'] ?? false)) {
             return response()->json(['success' => false, 'message' => 'Verifikasi on-chain gagal: ' . ($vr['reason'] ?? '-')], 422);

@@ -15,6 +15,24 @@ return [
 
     // Konfirmasi: 1 = terdeteksi, >= paid_confirmations dianggap 'paid',
     // >= finalized_confirmations dianggap final (catatan audit).
-    'paid_confirmations'      => (int) env('PAID_CONFIRMATIONS', 6),
-    'finalized_confirmations' => (int) env('FINALIZED_CONFIRMATIONS', 12),
+    // H5: di TESTNET cukup 1-2 konfirmasi agar UX tidak lama (bisa dinaikkan untuk mainnet).
+    'paid_confirmations'      => (int) env('PAID_CONFIRMATIONS', 1),
+    'finalized_confirmations' => (int) env('FINALIZED_CONFIRMATIONS', 3),
+
+    // ============ BIAYA & PAJAK (sisi PENJUAL — tidak ditampilkan ke pembeli) ============
+    // H8: fee platform (basis poin, 100 = 1%) dipotong dari penjual saat dana dilepas.
+    'platform_fee_bps' => (int) env('PLATFORM_FEE_BPS', 100),
+    // H9: PPN/VAT (basis poin, 1100 = 11%) dihitung atas FEE platform (biaya jasa platform).
+    'vat_bps'          => (int) env('VAT_BPS', 1100),
+
+    // ============ ONGKOS KIRIM (H7) — configurable, produk fisik ============
+    // Metode: jarak garis lurus (haversine) antar kota berdasarkan koordinat bawaan
+    // (gratis, tanpa API). Batas area praktis: Jabodetabek / Pulau Jawa.
+    'shipping' => [
+        'base_fee'      => (int) env('SHIP_BASE_FEE', 20000),   // untuk 10 km pertama (Rupiah)
+        'base_km'       => (int) env('SHIP_BASE_KM', 10),
+        'step_km'       => (int) env('SHIP_STEP_KM', 5),        // tiap tambahan 5 km
+        'step_fee'      => (int) env('SHIP_STEP_FEE', 5000),    // +Rp5.000 per step
+        'fallback_fee'  => (int) env('SHIP_FALLBACK_FEE', 30000), // kota tak dikenal
+    ],
 ];

@@ -102,9 +102,15 @@
                     @php $subtotal = $group->sum(fn($it) => (float)$it->product->price_usdc * $it->quantity); @endphp
                     <div class="border border-slate-100 rounded-xl overflow-hidden">
                         <div class="bg-slate-50 px-4 py-2.5 flex items-center justify-between">
-                            <span class="text-xs font-mono text-slate-500">Penjual {{ substr($seller, 0, 8) }}…{{ substr($seller, -6) }}</span>
+                            <span class="text-xs font-mono text-slate-500">{{ $shipEstimates[$seller]['store'] ?? ('Penjual '.substr($seller, 0, 8).'…'.substr($seller, -6)) }}</span>
                             <span class="text-xs font-semibold text-slate-700">{{ rtrim(rtrim(number_format($subtotal, 2), '0'), '.') }} TLKM</span>
                         </div>
+                        @if(isset($shipEstimates[$seller]))
+                            <div class="px-4 py-1.5 bg-slate-50/60 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                                <span>Estimasi ongkir{{ $shipEstimates[$seller]['km'] !== null ? ' (~'.$shipEstimates[$seller]['km'].' km)' : '' }}</span>
+                                <span>Rp {{ number_format($shipEstimates[$seller]['fee'], 0, ',', '.') }}</span>
+                            </div>
+                        @endif
                         <div class="divide-y divide-slate-100">
                             @foreach($group as $it)
                                 <div class="px-4 py-3 flex items-center gap-3">
@@ -131,20 +137,25 @@
             <h3 class="font-semibold text-slate-900 mb-4">Pembayaran</h3>
             <div class="flex justify-between text-sm text-slate-600 mb-2"><span>Jumlah item</span><span>{{ $items->sum('quantity') }}</span></div>
             <div class="flex justify-between text-sm text-slate-600 mb-2"><span>Penjual</span><span>{{ $groups->count() }}</span></div>
-            <div class="flex justify-between items-end border-t border-slate-100 pt-3 mt-3">
-                <span class="text-sm text-slate-500">Total bayar</span>
+            {{-- H7: estimasi ongkir (produk fisik) — dihitung dari jarak kota toko ke kota pembeli --}}
+            <div class="flex justify-between text-sm text-slate-600 mb-2 border-t border-slate-100 pt-3 mt-3">
+                <span>Estimasi ongkir<sup class="text-slate-400">*</sup></span>
+                <span>Rp {{ number_format($shipTotal, 0, ',', '.') }}</span>
+            </div>
+            <div class="flex justify-between items-end">
+                <span class="text-sm text-slate-500">Total produk (on-chain)</span>
                 <span class="text-2xl font-extrabold text-slate-900">{{ rtrim(rtrim(number_format($total, 2), '0'), '.') }} <span class="text-sm text-blue-600 font-semibold">TLKM</span></span>
             </div>
-            {{-- Fee platform transparan sebelum checkout (dipotong dari penjual saat rilis) --}}
-            <div class="flex justify-between text-xs text-slate-500 mt-2">
-                <span>Fee platform (1%)</span>
-                <span>{{ rtrim(rtrim(number_format($total * 0.01, 2), '0'), '.') }} TLKM</span>
-            </div>
-            <p class="text-[11px] text-slate-400 mt-1 leading-snug">Fee dipotong dari penjual saat dana dilepas — kamu tetap membayar total di atas.</p>
+            <p class="text-[11px] text-slate-400 mt-1.5 leading-snug">*Ongkir dihitung dari jarak (haversine) kota toko ke kota pembeli, diselesaikan terpisah dari escrow produk. {{ $buyerCity ? 'Untuk kota: '.$buyerCity.'.' : 'Pilih/isi alamat untuk estimasi akurat.' }}</p>
 
             <div class="flex items-center gap-2 text-xs text-green-700 mt-4 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 Bayar 1× — escrow terpisah per penjual
+            </div>
+            {{-- H6: kebijakan refund yang adil --}}
+            <div class="flex items-start gap-2 text-[11px] text-slate-500 mt-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                <svg class="w-4 h-4 shrink-0 text-slate-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>Refund bisa diajukan bila barang tak diterima setelah <b>3 hari</b>. Sengketa ditinjau pengawas dengan bukti (resi/foto) — bukan refund otomatis.</span>
             </div>
 
             <button id="payBtn" onclick="checkoutPay()"

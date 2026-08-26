@@ -111,6 +111,27 @@ class SepoliaVerifier
         ];
     }
 
+    /**
+     * Baca jumlah item cart on-chain untuk sebuah orderId (mapping publik itemCount(string)).
+     * Dipakai untuk memastikan SEMUA item yang dibayar tersimpan (cegah item hilang).
+     */
+    public function itemCount(string $orderId): ?int
+    {
+        $sel    = substr(Keccak::hash('itemCount(string)', 256), 0, 8);
+        $offset = str_pad('20', 64, '0', STR_PAD_LEFT);
+        $len    = str_pad(dechex(strlen($orderId)), 64, '0', STR_PAD_LEFT);
+        $hex    = bin2hex($orderId);
+        $data   = str_pad($hex, (int) (ceil(strlen($hex) / 64) * 64), '0', STR_PAD_RIGHT);
+        $res = $this->rpc('eth_call', [[
+            'to'   => $this->gateway,
+            'data' => '0x' . $sel . $offset . $len . $data,
+        ], 'latest']);
+        if (!$res || strlen($res) < 66) {
+            return null;
+        }
+        return (int) hexdec(substr($res, 2, 64));
+    }
+
     private function poolConfigured(): ?string
     {
         $pool = strtolower((string) config('chain.donation_pool'));

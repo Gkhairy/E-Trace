@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\CartItem;
+use App\Models\Store;
+use App\Services\ShippingService;
 
 class CheckoutController extends Controller
 {
     // Halaman checkout: ringkasan cart dikelompokkan per penjual + form alamat.
-    public function index()
+    public function index(ShippingService $shipping)
     {
         $items = CartItem::with('product')
             ->where('user_id', auth()->id())
@@ -27,6 +29,20 @@ class CheckoutController extends Controller
             ->orderByDesc('is_default')->latest()->get();
         $lastAddress = $addresses->first();
 
-        return view('checkout.index', compact('items', 'groups', 'total', 'addresses', 'lastAddress'));
+        // H7: estimasi ongkir per penjual (jarak kota toko -> kota pembeli).
+        $buyerCity = $lastAddress->city ?? null;
+        $shipEstimates = [];   // seller_wallet => ['fee'=>Rp, 'km'=>, 'known'=>, 'store'=>]
+        $shipTotal = 0;
+        foreach ($groups as $seller => $g) {
+            $store = Store::where('payout_wallet', $seller)->first();
+            $est = $shipping->estimate($store?->origin_address, $buyerCity);
+            $shipEstimates[$seller] = $est + ['store' => $store?->name];
+            $shipTotal += $est['fee'];
+        }
+
+        return view('checkout.index', compact(
+            'items', 'groups', 'total', 'addresses', 'lastAddress',
+            'shipEstimates', 'shipTotal', 'buyerCity'
+        ));
     }
 }

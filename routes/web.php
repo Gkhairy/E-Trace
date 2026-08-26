@@ -167,5 +167,6 @@ Route::middleware('auth')->group(function () {
 
 // ORDER
 Route::get('/orders', [OrderController::class, 'index'])->middleware('auth');
+Route::get('/orders/updates', [OrderController::class, 'updates'])->middleware('auth'); // H3 polling ringan
 Route::post('/order/store', [OrderController::class, 'store'])->middleware('auth');
 Route::post('/order/item-status', [OrderController::class, 'updateItemStatus'])->middleware('auth');

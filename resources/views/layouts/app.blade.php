@@ -332,8 +332,8 @@
                     <h3 class="text-lg font-bold text-slate-900 mb-2">${title}</h3>
                     <p class="text-sm text-slate-500 leading-relaxed">${message}</p>
                     <div class="flex gap-3 mt-6">
-                        <button id="mCancel" class="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-sm font-medium transition">${cancelText}</button>
                         <button id="mOk" class="flex-1 py-2.5 rounded-xl ${danger?'bg-red-600 hover:bg-red-700':'bg-blue-600 hover:bg-blue-700'} text-white text-sm font-semibold transition">${confirmText}</button>
+                        <button id="mCancel" class="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-sm font-medium transition">${cancelText}</button>
                     </div>
                 </div>`);
             document.getElementById('mCancel').onclick = () => { closeModal(); resolve(false); };

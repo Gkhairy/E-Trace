@@ -31,12 +31,24 @@ class SellerController extends Controller
             ->latest()
             ->get();
 
+        // Biaya & pajak sisi PENJUAL (H8/H9) — TIDAK ditampilkan ke pembeli.
+        $feeBps = (int) config('chain.platform_fee_bps'); // 100 = 1%
+        $vatBps = (int) config('chain.vat_bps');          // 1100 = 11% (atas fee)
+        $grossCompleted = (float) $items->where('status', 'completed')->sum('amount');
+        $feeTotal = $grossCompleted * $feeBps / 10000;
+        $vatTotal = $feeTotal * $vatBps / 10000;          // PPN dihitung atas fee jasa platform
+
         $stats = [
             'products'      => $products->count(),
             'orders'        => $items->count(),
-            'escrow_active' => $items->where('status', 'paid')->sum('amount'),                      // ditahan escrow
-            'released_net'  => $items->where('status', 'completed')->sum(fn ($i) => (float) $i->amount * 0.99), // diterima (setelah fee 1%)
+            'escrow_active' => $items->where('status', 'paid')->sum('amount'),                       // ditahan escrow
+            'gross'         => $grossCompleted,                                                       // penjualan bruto (selesai)
+            'fee'           => $feeTotal,                                                             // fee platform
+            'vat'           => $vatTotal,                                                             // PPN atas fee
+            'released_net'  => $grossCompleted - $feeTotal,                                           // diterima on-chain (bruto - fee)
             'refunded'      => $items->where('status', 'refunded')->sum('amount'),
+            'fee_pct'       => $feeBps / 100,
+            'vat_pct'       => $vatBps / 100,
         ];
 
         return view('seller.dashboard', compact('store', 'products', 'items', 'stats'));

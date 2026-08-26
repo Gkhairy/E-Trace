@@ -8,10 +8,16 @@
     </div>
     <h1 class="text-2xl font-bold text-slate-900">Riwayat Order</h1>
 </div>
-<p class="text-sm text-slate-500 mb-6 max-w-3xl">
+<p class="text-sm text-slate-500 mb-3 max-w-3xl">
     Setiap item ditahan di <b class="text-slate-700">escrow terpisah per penjual</b> di blockchain Ethereum Sepolia.
     Konfirmasi 1 item hanya melepas dana item itu ke penjualnya — item lain tidak terpengaruh.
 </p>
+{{-- H6: kebijakan refund yang jelas & adil --}}
+<div class="flex items-start gap-2 text-xs text-slate-600 mb-5 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 max-w-3xl">
+    <svg class="w-4 h-4 shrink-0 text-blue-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <span><b>Kebijakan refund:</b> refund bisa diajukan bila barang <b>tidak diterima setelah 3 hari</b>. Bila ada masalah (mis. salah kirim), ajukan <b>Sengketa</b> dengan bukti (resi/foto) — pengawas yang memutuskan, bukan refund otomatis sepihak. Ini melindungi pembeli dan penjual.</span>
+</div>
+<p id="autoRefreshNote" class="text-[11px] text-slate-400 mb-5 hidden">Memuat pembaruan…</p>
 
 @if($orders->isEmpty())
     <div class="flex flex-col items-center justify-center py-24 text-center bg-white border border-dashed border-slate-300 rounded-3xl">
@@ -111,6 +117,9 @@
                                             @endif
                                         </div>
                                     </div>
+
+                                    {{-- H1: TAHAPAN STATUS (timeline) --}}
+                                    @include('orders.partials.timeline', ['item' => $item])
                                 @endforeach
                             </div>
                         </div>
@@ -127,6 +136,28 @@
 
 @section('scripts')
 <script>
+// ===== H3: AUTO-REFRESH RINGAN (polling fetch) =====
+// Ambil "signature" state order tiap 30 dtk; kalau berubah & tidak ada transaksi
+// berjalan, muat ulang sekali supaya order/item baru muncul otomatis.
+(function () {
+    let baseSig = null;
+    async function poll() {
+        try {
+            const res = await fetch('/orders/updates', { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) return;
+            const d = await res.json();
+            if (baseSig === null) { baseSig = d.sig; return; }
+            if (d.sig !== baseSig && !window.__txBusy) {
+                const note = document.getElementById('autoRefreshNote');
+                if (note) note.classList.remove('hidden');
+                setTimeout(() => location.reload(), 600);
+            }
+        } catch (_) { /* diam: jaringan sesekali gagal tidak fatal */ }
+    }
+    poll();                       // ambil baseline
+    setInterval(poll, 30000);     // cek tiap 30 detik
+})();
+
 // Simpan status item baru di DB (mengikuti aksi on-chain per item).
 async function markItemStatus(orderId, itemIndex, status) {
     try {
