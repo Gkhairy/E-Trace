@@ -104,7 +104,7 @@
             @php $soldOut = $product->stock !== null && $product->stock <= 0; @endphp
             <a href="/products/{{ $product->id }}" class="group bg-white rounded-2xl overflow-hidden border border-slate-200 hover:border-blue-500 hover:shadow-lg hover:-translate-y-1 transition-all duration-200 flex flex-col">
                 <div class="relative aspect-square bg-white flex items-center justify-center p-3 border-b border-slate-100">
-                    <img src="{{ $product->image ? '/product_images/'.$product->image : 'https://placehold.co/400x400/f1f5f9/94a3b8?text=No+Image' }}" onerror="this.src='https://placehold.co/400x400/f1f5f9/94a3b8?text=No+Image'" class="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300">
+                    <img src="{{ $product->imageUrl() ?? 'https://placehold.co/400x400/f1f5f9/94a3b8?text=No+Image' }}" onerror="this.src='https://placehold.co/400x400/f1f5f9/94a3b8?text=No+Image'" class="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300">
                     <span class="absolute top-2 left-2 bg-blue-600 text-[10px] font-semibold px-2 py-1 rounded-full text-white shadow-sm">TLKM</span>
                     @if($soldOut)<span class="absolute inset-0 bg-white/70 flex items-center justify-center text-sm font-bold text-slate-500">Stok Habis</span>@endif
                 </div>

@@ -4,7 +4,7 @@
 
 @php
     $priceFmt = rtrim(rtrim(number_format($product->price_usdc, 2), '0'), '.');
-    $img = $product->image ? '/product_images/'.$product->image : 'https://placehold.co/600x600/f1f5f9/94a3b8?text=No+Image';
+    $img = $product->imageUrl() ?? 'https://placehold.co/600x600/f1f5f9/94a3b8?text=No+Image';
 @endphp
 
 {{-- ===== BREADCRUMB ===== --}}

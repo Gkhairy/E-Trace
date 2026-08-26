@@ -132,7 +132,7 @@
                 <a href="/products/{{ $product->id }}" class="flex flex-col flex-1">
                     {{-- Foto di latar PUTIH, object-contain agar warna akurat & tidak terpotong --}}
                     <div class="relative aspect-square bg-white flex items-center justify-center p-3 border-b border-slate-100">
-                        <img src="{{ $product->image ? '/product_images/'.$product->image : 'https://placehold.co/400x400/f1f5f9/94a3b8?text=No+Image' }}"
+                        <img src="{{ $product->imageUrl() ?? 'https://placehold.co/400x400/f1f5f9/94a3b8?text=No+Image' }}"
                              onerror="this.src='https://placehold.co/400x400/f1f5f9/94a3b8?text=No+Image'"
                              class="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300">
                         <span class="absolute top-2 left-2 bg-blue-600 text-[10px] font-semibold px-2 py-1 rounded-full text-white shadow-sm">TLKM</span>
