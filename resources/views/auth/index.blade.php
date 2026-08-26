@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -67,6 +67,9 @@
 </head>
 <body class="bg-slate-100 min-h-screen flex items-center justify-center p-4 text-slate-900">
 
+{{-- Ikon ganti bahasa (pojok kanan atas) --}}
+<div class="fixed top-4 right-4 z-50">@include('partials.lang-switcher')</div>
+
 @php
     $startRegister = ($mode ?? 'login') === 'register' || $errors->hasAny(['name', 'phone', 'wallet_address', 'password_confirmation']);
 @endphp
@@ -81,8 +84,8 @@
 
         {{-- ===== MASUK ===== --}}
         <div class="form-col col-signin">
-            <h1 class="text-2xl font-bold text-slate-900">Masuk</h1>
-            <p class="text-sm text-slate-500 mt-1 mb-5">Belanja aman dengan pembayaran crypto.</p>
+            <h1 class="text-2xl font-bold text-slate-900">{{ __('auth.login_title') }}</h1>
+            <p class="text-sm text-slate-500 mt-1 mb-5">{{ __('auth.login_sub') }}</p>
 
             @if($errors->any() && !$startRegister)
                 <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 rounded-xl mb-4 text-sm">{{ $errors->first() }}</div>
@@ -91,7 +94,7 @@
             <button id="mmBtn" type="button" onclick="loginWithWallet()"
                 class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-semibold transition flex items-center justify-center gap-2 mb-4">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 10h18M7 15h.01M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
-                Masuk dengan MetaMask
+                {{ __('auth.sign_in_mm') }}
             </button>
 
             <div class="flex items-center gap-3 my-2 mb-3">
@@ -102,21 +105,21 @@
 
             <form method="POST" action="/login" id="loginPass" class="space-y-3">
                 @csrf
-                <input name="email" type="email" value="{{ !$startRegister ? old('email') : '' }}" required placeholder="Email" class="in-field">
-                <input name="password" type="password" required placeholder="Password" class="in-field">
-                <button class="w-full py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm mt-1">Masuk</button>
+                <input name="email" type="email" value="{{ !$startRegister ? old('email') : '' }}" required placeholder="{{ __('auth.email') }}" class="in-field">
+                <input name="password" type="password" required placeholder="{{ __('auth.password') }}" class="in-field">
+                <button class="w-full py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm mt-1">{{ __('auth.sign_in') }}</button>
             </form>
-            <p class="text-[11px] text-slate-400 text-center mt-2">Setelah password, kamu akan diminta memasukkan PIN.</p>
+            <p class="text-[11px] text-slate-400 text-center mt-2">{{ __('auth.pin_after_pw') }}</p>
 
             <p class="mobile-switch text-sm text-slate-500 text-center mt-5">
-                Belum punya akun? <button type="button" onclick="toRegister()" class="text-blue-600 font-medium">Daftar</button>
+                {{ __('auth.no_account') }} <button type="button" onclick="toRegister()" class="text-blue-600 font-medium">{{ __('nav.register') }}</button>
             </p>
         </div>
 
         {{-- ===== DAFTAR ===== --}}
         <div class="form-col col-signup">
-            <h1 class="text-2xl font-bold text-slate-900">Buat Akun</h1>
-            <p class="text-sm text-slate-500 mt-1 mb-4"><b>PIN 6 angka</b> wajib untuk semua akun (login &amp; bayar). Pilih wallet: dibuatkan otomatis, atau hubungkan MetaMask.</p>
+            <h1 class="text-2xl font-bold text-slate-900">{{ __('auth.register_title') }}</h1>
+            <p class="text-sm text-slate-500 mt-1 mb-4">{{ __('auth.register_sub') }}</p>
 
             @if($errors->any() && $startRegister)
                 <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 rounded-xl mb-3 text-sm">
@@ -126,8 +129,8 @@
 
             {{-- Pilih metode wallet (PIN tetap wajib di kedua mode) --}}
             <div class="flex gap-2 mb-3 text-sm">
-                <button type="button" id="tabPin" onclick="regMode('pin')" class="flex-1 py-2 rounded-lg border border-blue-500 bg-blue-50 text-blue-700 font-medium">Wallet otomatis</button>
-                <button type="button" id="tabMm" onclick="regMode('mm')" class="flex-1 py-2 rounded-lg border border-slate-200 text-slate-600">Pakai MetaMask</button>
+                <button type="button" id="tabPin" onclick="regMode('pin')" class="flex-1 py-2 rounded-lg border border-blue-500 bg-blue-50 text-blue-700 font-medium">{{ __('auth.wallet_auto') }}</button>
+                <button type="button" id="tabMm" onclick="regMode('mm')" class="flex-1 py-2 rounded-lg border border-slate-200 text-slate-600">{{ __('auth.wallet_mm') }}</button>
             </div>
 
             <div id="mmConnect" class="hidden mb-3">
@@ -139,11 +142,32 @@
 
             <form method="POST" action="/register" id="regForm" class="space-y-3">
                 @csrf
-                <input name="name" value="{{ $startRegister ? old('name') : '' }}" required placeholder="Nama lengkap" class="in-field @error('name') !border-red-400 @enderror">
-                <input name="email" type="email" value="{{ $startRegister ? old('email') : '' }}" required placeholder="Email" class="in-field @error('email') !border-red-400 @enderror">
-                <input name="phone" type="text" value="{{ $startRegister ? old('phone') : '' }}" maxlength="15" required placeholder="No HP (08xxxx)" class="in-field @error('phone') !border-red-400 @enderror">
-                <input name="password" type="password" required placeholder="Password (min 8 karakter)" class="in-field @error('password') !border-red-400 @enderror">
-                <input name="password_confirmation" type="password" required placeholder="Ulangi password" class="in-field">
+                <input name="name" value="{{ $startRegister ? old('name') : '' }}" required placeholder="{{ __('auth.full_name') }}" class="in-field @error('name') !border-red-400 @enderror">
+                <input name="email" type="email" value="{{ $startRegister ? old('email') : '' }}" required placeholder="{{ __('auth.email') }}" class="in-field @error('email') !border-red-400 @enderror">
+
+                {{-- No HP dengan PEMILIH KODE NEGARA (target internasional) --}}
+                <div class="flex gap-2">
+                    <select id="phoneCc" class="in-field !w-[132px] shrink-0 !px-2" aria-label="Kode negara">
+                        @php
+                            $dials = [
+                                ['+62','ID','🇮🇩'], ['+60','MY','🇲🇾'], ['+65','SG','🇸🇬'], ['+66','TH','🇹🇭'],
+                                ['+63','PH','🇵🇭'], ['+84','VN','🇻🇳'], ['+1','US','🇺🇸'], ['+44','GB','🇬🇧'],
+                                ['+61','AU','🇦🇺'], ['+91','IN','🇮🇳'], ['+86','CN','🇨🇳'], ['+81','JP','🇯🇵'],
+                                ['+82','KR','🇰🇷'], ['+49','DE','🇩🇪'], ['+33','FR','🇫🇷'], ['+971','AE','🇦🇪'],
+                                ['+966','SA','🇸🇦'], ['+31','NL','🇳🇱'], ['+55','BR','🇧🇷'], ['+7','RU','🇷🇺'],
+                            ];
+                        @endphp
+                        @foreach($dials as $d)
+                            <option value="{{ $d[0] }}" @selected($d[0]==='+62')>{{ $d[2] }} {{ $d[1] }} {{ $d[0] }}</option>
+                        @endforeach
+                    </select>
+                    <input id="phoneNum" type="tel" inputmode="numeric" required placeholder="{{ __('auth.phone') }}" class="in-field @error('phone') !border-red-400 @enderror" value="{{ $startRegister ? old('phone_local') : '' }}">
+                </div>
+                {{-- Nomor lengkap (kode negara + nomor) diisi oleh JS saat submit --}}
+                <input type="hidden" name="phone" id="phoneHidden" value="{{ $startRegister ? old('phone') : '' }}">
+
+                <input name="password" type="password" required placeholder="{{ __('auth.password_min') }}" class="in-field @error('password') !border-red-400 @enderror">
+                <input name="password_confirmation" type="password" required placeholder="{{ __('auth.password_again') }}" class="in-field">
 
                 {{-- PIN dikumpulkan lewat MODAL setelah klik Daftar (form tetap pendek). --}}
                 <input type="hidden" name="pin" id="pinHidden">
@@ -156,29 +180,29 @@
                     <input type="hidden" name="sig_timestamp" id="sig_timestamp" value="{{ old('sig_timestamp') }}" disabled>
                 </div>
 
-                <button type="button" onclick="openPinModal()" class="w-full py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm mt-1">Buat Akun</button>
-                <p class="text-[11px] text-slate-400 text-center">Setelah ini kamu akan diminta membuat <b>PIN 6 angka</b>.</p>
+                <button type="button" onclick="openPinModal()" class="w-full py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm mt-1">{{ __('auth.create_account') }}</button>
+                <p class="text-[11px] text-slate-400 text-center">{{ __('auth.pin_after') }}</p>
             </form>
 
             {{-- ===== MODAL SET PIN (muncul setelah klik "Buat Akun") ===== --}}
             <div id="pinModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
                 <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onclick="event.stopPropagation()">
-                    <h3 class="text-lg font-bold text-slate-900 mb-1">Buat PIN 6 Angka</h3>
-                    <p class="text-sm text-slate-500 mb-4">PIN dipakai untuk login &amp; konfirmasi pembayaran. Jangan bagikan ke siapa pun.</p>
+                    <h3 class="text-lg font-bold text-slate-900 mb-1">{{ __('auth.pin_make_title') }}</h3>
+                    <p class="text-sm text-slate-500 mb-4">{{ __('auth.pin_make_sub') }}</p>
                     <div id="pinModalErr" class="hidden bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm mb-3"></div>
                     <input id="mPin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="••••••"
                         class="w-full text-center tracking-[0.5em] text-xl font-bold px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 outline-none focus:bg-white focus:border-blue-500 mb-2">
-                    <input id="mPin2" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="Ulangi PIN"
+                    <input id="mPin2" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="{{ __('auth.pin_repeat') }}"
                         class="w-full text-center tracking-[0.5em] text-xl font-bold px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 outline-none focus:bg-white focus:border-blue-500 mb-4">
                     <div class="flex gap-3">
-                        <button type="button" onclick="closePinModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-sm font-medium">Kembali</button>
-                        <button type="button" onclick="confirmPinAndRegister()" class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">Konfirmasi &amp; Daftar</button>
+                        <button type="button" onclick="closePinModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-sm font-medium">{{ __('common.back') }}</button>
+                        <button type="button" onclick="confirmPinAndRegister()" class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">{{ __('auth.pin_confirm') }}</button>
                     </div>
                 </div>
             </div>
 
             <p class="mobile-switch text-sm text-slate-500 text-center mt-5">
-                Sudah punya akun? <button type="button" onclick="toLogin()" class="text-blue-600 font-medium">Masuk</button>
+                {{ __('auth.have_account') }} <button type="button" onclick="toLogin()" class="text-blue-600 font-medium">{{ __('nav.login') }}</button>
             </p>
         </div>
 
@@ -187,15 +211,15 @@
             <div class="overlay">
                 {{-- Terlihat saat panel DAFTAR aktif --}}
                 <div class="overlay-panel overlay-left">
-                    <h2 class="text-3xl font-extrabold">Selamat datang kembali!</h2>
-                    <p class="text-sm text-blue-100 mt-3 max-w-xs">Sudah punya akun? Masuk untuk lanjut belanja dengan TLKM.</p>
-                    <button type="button" onclick="toLogin()" class="ghost-btn mt-6">Masuk</button>
+                    <h2 class="text-3xl font-extrabold">{{ __('auth.login_title') }}!</h2>
+                    <p class="text-sm text-blue-100 mt-3 max-w-xs">{{ __('auth.have_account') }} {{ __('auth.login_sub') }}</p>
+                    <button type="button" onclick="toLogin()" class="ghost-btn mt-6">{{ __('nav.login') }}</button>
                 </div>
                 {{-- Terlihat saat panel MASUK aktif --}}
                 <div class="overlay-panel overlay-right">
-                    <h2 class="text-3xl font-extrabold">Halo, teman!</h2>
-                    <p class="text-sm text-blue-100 mt-3 max-w-xs">Belum punya akun? Daftar & mulai belanja on-chain yang transparan.</p>
-                    <button type="button" onclick="toRegister()" class="ghost-btn mt-6">Daftar</button>
+                    <h2 class="text-3xl font-extrabold">{{ __('auth.register_title') }}</h2>
+                    <p class="text-sm text-blue-100 mt-3 max-w-xs">{{ __('auth.no_account') }} {{ __('auth.pin_after') }}</p>
+                    <button type="button" onclick="toRegister()" class="ghost-btn mt-6">{{ __('nav.register') }}</button>
                 </div>
             </div>
         </div>
@@ -227,9 +251,19 @@
     const regForm = document.getElementById('regForm');
     function isMetamaskMode() { return !document.getElementById('mmBlock').classList.contains('hidden'); }
 
+    // Gabungkan kode negara + nomor lokal jadi nomor lengkap (mis. +62 + 0812 -> +62812).
+    function buildFullPhone() {
+        const cc = document.getElementById('phoneCc').value;
+        let num = (document.getElementById('phoneNum').value || '').replace(/[^0-9]/g, '');
+        num = num.replace(/^0+/, ''); // buang angka 0 di depan (prefix lokal)
+        document.getElementById('phoneHidden').value = num ? (cc + num) : '';
+        return num.length >= 6;
+    }
     function openPinModal() {
         // Validasi field wajib dulu (nama/email/HP/password) sebelum minta PIN.
         if (!regForm.reportValidity()) return;
+        // Bangun nomor telepon lengkap (kode negara + nomor).
+        if (!buildFullPhone()) { alert('Masukkan nomor HP yang valid.'); return; }
         // Mode MetaMask: pastikan wallet sudah terhubung.
         if (isMetamaskMode() && !document.getElementById('wallet_address').value) {
             alert('Hubungkan MetaMask dulu (klik "Connect Wallet").');

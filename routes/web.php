@@ -19,9 +19,14 @@ use App\Http\Controllers\StoreController;
 use App\Http\Controllers\CommunityWalletController;
 use App\Http\Controllers\FriendController;
 
+// GANTI BAHASA (id/en) — simpan di session, lalu kembali.
+Route::get('/lang/{locale}', [\App\Http\Controllers\LocaleController::class, 'switch'])
+    ->where('locale', 'id|en')->name('lang.switch');
+
 // HOME / LANDING PAGE
 // Belum login -> landing page publik. Sudah login -> ke katalog produk.
-Route::get('/', fn() => auth()->check() ? redirect('/products') : view('welcome'));
+Route::get('/', fn() => auth()->check() ? redirect('/products') : redirect()->route('welcome'))->name('home');
+Route::get('/welcome', fn() => auth()->check() ? redirect('/products') : view('welcome'))->name('welcome');
 
 // REGISTER + LOGIN (endpoint sensitif -> rate limit cegah brute force/abuse)
 Route::get('/register', [AuthController::class, 'register']);
@@ -58,8 +63,8 @@ Route::get('/api/ticker', [CryptoController::class, 'ticker']);
 Route::post('/chatbot', [\App\Http\Controllers\ChatbotController::class, 'chat'])->middleware('throttle:15,1');
 
 // EXPLORER TRANSPARANSI (PUBLIK)
-Route::get('/explorer', [ExplorerController::class, 'index']);
-Route::get('/explorer/{address}', [ExplorerController::class, 'show'])->where('address', '0x[a-fA-F0-9]{40}');
+Route::get('/explorer', [ExplorerController::class, 'index'])->name('explorer.index');
+Route::get('/explorer/{address}', [ExplorerController::class, 'show'])->where('address', '0x[a-fA-F0-9]{40}')->name('explorer.show');
 
 // DONASI berbasis campaign. Daftar & detail = publik; buat campaign & salurkan = pengawas.
 Route::get('/donate', [DonationController::class, 'index']);
@@ -77,8 +82,8 @@ Route::get('/store/{slug}', [StoreController::class, 'show'])->where('slug', '[a
 
 // PRODUCTS
 // Katalog & detail produk PUBLIK (bisa dilihat tanpa login).
-Route::get('/products', [ProductController::class, 'index']);
-Route::get('/products/{id}', [ProductController::class, 'show'])->whereNumber('id');
+Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+Route::get('/products/{id}', [ProductController::class, 'show'])->whereNumber('id')->name('products.show');
 // Listing produk oleh admin tetap WAJIB login.
 Route::get('/products/create', [ProductController::class, 'create'])->middleware('auth');
 Route::post('/products/store', [ProductController::class, 'store'])->middleware('auth');

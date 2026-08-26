@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -305,10 +305,15 @@
 
   <footer style="border-top:1px solid rgba(15,23,42,0.08);padding:36px 40px;">
     <div style="max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;font-size:13px;color:#64748b;">
-      <p style="margin:0;">© {{ date('Y') }} E-Trace. Marketplace berbasis blockchain.</p>
-      <div style="display:flex;gap:24px;">
-        <a href="/products" style="color:#475569;">Katalog</a>
-        <a href="/login" style="color:#475569;">Masuk</a>
+      <p style="margin:0;">© {{ date('Y') }} E-Trace. {{ __('footer.rights') }}</p>
+      <div style="display:flex;gap:24px;align-items:center;">
+        <a href="/products" style="color:#475569;">{{ __('footer.catalog') }}</a>
+        <a href="/login" style="color:#475569;">{{ __('footer.login') }}</a>
+        @php $cur = app()->getLocale(); @endphp
+        <span style="display:inline-flex;align-items:center;gap:6px;border:1px solid #e2e8f0;border-radius:999px;padding:3px 6px;">
+          <a href="{{ route('lang.switch','id') }}" style="padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;{{ $cur==='id' ? 'background:#2563eb;color:#fff;' : 'color:#64748b;' }}">ID</a>
+          <a href="{{ route('lang.switch','en') }}" style="padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;{{ $cur==='en' ? 'background:#2563eb;color:#fff;' : 'color:#64748b;' }}">EN</a>
+        </span>
       </div>
     </div>
   </footer>

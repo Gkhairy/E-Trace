@@ -10,7 +10,11 @@
 
 <div class="max-w-2xl">
     <h1 class="text-2xl font-bold text-slate-900 mb-1">Profil Publik</h1>
-    <p class="text-sm text-slate-500 mb-6">Atur bagaimana identitasmu tampil di <a href="/explorer" class="text-blue-600 hover:underline">Explorer</a> transparansi. Data pribadi (email, telepon, alamat) <b>tidak pernah</b> ditampilkan.</p>
+    <p class="text-sm text-slate-500 mb-2">Atur bagaimana identitasmu tampil di <a href="/explorer" class="text-blue-600 hover:underline">Explorer</a> transparansi. Data pribadi (email, telepon, alamat) <b>tidak akan</b> ditampilkan.</p>
+    <p class="inline-flex items-center gap-1.5 text-xs text-slate-500 bg-slate-100 border border-slate-200 rounded-full px-3 py-1 mb-6">
+        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z"/></svg>
+        Bergabung sejak {{ $user->created_at ? $user->created_at->translatedFormat('F Y') : '—' }}
+    </p>
 
     @if($user->wallet_address)
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-6 flex items-center justify-between gap-4">
@@ -66,10 +70,10 @@
         @csrf
 
         <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1.5">Nama Publik (pseudonim)</label>
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Nama tampilan (nama samaran)</label>
             <input type="text" name="public_name" value="{{ old('public_name', $user->public_name) }}" maxlength="40" placeholder="mis. KolektorNFT21"
                 class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm transition">
-            <p class="text-xs text-slate-400 mt-1.5">Nama samaran yang tampil di Explorer sebagai ganti alamat wallet. <b>Tidak terverifikasi</b> — label resmi hanya bisa diberikan pengawas.</p>
+            <p class="text-xs text-slate-400 mt-1.5">Nama samaran yang tampil di Explorer menggantikan alamat wallet kamu. <b>Belum diverifikasi</b> (centang resmi hanya diberikan pengawas).</p>
         </div>
 
         <label class="flex items-start gap-3 cursor-pointer select-none">

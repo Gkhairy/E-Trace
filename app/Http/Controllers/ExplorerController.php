@@ -71,6 +71,13 @@ class ExplorerController extends Controller
 
         // Sebagai pembeli.
         $user = User::where('wallet_address', $addr)->first();
+
+        // Tanggal bergabung (A3): pakai tanggal daftar toko (jika penjual) atau akun user.
+        $store = Store::where('payout_wallet', $addr)->first();
+        $joined = $store?->created_at ?? $user?->created_at;
+        // Nama tampilan adalah nama samaran yang belum diverifikasi? (A4)
+        $isPseudonym = ($identity['type'] === 'buyer' && !$identity['verified']
+            && $user && $user->explorer_public && $user->public_name);
         $buyerOrders = $user
             ? Order::with('items.product')->where('user_id', $user->id)->latest()->get()
             : collect();
@@ -87,6 +94,6 @@ class ExplorerController extends Controller
             'escrow_out'   => (float) $buyerOrders->flatMap->items->where('status', 'paid')->sum('amount'), // ditahan dari dia (pembeli)
         ];
 
-        return view('explorer.show', compact('addr', 'identity', 'balance', 'buyerOrders', 'sellerItems', 'stats'));
+        return view('explorer.show', compact('addr', 'identity', 'balance', 'buyerOrders', 'sellerItems', 'stats', 'joined', 'isPseudonym'));
     }
 }

@@ -27,8 +27,19 @@
                 @endif
                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">{{ $typeLabel }}</span>
             </div>
+            @if($isPseudonym)
+                <p class="text-xs text-slate-400 mt-1">Nama samaran (belum diverifikasi) — pengganti alamat wallet.</p>
+            @endif
             <p class="text-sm text-slate-400 font-mono mt-1 break-all">{{ $addr }}</p>
-            <a href="https://sepolia.etherscan.io/address/{{ $addr }}" target="_blank" rel="noopener" class="text-xs text-blue-600 hover:underline">Lihat di Etherscan ↗</a>
+            <div class="flex flex-wrap items-center gap-3 mt-1">
+                <a href="https://sepolia.etherscan.io/address/{{ $addr }}" target="_blank" rel="noopener" class="text-xs text-blue-600 hover:underline">Lihat di Etherscan ↗</a>
+                @if($joined)
+                    <span class="inline-flex items-center gap-1 text-xs text-slate-500">
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z"/></svg>
+                        Bergabung sejak {{ $joined->translatedFormat('F Y') }}
+                    </span>
+                @endif
+            </div>
         </div>
         <div class="text-right">
             <p class="text-xs text-slate-500">Saldo TLKM</p>
@@ -42,8 +53,8 @@
     @foreach([
         ['Total Beli', $fmt($stats['bought_total']).' TLKM', $stats['bought_count'].' order', 'text-slate-900'],
         ['Total Jual (net)', $fmt($stats['sold_net']).' TLKM', $stats['sold_count'].' item', 'text-green-600'],
-        ['Escrow diterima', $fmt($stats['escrow_in']).' TLKM', 'sedang ditahan', 'text-amber-600'],
-        ['Escrow dibayar', $fmt($stats['escrow_out']).' TLKM', 'sedang ditahan', 'text-amber-600'],
+        ['Escrow diterima', $fmt($stats['escrow_in']).' TLKM', 'masuk (sbg penjual)', 'text-green-600'],
+        ['Escrow dibayar', $fmt($stats['escrow_out']).' TLKM', 'keluar (sbg pembeli)', 'text-blue-600'],
     ] as $c)
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
             <p class="text-xs text-slate-500">{{ $c[0] }}</p>
@@ -67,7 +78,11 @@
                         @foreach($o->items as $it)
                             @php $sb = $stBadge[$it->status] ?? ['—','bg-slate-100 text-slate-500 border-slate-200']; @endphp
                             <tr class="border-t border-slate-100">
-                                <td class="px-4 py-3 text-slate-800">{{ $it->product->name ?? '—' }}</td>
+                                <td class="px-4 py-3 text-slate-800">
+                                @if($it->product)
+                                    <a href="/products/{{ $it->product->id }}" class="hover:text-blue-600 hover:underline">{{ $it->product->name }}</a>
+                                @else — @endif
+                            </td>
                                 <td class="px-4 py-3 font-semibold text-blue-600 whitespace-nowrap">{{ $fmt($it->amount) }} TLKM</td>
                                 <td class="px-4 py-3"><span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium border {{ $sb[1] }}">{{ $sb[0] }}</span></td>
                                 <td class="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{{ $o->created_at->format('d M Y') }}</td>
@@ -94,7 +109,11 @@
                     @foreach($sellerItems as $it)
                         @php $sb = $stBadge[$it->status] ?? ['—','bg-slate-100 text-slate-500 border-slate-200']; @endphp
                         <tr class="border-t border-slate-100">
-                            <td class="px-4 py-3 text-slate-800">{{ $it->product->name ?? '—' }}</td>
+                            <td class="px-4 py-3 text-slate-800">
+                                @if($it->product)
+                                    <a href="/products/{{ $it->product->id }}" class="hover:text-blue-600 hover:underline">{{ $it->product->name }}</a>
+                                @else — @endif
+                            </td>
                             <td class="px-4 py-3 font-semibold text-green-600 whitespace-nowrap">{{ $fmt($it->amount) }} TLKM</td>
                             <td class="px-4 py-3"><span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium border {{ $sb[1] }}">{{ $sb[0] }}</span></td>
                             <td class="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{{ $it->created_at->format('d M Y') }}</td>

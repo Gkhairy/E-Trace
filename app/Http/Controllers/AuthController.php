@@ -32,7 +32,7 @@ class AuthController extends Controller
         $rules = [
             'name'     => 'required',
             'email'    => 'required|email|unique:users',
-            'phone'    => 'required|string|regex:/^[0-9]+$/|min:8|max:15',
+            'phone'    => ['required', 'string', 'regex:/^\+?[0-9]{8,20}$/'], // kode negara + nomor (mis. +62812xxxx)
             'password' => 'required|min:8|confirmed',
             'pin'      => 'required|digits:6|confirmed', // PIN WAJIB semua akun (login & bayar)
         ];
@@ -43,9 +43,7 @@ class AuthController extends Controller
         }
 
         $request->validate($rules, [
-            'phone.regex'          => 'Nomor telepon hanya boleh berisi angka.',
-            'phone.max'            => 'Nomor telepon maksimal 15 digit.',
-            'phone.min'            => 'Nomor telepon minimal 8 digit.',
+            'phone.regex'          => 'Nomor telepon tidak valid (gunakan kode negara + nomor, mis. +62812xxxxxxx).',
             'email.unique'         => 'Email ini sudah terdaftar.',
             'password.min'         => 'Password minimal 8 karakter.',
             'password.confirmed'   => 'Konfirmasi password tidak cocok.',

@@ -73,8 +73,9 @@
 
             <!-- NAV (desktop) — ringkas; pintasan fitur ada sebagai ikon di halaman /products -->
             <nav class="hidden lg:flex items-center gap-6 text-slate-600 text-sm font-medium shrink-0">
-                <a href="/products" class="hover:text-blue-600 transition">Produk</a>
-                <a href="/explorer" class="hover:text-blue-600 transition">Explorer</a>
+                <a href="/products" class="hover:text-blue-600 transition">{{ __('nav.products') }}</a>
+                <a href="/explorer" class="hover:text-blue-600 transition">{{ __('nav.explorer') }}</a>
+                @auth<a href="/orders" class="hover:text-blue-600 transition">{{ __('nav.orders') }}</a>@endauth
             </nav>
 
             @auth
@@ -98,9 +99,9 @@
                 </a>
 
                 <!-- LOGOUT -->
-                <form action="/logout" method="POST" class="shrink-0">
+                <form action="/logout" method="POST" class="shrink-0" id="logoutForm" onsubmit="return confirmLogout(event)">
                     @csrf
-                    <button class="bg-slate-100 hover:bg-red-50 border border-slate-200 hover:border-red-300 p-2 rounded-lg text-slate-600 hover:text-red-600 transition" title="Logout">
+                    <button type="submit" class="bg-slate-100 hover:bg-red-50 border border-slate-200 hover:border-red-300 p-2 rounded-lg text-slate-600 hover:text-red-600 transition" title="{{ __('nav.logout') }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                     </button>
                 </form>
@@ -109,25 +110,22 @@
             @guest
                 <!-- LOGIN / DAFTAR -->
                 <div class="flex items-center gap-2 shrink-0">
-                    <a href="/login" class="text-sm font-medium px-3.5 py-2 rounded-xl border border-slate-200 text-slate-700 hover:border-blue-300 hover:text-blue-600 transition">Login</a>
-                    <a href="/register" class="text-sm font-semibold px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm">Daftar</a>
+                    <a href="/login" class="text-sm font-medium px-3.5 py-2 rounded-xl border border-slate-200 text-slate-700 hover:border-blue-300 hover:text-blue-600 transition">{{ __('nav.login') }}</a>
+                    <a href="/register" class="text-sm font-semibold px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm">{{ __('nav.register') }}</a>
                 </div>
             @endguest
         </div>
 
-        <!-- SUB-NAV (mobile + kategori ringan, ala Amazon) -->
-        <div class="border-t border-slate-100 bg-white">
+        @auth
+        <!-- SUB-NAV (khusus mobile: pintasan Riwayat Order) -->
+        <div class="border-t border-slate-100 bg-white lg:hidden">
             <div class="max-w-7xl mx-auto px-4 md:px-8 h-10 flex items-center gap-5 text-xs text-slate-500 overflow-x-auto">
-                <a href="/products" class="hover:text-blue-600 whitespace-nowrap font-medium">Semua Produk</a>
-                @auth
-                    <a href="/orders" class="hover:text-blue-600 whitespace-nowrap lg:hidden">Riwayat Order</a>
-                @endauth
-                <span class="text-slate-300 hidden sm:inline">|</span>
-                <span class="whitespace-nowrap hidden sm:inline">Bayar pakai <b class="text-slate-700">TLKM</b></span>
-                <span class="text-slate-300 hidden sm:inline">|</span>
-                <span class="whitespace-nowrap hidden sm:inline">Transaksi tercatat blockchain</span>
+                <a href="/products" class="hover:text-blue-600 whitespace-nowrap font-medium">{{ __('nav.products') }}</a>
+                <a href="/orders" class="hover:text-blue-600 whitespace-nowrap">{{ __('nav.orders') }}</a>
+                <a href="/explorer" class="hover:text-blue-600 whitespace-nowrap">{{ __('nav.explorer') }}</a>
             </div>
         </div>
+        @endauth
     </header>
 
     <!-- ================= TICKER HARGA CRYPTO (kartu putih, selebar hero) ================= -->
@@ -143,10 +141,13 @@
     <!-- ================= FOOTER ================= -->
     <footer class="border-t border-slate-200 bg-white mt-8">
         <div class="max-w-7xl mx-auto px-4 md:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-            <p>© {{ date('Y') }} E-Trace — E-commerce berbasis blockchain.</p>
-            <div class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-green-500"></span>
-                <span>Jaringan: Ethereum Sepolia (Testnet)</span>
+            <p>© {{ date('Y') }} E-Trace — {{ __('footer.rights') }}</p>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                    <span>Ethereum Sepolia (Testnet)</span>
+                </div>
+                @include('partials.lang-switcher')
             </div>
         </div>
     </footer>
@@ -338,6 +339,22 @@
             document.getElementById('mCancel').onclick = () => { closeModal(); resolve(false); };
             document.getElementById('mOk').onclick     = () => { closeModal(); resolve(true); };
         });
+    }
+
+    // Konfirmasi logout via modal (bukan submit langsung).
+    let __logoutOK = false;
+    async function confirmLogout(e) {
+        if (__logoutOK) return true;           // sudah dikonfirmasi -> lanjutkan submit
+        e.preventDefault();
+        const ok = await uiConfirm({
+            title: @json(__('auth.logout_confirm_title')),
+            message: @json(__('auth.logout_confirm_body')),
+            confirmText: @json(__('nav.logout')),
+            cancelText: @json(__('common.cancel')),
+            danger: true,
+        });
+        if (ok) { __logoutOK = true; document.getElementById('logoutForm').submit(); }
+        return false;
     }
 
     // Modal info sederhana -> Promise
