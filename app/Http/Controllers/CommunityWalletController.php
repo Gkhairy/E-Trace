@@ -3,39 +3,240 @@
 namespace App\Http\Controllers;
 
 use App\Models\CommunityWallet;
+use App\Models\CommunityMember;
+use App\Models\CommunityProposal;
+use App\Models\CommunityApproval;
+use App\Models\Friendship;
+use App\Models\User;
+use App\Services\EmbeddedWallet;
+use App\Services\ChainSigner;
+use App\Services\SepoliaVerifier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
+/**
+ * Dompet komunitas DIKELOLA APP (custodial, prototipe/testnet):
+ * kunci dompet dienkripsi dgn secret server & ditandatangani backend. Anggota
+ * mengonfirmasi aksi dengan PIN masing-masing; aturan (jatah A / ambang B) di DB.
+ */
 class CommunityWalletController extends Controller
 {
+    private const ERC20_ABI = [
+        ['inputs' => [['name' => 'to', 'type' => 'address'], ['name' => 'v', 'type' => 'uint256']], 'name' => 'transfer', 'outputs' => [['type' => 'bool']], 'type' => 'function'],
+    ];
+
     public function index()
     {
-        $wallets = CommunityWallet::latest()->get();
+        $ids = CommunityMember::where('user_id', auth()->id())->pluck('community_wallet_id');
+        $wallets = CommunityWallet::whereIn('id', $ids)->orWhere('created_by', auth()->id())->latest()->get();
         return view('community.index', compact('wallets'));
     }
 
     public function create()
     {
-        return view('community.create');
+        $friends = Friendship::where('user_id', auth()->id())->with('friend')->get()
+            ->map(fn ($f) => ['id' => $f->friend_id, 'name' => $f->friend->public_name ?: $f->friend->name])
+            ->filter(fn ($f) => $f['name']);
+        return view('community.create', compact('friends'));
     }
 
     public function store(Request $req)
     {
         $data = $req->validate([
-            'name'        => 'required|string|max:120',
-            'mode'        => 'required|in:A,B',
-            'address'     => ['required', 'regex:/^0x[a-fA-F0-9]{40}$/', 'unique:community_wallets,address'],
-            'description' => 'nullable|string|max:500',
+            'name'          => 'required|string|max:120',
+            'mode'          => 'required|in:A,B',
+            'description'   => 'nullable|string|max:500',
+            'members'       => 'nullable|array',       // id teman yang diundang
+            'members.*'     => 'integer',
+            'monthly_limit' => 'nullable|numeric|min:0', // Mode A
+            'threshold'     => 'nullable|integer|min:1',  // Mode B
         ]);
-        $data['address']    = strtolower($data['address']);
-        $data['created_by'] = auth()->id();
 
-        $w = CommunityWallet::create($data);
-        return redirect('/community/' . $w->id)->with('success', 'Dompet komunitas terdaftar.');
+        // Buat wallet komunitas (dikelola app) — kunci dienkripsi SECRET SERVER.
+        $ew  = new EmbeddedWallet();
+        $w   = $ew->generate();
+        $enc = $ew->encryptServer($w['private']);
+
+        // Anggota = pembuat + teman terpilih (yang benar-benar teman kita).
+        $memberIds = collect($data['members'] ?? [])
+            ->filter(fn ($id) => Friendship::where('user_id', auth()->id())->where('friend_id', $id)->exists())
+            ->push(auth()->id())->unique()->values();
+
+        $threshold = $data['mode'] === 'B'
+            ? max(1, min((int) ($data['threshold'] ?? 2), $memberIds->count()))
+            : null;
+
+        $wallet = CommunityWallet::create([
+            'name'        => $data['name'],
+            'mode'        => $data['mode'],
+            'managed'     => true,
+            'address'     => $w['address'],
+            'description' => $data['description'] ?? null,
+            'created_by'  => auth()->id(),
+            'threshold'   => $threshold,
+        ] + $enc);
+
+        foreach ($memberIds as $uid) {
+            CommunityMember::create([
+                'community_wallet_id' => $wallet->id,
+                'user_id'             => $uid,
+                'monthly_limit'       => $data['mode'] === 'A' ? ($data['monthly_limit'] ?? 0) : null,
+                'spent'               => 0,
+                'period_start'        => now(),
+            ]);
+        }
+
+        // Gas drip untuk wallet komunitas (best-effort) supaya bisa menyalurkan dana.
+        $this->gasDrip($wallet);
+
+        return redirect('/community/' . $wallet->id)->with('success', 'Dompet komunitas dibuat.');
     }
 
-    public function show(int $id)
+    public function show(int $id, SepoliaVerifier $verifier)
     {
-        $wallet = CommunityWallet::findOrFail($id);
-        return view('community.show', compact('wallet'));
+        $wallet = CommunityWallet::with(['members.user', 'proposals'])->findOrFail($id);
+        $this->authorizeMember($wallet);
+
+        $balance = $verifier->tlkmBalance($wallet->address);
+        $me = $wallet->members->firstWhere('user_id', auth()->id());
+
+        // Sisa jatah (Mode A) dgn reset 30 hari.
+        $members = $wallet->members->map(function ($m) use ($wallet) {
+            $remaining = null;
+            if ($wallet->mode === 'A') {
+                $spent = ($m->period_start && now()->greaterThanOrEqualTo($m->period_start->copy()->addDays(30))) ? 0 : (float) $m->spent;
+                $remaining = max(0, (float) $m->monthly_limit - $spent);
+            }
+            return ['name' => $m->user->public_name ?: $m->user->name, 'wallet' => $m->user->wallet_address,
+                    'limit' => (float) $m->monthly_limit, 'remaining' => $remaining, 'is_me' => $m->user_id === auth()->id()];
+        });
+
+        $proposals = $wallet->proposals->map(fn ($p) => [
+            'id' => $p->id, 'to_wallet' => $p->to_wallet, 'to_name' => $p->to_name,
+            'amount' => (float) $p->amount, 'note' => $p->note, 'status' => $p->status, 'tx' => $p->tx_hash,
+            'approvals' => $p->approvals()->count(),
+            'approved_by_me' => $p->approvals()->where('user_id', auth()->id())->exists(),
+        ]);
+
+        return view('community.show', compact('wallet', 'balance', 'members', 'proposals', 'me'));
+    }
+
+    /** Mode A: tarik dana sampai jatah. Konfirmasi PIN. */
+    public function withdraw(Request $req, ChainSigner $signer)
+    {
+        $data = $req->validate(['id' => 'required|integer', 'amount' => 'required|numeric|min:0.000001', 'pin' => 'required|digits:6']);
+        $wallet = CommunityWallet::findOrFail($data['id']);
+        abort_unless($wallet->mode === 'A', 422, 'Bukan mode jatah bulanan.');
+        $member = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
+        $this->requirePin($data['pin']);
+
+        // Reset periode bila lewat 30 hari.
+        if (!$member->period_start || now()->greaterThanOrEqualTo($member->period_start->copy()->addDays(30))) {
+            $member->period_start = now(); $member->spent = 0;
+        }
+        if (bccomp(bcadd((string) $member->spent, (string) $data['amount'], 6), (string) ($member->monthly_limit ?? 0), 6) > 0) {
+            return response()->json(['success' => false, 'message' => 'Melebihi jatah bulan ini.'], 422);
+        }
+
+        $hash = $this->communitySign($wallet, $signer, auth()->user()->wallet_address, $data['amount']);
+        $member->spent = bcadd((string) $member->spent, (string) $data['amount'], 6);
+        $member->save();
+
+        return response()->json(['success' => true, 'tx_hash' => $hash]);
+    }
+
+    /** Mode B: usulkan pengiriman (penerima via No HP/wallet). */
+    public function propose(Request $req)
+    {
+        $data = $req->validate(['id' => 'required|integer', 'to' => 'required|string', 'amount' => 'required|numeric|min:0.000001', 'note' => 'nullable|string|max:120', 'pin' => 'required|digits:6']);
+        $wallet = CommunityWallet::findOrFail($data['id']);
+        abort_unless($wallet->mode === 'B', 422, 'Bukan mode multisig.');
+        CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
+        $this->requirePin($data['pin']);
+
+        // Resolusi penerima.
+        [$toWallet, $toName] = $this->resolveRecipient($data['to']);
+        abort_unless($toWallet, 422, 'Penerima tidak ditemukan.');
+
+        $p = CommunityProposal::create([
+            'community_wallet_id' => $wallet->id, 'proposer_id' => auth()->id(),
+            'to_wallet' => $toWallet, 'to_name' => $toName, 'amount' => $data['amount'], 'note' => $data['note'] ?? null,
+        ]);
+        CommunityApproval::firstOrCreate(['proposal_id' => $p->id, 'user_id' => auth()->id()]); // pengusul auto-setuju
+        return response()->json(['success' => true]);
+    }
+
+    /** Mode B: setujui usulan (PIN). Bila ambang tercapai → otomatis eksekusi. */
+    public function approve(Request $req, ChainSigner $signer)
+    {
+        $data = $req->validate(['proposal_id' => 'required|integer', 'pin' => 'required|digits:6']);
+        $p = CommunityProposal::findOrFail($data['proposal_id']);
+        $wallet = CommunityWallet::findOrFail($p->community_wallet_id);
+        CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
+        abort_unless($p->status === 'open', 422, 'Usulan sudah selesai.');
+        $this->requirePin($data['pin']);
+
+        CommunityApproval::firstOrCreate(['proposal_id' => $p->id, 'user_id' => auth()->id()]);
+
+        // Cukup ambang? Eksekusi.
+        if ($p->approvals()->count() >= (int) $wallet->threshold) {
+            $hash = $this->communitySign($wallet, $signer, $p->to_wallet, $p->amount);
+            $p->update(['status' => 'executed', 'tx_hash' => $hash]);
+            return response()->json(['success' => true, 'executed' => true, 'tx_hash' => $hash]);
+        }
+        return response()->json(['success' => true, 'executed' => false]);
+    }
+
+    // ===== helpers =====
+    private function authorizeMember(CommunityWallet $wallet): void
+    {
+        $isMember = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->exists();
+        abort_unless($isMember || $wallet->created_by === auth()->id(), 403, 'Bukan anggota dompet ini.');
+    }
+
+    private function requirePin(string $pin): void
+    {
+        $user = auth()->user();
+        abort_unless($user->pin_hash, 422, 'Akun belum punya PIN.');
+        abort_if($user->pinLocked(), 423, 'PIN terkunci sementara.');
+        if (!Hash::check($pin, $user->pin_hash)) {
+            $user->increment('pin_attempts');
+            if ($user->pin_attempts >= 5) { $user->forceFill(['pin_locked_until' => now()->addMinutes(15), 'pin_attempts' => 0])->save(); abort(423, 'PIN salah 5×. Dikunci 15 menit.'); }
+            abort(422, 'PIN salah. Sisa percobaan: ' . max(0, 5 - $user->pin_attempts) . '.');
+        }
+        $user->forceFill(['pin_attempts' => 0])->save();
+    }
+
+    private function communitySign(CommunityWallet $wallet, ChainSigner $signer, string $to, string|float $amount): string
+    {
+        $priv = (new EmbeddedWallet())->decryptServer($wallet->only(['wallet_enc', 'wallet_salt', 'wallet_iv', 'wallet_tag']));
+        abort_unless($priv, 500, 'Kunci dompet komunitas gagal dibuka.');
+        return $signer->sendContractCall($priv, config('chain.tlkm'), self::ERC20_ABI, 'transfer', [$to, $signer->toWei((string) $amount)]);
+    }
+
+    private function resolveRecipient(string $q): array
+    {
+        $q = trim($q);
+        if (preg_match('/^0x[a-fA-F0-9]{40}$/', $q)) {
+            $u = User::where('wallet_address', strtolower($q))->first();
+            return [strtolower($q), $u ? ($u->public_name ?: $u->name) : null];
+        }
+        $u = User::where('phone', $q)->orWhere('email', $q)->first();
+        return $u && $u->wallet_address ? [strtolower($u->wallet_address), $u->public_name ?: $u->name] : [null, null];
+    }
+
+    private function gasDrip(CommunityWallet $wallet): void
+    {
+        $priv = (string) env('PLATFORM_GAS_PRIVATE_KEY', '');
+        if ($priv === '') return;
+        if (str_starts_with($priv, '0x')) $priv = substr($priv, 2);
+        try {
+            (new ChainSigner())->sendRaw($priv, $wallet->address, (new ChainSigner())->toWeiHex((string) env('GAS_DRIP_AMOUNT', '0.01')));
+            $wallet->forceFill(['gas_dripped_at' => now()])->save();
+        } catch (\Throwable $e) {
+            Log::warning('Community gas drip gagal: ' . $e->getMessage());
+        }
     }
 }

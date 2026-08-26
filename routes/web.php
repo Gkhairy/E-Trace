@@ -17,6 +17,7 @@ use App\Http\Controllers\AddressController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\CommunityWalletController;
+use App\Http\Controllers\FriendController;
 
 // HOME / LANDING PAGE
 // Belum login -> landing page publik. Sudah login -> ke katalog produk.
@@ -122,11 +123,19 @@ Route::middleware('auth')->group(function () {
     // BAYAR QRIS pakai stablecoin — PROTOTIPE (receipt simulasi, tanpa settlement nyata)
     Route::post('/qris/pay', [\App\Http\Controllers\QrisController::class, 'pay'])->middleware('throttle:15,1');
 
-    // DOMPET KOMUNITAS (Fase F)
+    // TEMAN (kontak)
+    Route::get('/friends', [FriendController::class, 'index']);
+    Route::post('/friends', [FriendController::class, 'store']);
+    Route::post('/friends/delete', [FriendController::class, 'destroy']);
+
+    // DOMPET KOMUNITAS (dikelola app: teman + undang)
     Route::get('/community', [CommunityWalletController::class, 'index']);
     Route::get('/community/create', [CommunityWalletController::class, 'create']);
     Route::post('/community', [CommunityWalletController::class, 'store']);
     Route::get('/community/{id}', [CommunityWalletController::class, 'show'])->whereNumber('id');
+    Route::post('/community/withdraw', [CommunityWalletController::class, 'withdraw'])->middleware('throttle:15,1');
+    Route::post('/community/propose', [CommunityWalletController::class, 'propose'])->middleware('throttle:15,1');
+    Route::post('/community/approve', [CommunityWalletController::class, 'approve'])->middleware('throttle:15,1');
 
     // DASHBOARD SELLER
     Route::get('/seller', [SellerController::class, 'dashboard']);

@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
+@php $fmt = fn($n) => rtrim(rtrim(number_format((float)$n, 2), '0'), '.'); @endphp
+
 <nav class="flex items-center gap-2 text-xs text-slate-500 mb-4">
     <a href="/community" class="hover:text-blue-600 transition">Dompet Komunitas</a>
     <span class="text-slate-300">/</span><span class="text-slate-700 truncate">{{ $wallet->name }}</span>
@@ -17,154 +19,116 @@
         </div>
         <div class="text-right">
             <p class="text-xs text-slate-500">Saldo dompet</p>
-            <p class="text-2xl font-extrabold text-slate-900"><span id="balance">…</span> <span class="text-sm text-blue-600">TLKM</span></p>
+            <p class="text-2xl font-extrabold text-slate-900">{{ $balance !== null ? $fmt($balance) : '—' }} <span class="text-sm text-blue-600">TLKM</span></p>
         </div>
     </div>
     @if($wallet->description)<p class="text-sm text-slate-500 mt-3">{{ $wallet->description }}</p>@endif
+    <button onclick="doDeposit()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold">Setor TLKM</button>
+</div>
 
-    <div class="mt-4 flex flex-wrap gap-2">
-        <button onclick="doDeposit()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold">Setor TLKM</button>
+@if($wallet->mode === 'A')
+    {{-- MODE A: anggota & jatah --}}
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h2 class="font-bold text-slate-900">Anggota &amp; Jatah/bulan</h2>
+            <button onclick="doWithdraw()" class="bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">Tarik jatahku</button>
+        </div>
+        <table class="w-full text-sm">
+            <thead class="text-xs text-slate-500 text-left"><tr><th class="px-5 py-2">Anggota</th><th class="px-5 py-2">Limit/bulan</th><th class="px-5 py-2">Sisa bulan ini</th></tr></thead>
+            <tbody>
+                @foreach($members as $m)
+                    <tr class="border-t border-slate-100">
+                        <td class="px-5 py-2">{{ $m['name'] }} @if($m['is_me'])<span class="text-[10px] text-blue-600">(kamu)</span>@endif</td>
+                        <td class="px-5 py-2">{{ $fmt($m['limit']) }} TLKM</td>
+                        <td class="px-5 py-2 text-green-600">{{ $m['remaining'] !== null ? $fmt($m['remaining']).' TLKM' : '—' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
     </div>
-</div>
-
-<div id="modeArea" class="space-y-6">
-    <div class="text-sm text-slate-400">Memuat data on-chain…</div>
-</div>
+@else
+    {{-- MODE B: multisig --}}
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-6">
+        <h2 class="font-bold text-slate-900 mb-1">Multisig {{ $wallet->threshold }} dari {{ count($members) }}</h2>
+        <p class="text-xs text-slate-500 mb-3">Anggota: {{ collect($members)->pluck('name')->join(', ') }}</p>
+        <button onclick="doPropose()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold">Usulkan Kirim Dana</button>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100"><h2 class="font-bold text-slate-900">Usulan</h2></div>
+        @if($proposals->isEmpty())
+            <p class="px-5 py-8 text-center text-sm text-slate-400">Belum ada usulan.</p>
+        @else
+            @foreach($proposals as $p)
+                <div class="px-5 py-3 border-t border-slate-100 flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-sm text-slate-800">{{ $fmt($p['amount']) }} TLKM → <b>{{ $p['to_name'] ?: (substr($p['to_wallet'],0,8).'…'.substr($p['to_wallet'],-4)) }}</b></p>
+                        <p class="text-[11px] text-slate-400">{{ $p['approvals'] }}/{{ $wallet->threshold }} setuju @if($p['note'])· {{ $p['note'] }}@endif</p>
+                    </div>
+                    <div class="shrink-0">
+                        @if($p['status'] === 'executed')
+                            <a href="https://sepolia.etherscan.io/tx/{{ $p['tx'] }}" target="_blank" class="text-xs text-green-600 hover:underline">Terkirim ↗</a>
+                        @elseif($p['approved_by_me'])
+                            <span class="text-xs text-slate-400">Kamu sudah setuju</span>
+                        @else
+                            <button onclick="doApprove({{ $p['id'] }})" class="text-xs text-blue-600 font-semibold">Setujui</button>
+                        @endif
+                    </div>
+                </div>
+            @endforeach
+        @endif
+    </div>
+@endif
 
 @endsection
 
 @section('scripts')
 <script>
+const WID = @json($wallet->id);
 const CADDR = @json($wallet->address);
-const MODE  = @json($wallet->mode); // 'A' | 'B'
-const RPC   = @json(config('chain.rpc_url'));
-const fmt = (wei) => { try { return Number(ethers.formatUnits(wei, 18)).toLocaleString('id-ID', {maximumFractionDigits:2}); } catch(e){ return '0'; } };
 
-const ALLOW_ABI = [
-  "function balance() view returns (uint256)","function owner() view returns (address)",
-  "function memberCount() view returns (uint256)","function memberList(uint256) view returns (address)",
-  "function members(address) view returns (bool active,uint256 monthlyLimit,uint256 spent,uint256 periodStart)",
-  "function remaining(address) view returns (uint256)",
-  "function deposit(uint256)","function withdraw(uint256)","function setMember(address,uint256)","function removeMember(address)"
-];
-const MULTI_ABI = [
-  "function balance() view returns (uint256)","function threshold() view returns (uint256)",
-  "function memberCount() view returns (uint256)","function members(uint256) view returns (address)","function isMember(address) view returns (bool)",
-  "function proposalCount() view returns (uint256)",
-  "function getProposal(uint256) view returns (uint8 kind,address to,uint256 amount,uint256 newThreshold,uint256 approvals,bool executed,address proposer)",
-  "function approvedBy(uint256,address) view returns (bool)",
-  "function deposit(uint256)","function proposeTransfer(address,uint256)","function approve(uint256)","function execute(uint256)"
-];
-const ABI = MODE === 'B' ? MULTI_ABI : ALLOW_ABI;
-
-function reader() { return new ethers.Contract(CADDR, ABI, new ethers.JsonRpcProvider(RPC)); }
-
-// Eksekusi aksi: embedded → PIN (backend), lainnya → MetaMask (ethers signer).
-async function act(method, args, tokenIdx = [], depositApprove = false) {
-    if (IS_EMBEDDED) {
-        const pin = await askPin('Konfirmasi Aksi'); if (!pin) return;
-        txProgress.open('Memproses', ['Tanda tangan dengan PIN', 'Menyiarkan']);
-        try {
-            txProgress.active(0, 'Menandatangani…');
-            const hash = await pinTx('/pin/community', { pin, address: CADDR, method, args });
-            txProgress.done(0); txProgress.active(1); txProgress.done(1);
-            setTimeout(() => { txProgress.close(); uiAlert({title:'Berhasil', message:`<a href="https://sepolia.etherscan.io/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type:'success'}).then(()=>location.reload()); }, 300);
-        } catch (e) { txProgress.close(); uiAlert({title:'Gagal', message: niceError(e), type:'error'}); }
-        return;
-    }
-    // MetaMask
-    txProgress.open('Memproses', ['Memeriksa jaringan', 'Konfirmasi di MetaMask']);
-    try {
-        txProgress.active(0); await checkNetwork(); txProgress.done(0);
-        const { signer } = await connectWallet();
-        if (depositApprove) {
-            const token = new ethers.Contract(TLKM_ADDRESS, ERC20_ABI, signer);
-            const ap = await token.approve(CADDR, ethers.parseUnits(String(args[0]), 18)); await ap.wait();
-        }
-        const callArgs = args.map((a, i) => tokenIdx.includes(i) ? ethers.parseUnits(String(a), 18) : a);
-        const c = new ethers.Contract(CADDR, ABI, signer);
-        txProgress.active(1, 'Konfirmasi di MetaMask…');
-        const tx = await c[method](...callArgs); const rc = await tx.wait();
-        txProgress.done(1);
-        setTimeout(() => { txProgress.close(); uiAlert({title:'Berhasil', message:`<a href="https://sepolia.etherscan.io/tx/${rc.hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type:'success'}).then(()=>location.reload()); }, 300);
-    } catch (e) { txProgress.close(); uiAlert({title:'Gagal', message: niceError(e), type:'error'}); }
+async function post(url, body) {
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN }, body: JSON.stringify(body) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) throw new Error(data.message || 'Aksi gagal.');
+    return data;
 }
+function ok(hash) { txProgress.close(); uiAlert({ title: 'Berhasil', message: hash ? `<a href="https://sepolia.etherscan.io/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>` : 'Tersimpan.', type: 'success' }).then(() => location.reload()); }
+function fail(e) { txProgress.close(); uiAlert({ title: 'Gagal', message: niceError(e), type: 'error' }); }
 
+// Setor: transfer TLKM milik SENDIRI ke alamat komunitas (PIN embedded / MetaMask).
 async function doDeposit() {
-    const amt = prompt('Jumlah TLKM yang disetor:'); if (!amt || isNaN(amt) || +amt <= 0) return;
-    act('deposit', [amt], [0], true); // butuh approve dulu
-}
-
-async function loadState() {
-    const area = document.getElementById('modeArea');
+    const amt = prompt('Jumlah TLKM yang disetor:'); if (!amt || +amt <= 0) return;
+    let pin = null;
+    if (IS_EMBEDDED) { pin = await askPin('Setor ke Komunitas'); if (!pin) return; }
+    txProgress.open('Setor TLKM', ['Menandatangani', 'Menyiarkan']);
     try {
-        const c = reader();
-        document.getElementById('balance').textContent = fmt(await c.balance());
-        if (MODE === 'A') { await loadAllowance(c, area); } else { await loadMultisig(c, area); }
-    } catch (e) {
-        area.innerHTML = '<div class="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-4 text-sm">Gagal memuat data on-chain. Pastikan alamat kontrak benar & jaringan Sepolia.</div>';
-    }
+        txProgress.active(0);
+        const hash = IS_EMBEDDED ? await pinTx('/pin/transfer', { pin, to: CADDR, amount: amt }) : await sendTLKM(CADDR, amt);
+        txProgress.done(0); txProgress.active(1); txProgress.done(1); ok(hash);
+    } catch (e) { fail(e); }
 }
 
-async function loadAllowance(c, area) {
-    const n = Number(await c.memberCount());
-    let rows = '';
-    for (let i = 0; i < n; i++) {
-        const addr = await c.memberList(i);
-        const m = await c.members(addr);
-        if (!m.active) continue;
-        const rem = await c.remaining(addr);
-        rows += `<tr class="border-t border-slate-100">
-            <td class="px-4 py-2 font-mono text-xs">${addr.slice(0,8)}…${addr.slice(-6)}</td>
-            <td class="px-4 py-2">${fmt(m.monthlyLimit)}</td>
-            <td class="px-4 py-2 text-green-600">${fmt(rem)}</td></tr>`;
-    }
-    area.innerHTML = `
-        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
-            <div class="flex items-center justify-between mb-3"><h2 class="font-bold text-slate-900">Anggota &amp; Jatah</h2>
-              <div class="flex gap-2">
-                <button onclick="doWithdraw()" class="bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">Tarik (anggota)</button>
-                <button onclick="doSetMember()" class="bg-white border border-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold">Set Anggota (owner)</button>
-              </div>
-            </div>
-            <table class="w-full text-sm"><thead class="text-xs text-slate-500 text-left"><tr><th class="px-4 py-2">Anggota</th><th class="px-4 py-2">Limit/bulan</th><th class="px-4 py-2">Sisa bulan ini</th></tr></thead>
-            <tbody>${rows || '<tr><td colspan="3" class="px-4 py-6 text-center text-slate-400">Belum ada anggota.</td></tr>'}</tbody></table>
-        </div>`;
+// Mode A: tarik jatah (ditandatangani backend pakai kunci komunitas).
+async function doWithdraw() {
+    const amt = prompt('Jumlah TLKM yang ditarik (≤ sisa jatahmu):'); if (!amt || +amt <= 0) return;
+    const pin = await askPin('Tarik Jatah'); if (!pin) return;
+    txProgress.open('Menarik dana', ['Verifikasi PIN', 'Menyiarkan']);
+    try { txProgress.active(0); const d = await post('/community/withdraw', { id: WID, amount: amt, pin }); txProgress.done(0); txProgress.active(1); txProgress.done(1); ok(d.tx_hash); } catch (e) { fail(e); }
 }
-function doWithdraw() { const a = prompt('Jumlah TLKM yang ditarik:'); if (a && +a > 0) act('withdraw', [a], [0]); }
-function doSetMember() { const m = prompt('Alamat anggota (0x…):'); if (!m) return; const l = prompt('Limit per bulan (TLKM):'); if (l && +l >= 0) act('setMember', [m, l], [1]); }
 
-async function loadMultisig(c, area) {
-    const th = Number(await c.threshold());
-    const nm = Number(await c.memberCount());
-    const np = Number(await c.proposalCount());
-    let mem = [];
-    for (let i = 0; i < nm; i++) mem.push(await c.members(i));
-    let props = '';
-    for (let i = np - 1; i >= 0 && i >= np - 20; i--) {
-        const p = await c.getProposal(i);
-        const kind = Number(p.kind) === 0 ? `Kirim ${fmt(p.amount)} TLKM → ${p.to.slice(0,8)}…${p.to.slice(-4)}` : 'Ubah aturan';
-        const status = p.executed ? '<span class="text-green-600">Selesai</span>' : `${p.approvals}/${th} setuju`;
-        const btns = p.executed ? '' :
-            `<button onclick="act('approve',[${i}])" class="text-xs text-blue-600 font-medium">Setujui</button>
-             ${Number(p.approvals) >= th ? `<button onclick="act('execute',[${i}])" class="text-xs text-green-600 font-medium ml-2">Eksekusi</button>` : ''}`;
-        props += `<div class="px-4 py-3 border-t border-slate-100 flex items-center justify-between gap-3">
-            <div><p class="text-sm text-slate-800">#${i} · ${kind}</p><p class="text-[11px] text-slate-400">${status}</p></div>
-            <div class="shrink-0">${btns}</div></div>`;
-    }
-    area.innerHTML = `
-        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
-            <h2 class="font-bold text-slate-900 mb-1">Multisig ${th} dari ${nm}</h2>
-            <p class="text-xs text-slate-500 mb-2">Anggota: ${mem.map(a=>a.slice(0,6)+'…'+a.slice(-4)).join(', ')}</p>
-            <button onclick="doPropose()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">Usulkan Kirim Dana</button>
-        </div>
-        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-            <div class="px-4 py-3 border-b border-slate-100"><h2 class="font-bold text-slate-900">Usulan</h2></div>
-            ${props || '<p class="px-4 py-6 text-center text-sm text-slate-400">Belum ada usulan.</p>'}
-        </div>`;
+// Mode B: usulkan / setujui.
+async function doPropose() {
+    const to = prompt('Kirim ke (No HP / wallet 0x…):'); if (!to) return;
+    const amt = prompt('Jumlah TLKM:'); if (!amt || +amt <= 0) return;
+    const note = prompt('Catatan (opsional):') || '';
+    const pin = await askPin('Usulkan Kirim'); if (!pin) return;
+    txProgress.open('Membuat usulan', ['Verifikasi PIN']);
+    try { txProgress.active(0); await post('/community/propose', { id: WID, to, amount: amt, note, pin }); txProgress.done(0); ok(null); } catch (e) { fail(e); }
 }
-function doPropose() { const to = prompt('Kirim ke alamat (0x…):'); if (!to) return; const a = prompt('Jumlah TLKM:'); if (a && +a > 0) act('proposeTransfer', [to, a], [1]); }
-
-loadState();
+async function doApprove(pid) {
+    const pin = await askPin('Setujui Usulan'); if (!pin) return;
+    txProgress.open('Menyetujui', ['Verifikasi PIN', 'Eksekusi bila cukup']);
+    try { txProgress.active(0); const d = await post('/community/approve', { proposal_id: pid, pin }); txProgress.done(0); txProgress.active(1); txProgress.done(1); ok(d.tx_hash); } catch (e) { fail(e); }
+}
 </script>
 @endsection

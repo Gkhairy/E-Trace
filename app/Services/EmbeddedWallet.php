@@ -64,6 +64,42 @@ class EmbeddedWallet
         ];
     }
 
+    /**
+     * Enkripsi private key dg kunci turunan SECRET SERVER saja (tanpa PIN).
+     * Untuk dompet komunitas custodial (dikelola app; ditandatangani backend).
+     */
+    public function encryptServer(string $privHex): array
+    {
+        return $this->encryptWith($privHex, '');
+    }
+
+    /** Dekripsi private key yang dienkripsi server-only. Return hex atau null. */
+    public function decryptServer(array $cols): ?string
+    {
+        $dkey = hash_pbkdf2('sha256', '' . $this->serverSecret(), base64_decode($cols['wallet_salt']), 100000, 32, true);
+        $priv = openssl_decrypt(
+            base64_decode($cols['wallet_enc']), 'aes-256-gcm', $dkey, OPENSSL_RAW_DATA,
+            base64_decode($cols['wallet_iv']), base64_decode($cols['wallet_tag'])
+        );
+        return $priv === false ? null : $priv;
+    }
+
+    /** Inti enkripsi: kunci = PBKDF2(prefix + serverSecret + salt). */
+    private function encryptWith(string $privHex, string $prefix): array
+    {
+        $salt = random_bytes(16);
+        $iv   = random_bytes(12);
+        $dkey = hash_pbkdf2('sha256', $prefix . $this->serverSecret(), $salt, 100000, 32, true);
+        $tag  = '';
+        $cipher = openssl_encrypt($privHex, 'aes-256-gcm', $dkey, OPENSSL_RAW_DATA, $iv, $tag);
+        return [
+            'wallet_enc'  => base64_encode($cipher),
+            'wallet_salt' => base64_encode($salt),
+            'wallet_iv'   => base64_encode($iv),
+            'wallet_tag'  => base64_encode($tag),
+        ];
+    }
+
     /** Dekripsi private key user dg PIN. Return hex atau null (PIN salah/rusak). */
     public function decrypt(User $user, string $pin): ?string
     {
