@@ -28,7 +28,8 @@ class WalletController extends Controller
                 return response()->json(['found' => true, 'name' => null, 'wallet' => strtolower($q)]);
             }
         } else {
-            $user = User::where('phone', $q)->orWhere('email', $q)->first();
+            // Cari via blind index phone_hash (phone terenkripsi) atau email.
+            $user = User::where('phone_hash', User::hashPhone($q))->orWhere('email', $q)->first();
         }
 
         if (!$user || !$user->wallet_address) {

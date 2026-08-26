@@ -10,7 +10,15 @@ class ShippingAddress extends Model
         'user_id', 'label', 'recipient_name', 'phone', 'address', 'city', 'postal_code', 'notes', 'is_default',
     ];
 
-    protected $casts = ['is_default' => 'boolean'];
+    // I1: data pribadi dienkripsi at-rest (kalau DB bocor, tidak langsung terbaca).
+    // city & postal_code dibiarkan plaintext (dipakai estimasi ongkir, sensitivitas rendah).
+    protected $casts = [
+        'is_default'     => 'boolean',
+        'recipient_name' => 'encrypted',
+        'phone'          => 'encrypted',
+        'address'        => 'encrypted',
+        'notes'          => 'encrypted',
+    ];
 
     public function user()
     {

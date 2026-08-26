@@ -49,6 +49,35 @@ class User extends Authenticatable
         'gas_dripped_at',
     ];
 
+    /**
+     * Jaga blind index phone_hash tetap sinkron dengan phone (I1).
+     * phone disimpan terenkripsi; phone_hash (HMAC) dipakai untuk pencarian.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (User $user) {
+            if ($user->isDirty('phone')) {
+                $user->phone_hash = $user->phone ? self::hashPhone($user->phone) : null;
+            }
+        });
+    }
+
+    /** Normalisasi nomor telepon ke bentuk kanonik (angka saja, 0 depan -> 62). */
+    public static function normalizePhone(string $raw): string
+    {
+        $d = preg_replace('/[^0-9]/', '', $raw) ?? '';
+        if ($d !== '' && str_starts_with($d, '0')) {
+            $d = '62' . ltrim($d, '0'); // asumsi Indonesia bila diawali 0
+        }
+        return $d;
+    }
+
+    /** Blind index HMAC untuk mencari user berdasarkan nomor telepon. */
+    public static function hashPhone(string $raw): string
+    {
+        return hash_hmac('sha256', self::normalizePhone($raw), (string) config('app.key'));
+    }
+
     /** 2FA TOTP aktif & sudah dikonfirmasi? */
     public function hasTwoFactor(): bool
     {
@@ -103,6 +132,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'phone' => 'encrypted', // I1: data pribadi terenkripsi at-rest
             'explorer_public' => 'boolean',
             'nonce_expires_at' => 'datetime',
             'otp_expires_at' => 'datetime',

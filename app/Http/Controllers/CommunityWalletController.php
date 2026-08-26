@@ -223,7 +223,7 @@ class CommunityWalletController extends Controller
             $u = User::where('wallet_address', strtolower($q))->first();
             return [strtolower($q), $u ? ($u->public_name ?: $u->name) : null];
         }
-        $u = User::where('phone', $q)->orWhere('email', $q)->first();
+        $u = User::where('phone_hash', User::hashPhone($q))->orWhere('email', $q)->first();
         return $u && $u->wallet_address ? [strtolower($u->wallet_address), $u->public_name ?: $u->name] : [null, null];
     }
 

@@ -20,7 +20,7 @@ class FriendController extends Controller
         $data = $req->validate(['q' => 'required|string|max:120']);
         $q = trim($data['q']);
 
-        $friend = User::where('phone', $q)->orWhere('email', $q)->first();
+        $friend = User::where('phone_hash', User::hashPhone($q))->orWhere('email', $q)->first();
         if (!$friend) {
             return back()->with('error', 'Pengguna dengan No HP/email itu tidak ditemukan.');
         }
