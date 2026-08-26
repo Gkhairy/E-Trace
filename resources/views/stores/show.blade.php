@@ -42,6 +42,10 @@
             <div class="flex gap-6 text-center pb-1">
                 <div><p class="text-lg font-extrabold text-slate-900">{{ $products->count() }}</p><p class="text-[11px] text-slate-400">Produk</p></div>
                 <div><p class="text-lg font-extrabold text-slate-900">{{ $sold }}</p><p class="text-[11px] text-slate-400">Terjual</p></div>
+                <div>
+                    <p class="text-lg font-extrabold {{ $ratingAvg !== null ? 'text-amber-500' : 'text-slate-300' }}">{{ $ratingAvg !== null ? '★ '.$ratingAvg : '—' }}</p>
+                    <p class="text-[11px] text-slate-400">{{ $ratingCount }} ulasan</p>
+                </div>
             </div>
         </div>
 
@@ -56,6 +60,39 @@
         @endif
     </div>
 </div>
+
+{{-- ===== ULASAN GABUNGAN (dari semua produk toko) — F1 ===== --}}
+@if($reviews->isNotEmpty())
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-8">
+        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h2 class="font-bold text-slate-900">Ulasan Pembeli</h2>
+            <span class="text-xs text-slate-400">
+                @if($ratingAvg !== null)<span class="text-amber-500 font-semibold">★ {{ $ratingAvg }}</span> · @endif{{ $ratingCount }} ulasan (semua produk)
+            </span>
+        </div>
+        <div class="divide-y divide-slate-100">
+            @foreach($reviews as $rv)
+                <div class="px-5 py-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-semibold text-slate-800 truncate">{{ $rv['reviewer'] }}</span>
+                                <span class="text-amber-500 text-xs whitespace-nowrap">{!! str_repeat('★', $rv['rating']) . str_repeat('☆', 5 - $rv['rating']) !!}</span>
+                            </div>
+                            @if($rv['product'])
+                                <a href="/products/{{ $rv['product']->id }}" class="text-[11px] text-blue-600 hover:underline">{{ $rv['product']->name }}</a>
+                            @endif
+                        </div>
+                        <span class="text-[11px] text-slate-400 shrink-0">{{ $rv['at']->translatedFormat('d M Y') }}</span>
+                    </div>
+                    @if($rv['comment'])
+                        <p class="text-sm text-slate-600 mt-1.5 leading-relaxed">{{ $rv['comment'] }}</p>
+                    @endif
+                </div>
+            @endforeach
+        </div>
+    </div>
+@endif
 
 {{-- ===== PRODUK TOKO ===== --}}
 <h2 class="text-lg font-bold text-slate-900 mb-4">Produk Toko</h2>
