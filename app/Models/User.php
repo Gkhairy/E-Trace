@@ -132,7 +132,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'phone' => 'encrypted', // I1: data pribadi terenkripsi at-rest
+            'phone' => \App\Casts\EncryptedOrPlain::class, // I1: terenkripsi (toleran data lama)
             'explorer_public' => 'boolean',
             'nonce_expires_at' => 'datetime',
             'otp_expires_at' => 'datetime',
