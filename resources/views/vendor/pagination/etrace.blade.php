@@ -2,8 +2,8 @@
     <nav role="navigation" aria-label="Navigasi halaman" class="flex items-center justify-between flex-wrap gap-3">
         {{-- Ringkasan jumlah --}}
         <p class="text-xs text-slate-500">
-            Menampilkan <span class="font-medium text-slate-700">{{ $paginator->firstItem() ?? 0 }}</span>–<span class="font-medium text-slate-700">{{ $paginator->lastItem() ?? 0 }}</span>
-            dari <span class="font-medium text-slate-700">{{ number_format($paginator->total(), 0, ',', '.') }}</span>
+            {{ __('common.showing') }} <span class="font-medium text-slate-700">{{ $paginator->firstItem() ?? 0 }}</span>–<span class="font-medium text-slate-700">{{ $paginator->lastItem() ?? 0 }}</span>
+            {{ __('common.of') }} <span class="font-medium text-slate-700">{{ number_format($paginator->total(), 0, ',', '.') }}</span>
         </p>
 
         <div class="flex items-center gap-1">

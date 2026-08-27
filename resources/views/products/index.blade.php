@@ -6,18 +6,18 @@
 <section class="relative overflow-hidden rounded-2xl bg-blue-600 mb-8">
     <div class="relative px-6 md:px-12 py-10 md:py-14 max-w-2xl">
         <span class="inline-flex items-center gap-2 text-xs font-medium bg-white/15 border border-white/20 rounded-full px-3 py-1 text-white mb-4">
-            <span class="w-1.5 h-1.5 rounded-full bg-white"></span> Pembayaran on-chain • Transparan
+            <span class="w-1.5 h-1.5 rounded-full bg-white"></span> {{ __('catalog.hero_badge') }}
         </span>
         <h1 class="text-3xl md:text-5xl font-extrabold leading-tight tracking-tight text-white">
-            Belanja dengan <span class="text-yellow-300">TLKM</span>,
-            <br class="hidden md:block">setiap transaksi tercatat blockchain.
+            {{ __('catalog.hero_title_1') }} <span class="text-yellow-300">TLKM</span>,
+            <br class="hidden md:block">{{ __('catalog.hero_title_2') }}
         </h1>
         <p class="text-blue-100 mt-4 text-sm md:text-base max-w-lg">
-            Bayar aman lewat smart contract escrow. Dana baru lepas ke penjual setelah kamu konfirmasi barang diterima.
+            {{ __('catalog.hero_sub') }}
         </p>
         <div class="flex flex-wrap gap-3 mt-6">
-            <a href="#katalog" class="bg-white text-blue-700 hover:bg-blue-50 px-5 py-2.5 rounded-xl text-sm font-semibold transition shadow-sm">Lihat Produk</a>
-            <a href="/orders" class="bg-white/15 hover:bg-white/25 border border-white/25 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition">Riwayat Order</a>
+            <a href="#katalog" class="bg-white text-blue-700 hover:bg-blue-50 px-5 py-2.5 rounded-xl text-sm font-semibold transition shadow-sm">{{ __('catalog.see_products') }}</a>
+            <a href="/orders" class="bg-white/15 hover:bg-white/25 border border-white/25 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition">{{ __('catalog.order_history') }}</a>
         </div>
     </div>
 </section>
@@ -26,20 +26,20 @@
 @php
     $u = auth()->user();
     $sc = [
-        ['/explorer', 'Explorer', 'bg-indigo-50 text-indigo-600', 'M11 3a8 8 0 105.29 14.29l4.7 4.71 1.42-1.42-4.71-4.7A8 8 0 0011 3zm0 2a6 6 0 110 12 6 6 0 010-12z'],
-        ['/donate', 'Donasi', 'bg-rose-50 text-rose-600', 'M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 10-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z'],
+        ['/explorer', __('catalog.sc_explorer'), 'bg-indigo-50 text-indigo-600', 'M11 3a8 8 0 105.29 14.29l4.7 4.71 1.42-1.42-4.71-4.7A8 8 0 0011 3zm0 2a6 6 0 110 12 6 6 0 010-12z'],
+        ['/donate', __('catalog.sc_donate'), 'bg-rose-50 text-rose-600', 'M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 10-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z'],
     ];
     if ($u) {
-        $sc[] = ['/wallet', 'Dompet', 'bg-blue-50 text-blue-600', 'M3 10h18M7 15h.01M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z'];
-        $sc[] = ['/orders', 'Order', 'bg-amber-50 text-amber-600', 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2'];
-        $sc[] = ['/addresses', 'Alamat', 'bg-emerald-50 text-emerald-600', 'M12 21s-6-5.686-6-10a6 6 0 1112 0c0 4.314-6 10-6 10zM12 11a2 2 0 100-4 2 2 0 000 4z'];
-        $sc[] = ['/community', 'Komunitas', 'bg-violet-50 text-violet-600', 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4zm6-6a3 3 0 11-3 3'];
-        if ($u->isSeller())     $sc[] = ['/seller', 'Toko Saya', 'bg-orange-50 text-orange-600', 'M3 7l2-4h14l2 4M3 7h18M3 7v13a1 1 0 001 1h16a1 1 0 001-1V7'];
-        if ($u->isSupervisor()) $sc[] = ['/supervisor/disputes', 'Pengawas', 'bg-violet-50 text-violet-600', 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'];
-        $sc[] = ['/profile', 'Profil', 'bg-slate-100 text-slate-600', 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'];
+        $sc[] = ['/wallet', __('catalog.sc_wallet'), 'bg-blue-50 text-blue-600', 'M3 10h18M7 15h.01M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z'];
+        $sc[] = ['/orders', __('catalog.sc_orders'), 'bg-amber-50 text-amber-600', 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2'];
+        $sc[] = ['/addresses', __('catalog.sc_address'), 'bg-emerald-50 text-emerald-600', 'M12 21s-6-5.686-6-10a6 6 0 1112 0c0 4.314-6 10-6 10zM12 11a2 2 0 100-4 2 2 0 000 4z'];
+        $sc[] = ['/community', __('catalog.sc_community'), 'bg-violet-50 text-violet-600', 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4zm6-6a3 3 0 11-3 3'];
+        if ($u->isSeller())     $sc[] = ['/seller', __('catalog.sc_store'), 'bg-orange-50 text-orange-600', 'M3 7l2-4h14l2 4M3 7h18M3 7v13a1 1 0 001 1h16a1 1 0 001-1V7'];
+        if ($u->isSupervisor()) $sc[] = ['/supervisor/disputes', __('catalog.sc_supervisor'), 'bg-violet-50 text-violet-600', 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'];
+        $sc[] = ['/profile', __('catalog.sc_profile'), 'bg-slate-100 text-slate-600', 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'];
     } else {
-        $sc[] = ['/login', 'Masuk', 'bg-blue-50 text-blue-600', 'M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1'];
-        $sc[] = ['/register', 'Daftar', 'bg-emerald-50 text-emerald-600', 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h9m5-3h-4m2-2v4'];
+        $sc[] = ['/login', __('catalog.sc_login'), 'bg-blue-50 text-blue-600', 'M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1'];
+        $sc[] = ['/register', __('catalog.sc_register'), 'bg-emerald-50 text-emerald-600', 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h9m5-3h-4m2-2v4'];
     }
 @endphp
 <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-8">
@@ -59,10 +59,10 @@
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
     @php
         $badges = [
-            ['M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z', 'Escrow Aman', 'Dana ditahan kontrak'],
-            ['M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', 'Terverifikasi', 'Cek di block explorer'],
-            ['M13 10V3L4 14h7v7l9-11h-7z', 'Instan', 'Bayar langsung on-chain'],
-            ['M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z', 'Token TLKM', 'ERC-20 di Sepolia'],
+            ['M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z', __('catalog.trust_escrow_t'), __('catalog.trust_escrow_s')],
+            ['M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', __('catalog.trust_verified_t'), __('catalog.trust_verified_s')],
+            ['M13 10V3L4 14h7v7l9-11h-7z', __('catalog.trust_instant_t'), __('catalog.trust_instant_s')],
+            ['M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z', __('catalog.trust_token_t'), __('catalog.trust_token_s')],
         ];
     @endphp
     @foreach($badges as $b)
@@ -78,35 +78,47 @@
     @endforeach
 </div>
 
-{{-- ===== KATEGORI (baris ikon, ala Tokopedia/Shopee) — G1 ===== --}}
+{{-- ===== KATEGORI (baris ikon, ala Tokopedia/Shopee) — tampil 6 + lihat lebih banyak ===== --}}
 @if($categories->isNotEmpty())
+@php $visible = 6; @endphp
 <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-8">
     <div class="flex items-center justify-between mb-4">
-        <h2 class="text-sm font-bold text-slate-900">Kategori</h2>
+        <h2 class="text-sm font-bold text-slate-900">{{ __('catalog.categories') }}</h2>
         @if($activeCategory)
-            <a href="/products" class="text-xs text-blue-600 hover:underline">Tampilkan semua</a>
+            <a href="/products" class="text-xs text-blue-600 hover:underline">{{ __('catalog.show_all') }}</a>
         @endif
     </div>
-    <div class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 gap-3">
+    <div id="catGrid" class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-7 gap-3">
         <a href="/products" class="group flex flex-col items-center gap-1.5 text-center">
             <span class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition {{ !$activeCategory ? 'bg-blue-600 text-white' : 'bg-slate-100 group-hover:bg-blue-50' }}">🛍️</span>
-            <span class="text-[10px] leading-tight {{ !$activeCategory ? 'text-blue-600 font-semibold' : 'text-slate-600' }}">Semua</span>
+            <span class="text-[10px] leading-tight {{ !$activeCategory ? 'text-blue-600 font-semibold' : 'text-slate-600' }}">{{ __('catalog.all') }}</span>
         </a>
-        @foreach($categories as $cat)
+        @foreach($categories as $i => $cat)
             @php $on = $activeCategory && $activeCategory->id === $cat->id; @endphp
-            <a href="/products?category={{ $cat->slug }}" class="group flex flex-col items-center gap-1.5 text-center">
+            {{-- Kategori ke-7 dst disembunyikan sampai "lihat lebih banyak" (kecuali yang sedang aktif) --}}
+            <a href="/products?category={{ $cat->slug }}"
+               class="cat-item group flex flex-col items-center gap-1.5 text-center {{ ($i >= $visible && !$on) ? 'cat-extra hidden' : '' }}">
                 <span class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition {{ $on ? 'bg-blue-600' : 'bg-slate-100 group-hover:bg-blue-50' }}">{{ $cat->icon }}</span>
                 <span class="text-[10px] leading-tight {{ $on ? 'text-blue-600 font-semibold' : 'text-slate-600' }}">{{ $cat->name }}</span>
             </a>
         @endforeach
     </div>
+    @if($categories->count() > $visible)
+        <div class="text-center mt-4">
+            <button type="button" id="catToggle" onclick="toggleCats()"
+                class="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition">
+                <span id="catToggleLabel">{{ __('catalog.more') }}</span>
+                <svg id="catToggleIcon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+        </div>
+    @endif
 </div>
 @endif
 
 {{-- ===== HEADER KATALOG ===== --}}
 <div id="katalog" class="mb-6 scroll-mt-28">
-    <h2 class="text-2xl font-bold text-slate-900">{{ $activeCategory ? $activeCategory->icon.' '.$activeCategory->name : 'Katalog Produk' }}</h2>
-    <p class="text-sm text-slate-500">{{ $products->total() }} produk {{ $activeCategory ? 'di kategori ini' : 'tersedia' }}</p>
+    <h2 class="text-2xl font-bold text-slate-900">{{ $activeCategory ? $activeCategory->icon.' '.$activeCategory->name : __('catalog.catalog') }}</h2>
+    <p class="text-sm text-slate-500">{{ number_format($products->total(), 0, ',', '.') }} {{ $activeCategory ? __('catalog.in_category') : __('catalog.available') }}</p>
 </div>
 
 @if(session('success'))
@@ -122,8 +134,8 @@
         <div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
             <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
         </div>
-        <p class="text-slate-600 font-medium">Belum ada produk</p>
-        <p class="text-sm text-slate-400 mt-1">Produk yang ditambahkan admin akan muncul di sini.</p>
+        <p class="text-slate-600 font-medium">{{ __('catalog.empty_title') }}</p>
+        <p class="text-sm text-slate-400 mt-1">{{ __('catalog.empty_sub') }}</p>
     </div>
 @else
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
@@ -137,7 +149,7 @@
                              class="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300">
                         <span class="absolute top-2 left-2 bg-blue-600 text-[10px] font-semibold px-2 py-1 rounded-full text-white shadow-sm">TLKM</span>
                         @if($product->stock !== null && $product->stock <= 0)
-                            <span class="absolute inset-0 bg-white/70 flex items-center justify-center text-sm font-bold text-slate-500">Stok Habis</span>
+                            <span class="absolute inset-0 bg-white/70 flex items-center justify-center text-sm font-bold text-slate-500">{{ __('catalog.sold_out') }}</span>
                         @endif
                     </div>
                     <div class="p-4 pb-2 flex flex-col flex-1">
@@ -162,18 +174,18 @@
                 <div class="px-4 pb-4">
                     @php $soldOut = $product->stock !== null && $product->stock <= 0; @endphp
                     @if($soldOut)
-                        <button disabled class="w-full py-2 rounded-xl text-sm font-semibold bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed">Stok Habis</button>
+                        <button disabled class="w-full py-2 rounded-xl text-sm font-semibold bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed">{{ __('catalog.sold_out') }}</button>
                     @elseif(auth()->check())
                         <button onclick="addToCart({{ $product->id }}, this)"
                             class="w-full inline-flex items-center justify-center gap-1.5 bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 py-2 rounded-xl text-sm font-semibold transition">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                            Keranjang
+                            {{ __('catalog.add_cart') }}
                         </button>
                     @else
                         <a href="/login?next={{ urlencode(url('/products/'.$product->id)) }}"
                             class="w-full inline-flex items-center justify-center gap-1.5 bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 py-2 rounded-xl text-sm font-semibold transition">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                            Keranjang
+                            {{ __('catalog.add_cart') }}
                         </a>
                     @endif
                 </div>
@@ -184,4 +196,19 @@
     <div class="mt-8">{{ $products->links() }}</div>
 @endif
 
+@endsection
+
+@section('scripts')
+<script>
+    // Kategori: tampil 6 dulu, sisanya muncul saat "Lihat lebih banyak".
+    function toggleCats() {
+        const grid = document.getElementById('catGrid');
+        const label = document.getElementById('catToggleLabel');
+        const icon = document.getElementById('catToggleIcon');
+        const expanded = grid.classList.toggle('cats-expanded');
+        document.querySelectorAll('.cat-extra').forEach(el => el.classList.toggle('hidden', !expanded));
+        label.textContent = expanded ? @json(__('catalog.less')) : @json(__('catalog.more'));
+        icon.classList.toggle('rotate-180', expanded);
+    }
+</script>
 @endsection

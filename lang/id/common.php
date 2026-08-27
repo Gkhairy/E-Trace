@@ -14,4 +14,6 @@ return [
     'language' => 'Bahasa',
     'view'     => 'Lihat',
     'download' => 'Unduh',
+    'showing'  => 'Menampilkan',
+    'of'       => 'dari',
 ];

@@ -14,4 +14,6 @@ return [
     'language' => 'Language',
     'view'     => 'View',
     'download' => 'Download',
+    'showing'  => 'Showing',
+    'of'       => 'of',
 ];
