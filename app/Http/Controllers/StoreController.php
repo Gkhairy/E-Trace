@@ -14,7 +14,8 @@ class StoreController extends Controller
     {
         $store = Store::where('slug', $slug)->firstOrFail();
 
-        $products = $store->products()->latest()->get();
+        $productCount = $store->products()->count();
+        $products = $store->products()->with('category')->latest()->paginate(20);
 
         // Statistik ringkas.
         $sold = Order::whereHas('items', fn ($q) => $q->where('seller_wallet', $store->payout_wallet)->where('status', 'completed'))->count();
@@ -38,6 +39,6 @@ class StoreController extends Controller
                 'at'       => $r->created_at,
             ]);
 
-        return view('stores.show', compact('store', 'products', 'sold', 'identity', 'reviews', 'ratingAvg', 'ratingCount'));
+        return view('stores.show', compact('store', 'products', 'productCount', 'sold', 'identity', 'reviews', 'ratingAvg', 'ratingCount'));
     }
 }

@@ -24,6 +24,7 @@ class ImportProducts extends Command
     protected $signature = 'products:import
         {file? : Path file JSONL (default: storage/app/seed/walmart_products.jsonl)}
         {--store= : Slug toko tujuan (default: toko seller pertama)}
+        {--distribute : Sebar produk merata ke semua toko (round-robin), abaikan --store}
         {--limit=0 : Batasi jumlah produk (0 = semua)}
         {--truncate : Hapus produk toko tujuan dulu sebelum impor}';
 
@@ -53,30 +54,46 @@ class ImportProducts extends Command
             return self::FAILURE;
         }
 
-        // Toko tujuan.
-        $store = $this->option('store')
-            ? Store::where('slug', $this->option('store'))->first()
-            : Store::whereHas('user', fn ($q) => $q->where('role', 'seller'))->first() ?? Store::first();
-        if (!$store) {
+        // Toko tujuan: satu toko, atau semua toko (round-robin) bila --distribute.
+        if ($this->option('distribute')) {
+            $stores = Store::all();
+        } else {
+            $one = $this->option('store')
+                ? Store::where('slug', $this->option('store'))->first()
+                : (Store::whereHas('user', fn ($q) => $q->where('role', 'seller'))->first() ?? Store::first());
+            $stores = $one ? collect([$one]) : collect();
+        }
+        if ($stores->isEmpty()) {
             $this->error('Tidak ada toko tujuan. Jalankan `php artisan db:seed --class=DemoSeeder` dulu.');
             return self::FAILURE;
         }
 
         if ($this->option('truncate')) {
-            $n = Product::where('store_id', $store->id)->delete();
-            $this->warn("Menghapus {$n} produk lama toko {$store->name}.");
+            $ids = $stores->pluck('id');
+            $n = Product::whereIn('store_id', $ids)->delete();
+            $this->warn("Menghapus {$n} produk lama dari " . $stores->count() . ' toko.');
         }
 
         // Peta slug->id kategori (untuk resolusi cepat).
         $catIds = Category::pluck('id', 'slug');
         $lainnya = $catIds['lainnya'] ?? null;
+        $storeList = $stores->values();
 
         $limit = (int) $this->option('limit');
-        $count = 0; $skipped = 0;
+        $count = 0; $skipped = 0; $si = 0;
+        $now = now();
+        $batch = [];
+
+        $flush = function () use (&$batch) {
+            if ($batch) {
+                Product::insert($batch);
+                $batch = [];
+            }
+        };
 
         $fh = fopen($file, 'r');
-        $this->info("Mengimpor ke toko: {$store->name} (payout {$store->payout_wallet})");
-        $bar = $this->output->createProgressBar($limit > 0 ? $limit : 0);
+        $this->info('Mengimpor ke ' . $storeList->count() . ' toko' . ($this->option('distribute') ? ' (round-robin)' : ": {$storeList->first()->name}") . '…');
+        $bar = $this->output->createProgressBar($limit > 0 ? $limit : 10000);
 
         while (($line = fgets($fh)) !== false) {
             $line = trim($line);
@@ -89,34 +106,39 @@ class ImportProducts extends Command
                 continue;
             }
 
-            $slug = $this->mapDepartment($d['department'] ?? null);
-            $catId = $catIds[$slug] ?? $lainnya;
+            // Toko untuk produk ini (round-robin bila banyak toko).
+            $store = $storeList[$si % $storeList->count()];
+            $si++;
 
-            Product::create([
+            $slug = $this->mapDepartment($d['department'] ?? null);
+
+            $batch[] = [
                 'name'          => Str::limit((string) $d['name'], 250, ''),
                 'description'   => $this->buildDescription($d),
                 'price_usdc'    => $this->price($d),
                 'stock'         => null,
                 'store_id'      => $store->id,
                 'seller_wallet' => $store->payout_wallet,
-                'category_id'   => $catId,
+                'category_id'   => $catIds[$slug] ?? $lainnya,
                 'product_id'    => (string) Str::uuid(),
                 'image'         => $d['image'] ?? null, // URL remote didukung Product::imageUrl()
-            ]);
+                'created_at'    => $now,
+                'updated_at'    => $now,
+            ];
 
             $count++;
-            if ($limit > 0) {
-                $bar->advance();
+            $bar->advance();
+            if (count($batch) >= 500) {
+                $flush();
             }
             if ($limit > 0 && $count >= $limit) {
                 break;
             }
         }
         fclose($fh);
-        if ($limit > 0) {
-            $bar->finish();
-            $this->newLine();
-        }
+        $flush();
+        $bar->finish();
+        $this->newLine();
 
         $this->info("Selesai. {$count} produk diimpor" . ($skipped ? ", {$skipped} baris dilewati." : '.'));
         return self::SUCCESS;

@@ -40,7 +40,7 @@
                 <a href="/explorer/{{ $store->payout_wallet }}" class="text-xs text-blue-600 hover:underline font-mono">{{ substr($store->payout_wallet, 0, 10) }}…{{ substr($store->payout_wallet, -6) }} ↗</a>
             </div>
             <div class="flex gap-6 text-center pb-1">
-                <div><p class="text-lg font-extrabold text-slate-900">{{ $products->count() }}</p><p class="text-[11px] text-slate-400">Produk</p></div>
+                <div><p class="text-lg font-extrabold text-slate-900">{{ $productCount }}</p><p class="text-[11px] text-slate-400">Produk</p></div>
                 <div><p class="text-lg font-extrabold text-slate-900">{{ $sold }}</p><p class="text-[11px] text-slate-400">Terjual</p></div>
                 <div>
                     <p class="text-lg font-extrabold {{ $ratingAvg !== null ? 'text-amber-500' : 'text-slate-300' }}">{{ $ratingAvg !== null ? '★ '.$ratingAvg : '—' }}</p>
@@ -115,6 +115,7 @@
             </a>
         @endforeach
     </div>
+    <div class="mt-8">{{ $products->links() }}</div>
 @endif
 
 @endsection
