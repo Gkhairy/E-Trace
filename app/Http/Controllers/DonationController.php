@@ -152,6 +152,12 @@ class DonationController extends Controller
             return response()->json(['success' => true]);
         }
 
+        // Notifikasi ke pembuat campaign: donasi masuk.
+        $amt = rtrim(rtrim(number_format((float) $v['amount_tlkm'], 6, '.', ''), '0'), '.');
+        $donorName = \App\Support\Identity::resolve($v['donor'])['name'] ?? 'Seseorang';
+        \App\Support\Notify::send($campaign->created_by, 'donation', 'Donasi masuk',
+            "{$donorName} berdonasi {$amt} TLKM ke \"{$campaign->title}\".", '/donate/' . $campaign->slug, '💝');
+
         return response()->json(['success' => true, 'amount' => $v['amount_tlkm']]);
     }
 

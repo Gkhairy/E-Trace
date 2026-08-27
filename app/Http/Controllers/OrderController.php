@@ -228,6 +228,14 @@ class OrderController extends Controller
             Log::warning('Gagal dispatch email order '.$order->id.': '.$e->getMessage());
         }
 
+        // Notifikasi in-app: pembeli (pesanan dibuat) + tiap penjual (pesanan baru).
+        \App\Support\Notify::send($order->user_id, 'order', 'Pesanan dibuat',
+            'Pembayaran diterima & ditahan escrow. Order ' . $order->order_id . '.', '/orders', '🛒');
+        foreach ($order->items()->pluck('seller_wallet')->unique() as $wallet) {
+            \App\Support\Notify::toWallet($wallet, 'order', 'Pesanan baru masuk',
+                'Ada pesanan baru untuk tokomu. Segera proses & kirim.', '/seller', '📦');
+        }
+
         return response()->json(['success' => true, 'order_id' => $order->id, 'status' => $order->status]);
     }
 
@@ -289,6 +297,21 @@ class OrderController extends Controller
         if (!OrderItem::where('order_ref_id', $order->id)->whereIn('status', ['paid', 'disputed', 'pending_confirmation'])->exists()) {
             $order->status = 'completed';
             $order->save();
+        }
+
+        // Notifikasi ke penjual (+ pengawas bila sengketa).
+        $prodName = optional($item->product)->name ?: 'Produk';
+        if ($data['status'] === 'completed') {
+            \App\Support\Notify::toWallet($item->seller_wallet, 'order', 'Pesanan dikonfirmasi diterima',
+                "Pembeli mengonfirmasi \"{$prodName}\" diterima — dana dilepas ke kamu.", '/seller', '✅');
+        } elseif ($data['status'] === 'refunded') {
+            \App\Support\Notify::toWallet($item->seller_wallet, 'order', 'Item direfund',
+                "Item \"{$prodName}\" direfund ke pembeli.", '/seller', '↩️');
+        } elseif ($data['status'] === 'disputed') {
+            \App\Support\Notify::toWallet($item->seller_wallet, 'order', 'Sengketa diajukan',
+                "Pembeli mengajukan sengketa untuk \"{$prodName}\". Dana ditahan sampai pengawas memutus.", '/seller', '⚠️');
+            \App\Support\Notify::toSupervisors('order', 'Sengketa baru',
+                "Ada sengketa untuk \"{$prodName}\" (order {$order->order_id}). Perlu ditinjau.", '/supervisor/disputes', '⚖️');
         }
 
         return response()->json(['success' => true, 'status' => $item->status]);

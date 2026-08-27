@@ -135,6 +135,13 @@ class SellerController extends Controller
             } catch (\Throwable $e) {
                 Log::warning('Gagal dispatch email dikirim item '.$item->id.': '.$e->getMessage());
             }
+
+            // Notifikasi in-app ke pembeli: pesanan dikirim (+ resi).
+            $buyerId = optional($item->order)->user_id;
+            $prodName = optional($item->product)->name ?: 'Produk';
+            $resi = $item->tracking_number ? (' Resi: ' . $item->tracking_number . ($item->courier ? ' (' . $item->courier . ')' : '') . '.') : '';
+            \App\Support\Notify::send($buyerId, 'order', 'Pesanan dikirim',
+                "\"{$prodName}\" sedang dikirim ke alamatmu.{$resi}", '/orders', '🚚');
         }
 
         return back()->with('success', 'Status pengiriman diperbarui.');

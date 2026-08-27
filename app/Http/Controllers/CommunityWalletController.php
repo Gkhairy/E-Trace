@@ -36,7 +36,7 @@ class CommunityWalletController extends Controller
 
     public function create()
     {
-        $friends = Friendship::where('user_id', auth()->id())->with('friend')->get()
+        $friends = Friendship::where('user_id', auth()->id())->where('status', 'accepted')->with('friend')->get()
             ->map(fn ($f) => ['id' => $f->friend_id, 'name' => $f->friend->public_name ?: $f->friend->name])
             ->filter(fn ($f) => $f['name']);
         return view('community.create', compact('friends'));
@@ -61,7 +61,7 @@ class CommunityWalletController extends Controller
 
         // Anggota = pembuat + teman terpilih (yang benar-benar teman kita).
         $memberIds = collect($data['members'] ?? [])
-            ->filter(fn ($id) => Friendship::where('user_id', auth()->id())->where('friend_id', $id)->exists())
+            ->filter(fn ($id) => Friendship::where('user_id', auth()->id())->where('friend_id', $id)->where('status', 'accepted')->exists())
             ->push(auth()->id())->unique()->values();
 
         $threshold = $data['mode'] === 'B'
@@ -86,6 +86,16 @@ class CommunityWalletController extends Controller
                 'spent'               => 0,
                 'period_start'        => now(),
             ]);
+        }
+
+        // Notifikasi ke anggota yang diundang (selain pembuat).
+        $inviter = auth()->user();
+        $inviterName = $inviter->public_name ?: $inviter->name;
+        foreach ($memberIds as $uid) {
+            if ($uid !== auth()->id()) {
+                \App\Support\Notify::send($uid, 'community', 'Diundang ke dompet komunitas',
+                    "{$inviterName} mengundangmu ke \"{$wallet->name}\".", '/community/' . $wallet->id, '👥');
+            }
         }
 
         // Gas drip untuk wallet komunitas (best-effort) supaya bisa menyalurkan dana.
@@ -165,6 +175,16 @@ class CommunityWalletController extends Controller
             'to_wallet' => $toWallet, 'to_name' => $toName, 'amount' => $data['amount'], 'note' => $data['note'] ?? null,
         ]);
         CommunityApproval::firstOrCreate(['proposal_id' => $p->id, 'user_id' => auth()->id()]); // pengusul auto-setuju
+
+        // Notifikasi ke anggota lain (penandatangan multisig) untuk menyetujui.
+        $proposerName = auth()->user()->public_name ?: auth()->user()->name;
+        $amt = rtrim(rtrim(number_format((float) $data['amount'], 6, '.', ''), '0'), '.');
+        $others = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', '!=', auth()->id())->pluck('user_id');
+        foreach ($others as $uid) {
+            \App\Support\Notify::send($uid, 'community', 'Usulan butuh persetujuan',
+                "{$proposerName} mengusulkan kirim {$amt} TLKM dari \"{$wallet->name}\". Butuh persetujuanmu.",
+                '/community/' . $wallet->id, '🗳️');
+        }
         return response()->json(['success' => true]);
     }
 
@@ -184,6 +204,14 @@ class CommunityWalletController extends Controller
         if ($p->approvals()->count() >= (int) $wallet->threshold) {
             $hash = $this->communitySign($wallet, $signer, $p->to_wallet, $p->amount);
             $p->update(['status' => 'executed', 'tx_hash' => $hash]);
+
+            // Notifikasi ke semua anggota bahwa usulan dieksekusi.
+            $amt = rtrim(rtrim(number_format((float) $p->amount, 6, '.', ''), '0'), '.');
+            foreach (CommunityMember::where('community_wallet_id', $wallet->id)->pluck('user_id') as $uid) {
+                \App\Support\Notify::send($uid, 'community', 'Dana komunitas dikirim',
+                    "Usulan disetujui — {$amt} TLKM dikirim dari \"{$wallet->name}\".",
+                    '/community/' . $wallet->id, '✅');
+            }
             return response()->json(['success' => true, 'executed' => true, 'tx_hash' => $hash]);
         }
         return response()->json(['success' => true, 'executed' => false]);

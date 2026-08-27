@@ -15,6 +15,8 @@ return [
     'login_store'=> 'Sign In',
     'register'   => 'Sign Up',
     'logout'     => 'Log Out',
+    'notifications' => 'Notifications',
+    'search_placeholder' => 'Search products, stores, or people…',
     'address'    => 'Addresses',
     'dashboard'  => 'Dashboard',
 ];

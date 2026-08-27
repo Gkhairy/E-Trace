@@ -62,6 +62,9 @@ Route::get('/api/ticker', [CryptoController::class, 'ticker']);
 // CHATBOT AI (PUBLIK, rate-limited). API key OpenAI di backend (.env).
 Route::post('/chatbot', [\App\Http\Controllers\ChatbotController::class, 'chat'])->middleware('throttle:15,1');
 
+// PENCARIAN (produk, toko, orang) — publik
+Route::get('/search', [\App\Http\Controllers\SearchController::class, 'index'])->name('search');
+
 // EXPLORER TRANSPARANSI (PUBLIK)
 Route::get('/explorer', [ExplorerController::class, 'index'])->name('explorer.index');
 Route::get('/explorer/{address}', [ExplorerController::class, 'show'])->where('address', '0x[a-fA-F0-9]{40}')->name('explorer.show');
@@ -130,9 +133,17 @@ Route::middleware('auth')->group(function () {
     // BAYAR QRIS pakai stablecoin — PROTOTIPE (receipt simulasi, tanpa settlement nyata)
     Route::post('/qris/pay', [\App\Http\Controllers\QrisController::class, 'pay'])->middleware('throttle:15,1');
 
+    // NOTIFIKASI IN-APP
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [\App\Http\Controllers\NotificationController::class, 'unreadCount']);
+    Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'readAll']);
+    Route::get('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'read'])->whereNumber('id');
+
     // TEMAN (kontak)
     Route::get('/friends', [FriendController::class, 'index']);
     Route::post('/friends', [FriendController::class, 'store']);
+    Route::post('/friends/accept', [FriendController::class, 'accept']);
+    Route::post('/friends/reject', [FriendController::class, 'reject']);
     Route::post('/friends/delete', [FriendController::class, 'destroy']);
 
     // DOMPET KOMUNITAS (dikelola app: teman + undang)

@@ -11,9 +11,46 @@
     <form action="/friends" method="POST" class="flex gap-2 mb-6">
         @csrf
         <input name="q" required placeholder="No HP atau email teman" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
-        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold">Tambah</button>
+        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold">Kirim Permintaan</button>
     </form>
 
+    {{-- PERMINTAAN MASUK (harus diterima) --}}
+    @if($incoming->isNotEmpty())
+        <h2 class="text-sm font-bold text-slate-900 mb-2">Permintaan pertemanan ({{ $incoming->count() }})</h2>
+        <div class="bg-white border border-blue-200 rounded-2xl shadow-sm divide-y divide-slate-100 mb-6">
+            @foreach($incoming as $r)
+                <div class="px-5 py-3 flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="font-medium text-slate-800">{{ $r->user->public_name ?: $r->user->name }}</p>
+                        <p class="text-xs text-slate-400">ingin berteman denganmu</p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <form action="/friends/accept" method="POST">@csrf<input type="hidden" name="id" value="{{ $r->id }}">
+                            <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">Terima</button>
+                        </form>
+                        <form action="/friends/reject" method="POST">@csrf<input type="hidden" name="id" value="{{ $r->id }}">
+                            <button class="bg-white border border-slate-200 text-slate-600 hover:border-red-300 hover:text-red-600 px-3 py-1.5 rounded-lg text-xs font-medium">Tolak</button>
+                        </form>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    @endif
+
+    {{-- PERMINTAAN TERKIRIM (menunggu) --}}
+    @if($outgoing->isNotEmpty())
+        <h2 class="text-sm font-bold text-slate-900 mb-2">Menunggu diterima</h2>
+        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm divide-y divide-slate-100 mb-6">
+            @foreach($outgoing as $r)
+                <div class="px-5 py-3 flex items-center justify-between gap-3">
+                    <p class="font-medium text-slate-700">{{ $r->friend->public_name ?: $r->friend->name }}</p>
+                    <span class="text-xs text-amber-600">Menunggu…</span>
+                </div>
+            @endforeach
+        </div>
+    @endif
+
+    <h2 class="text-sm font-bold text-slate-900 mb-2">Teman</h2>
     @if($friends->isEmpty())
         <div class="bg-white border border-dashed border-slate-300 rounded-3xl p-12 text-center text-slate-500">Belum ada teman.</div>
     @else

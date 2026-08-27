@@ -15,6 +15,8 @@ return [
     'login_store'=> 'Masuk Toko',
     'register'   => 'Daftar',
     'logout'     => 'Keluar',
+    'notifications' => 'Notifikasi',
+    'search_placeholder' => 'Cari produk, toko, atau orang…',
     'address'    => 'Alamat',
     'dashboard'  => 'Dashboard',
 ];
