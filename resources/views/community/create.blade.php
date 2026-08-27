@@ -32,7 +32,7 @@
         <div id="fieldB" class="hidden">
             <label class="block text-sm font-medium text-slate-700 mb-1.5">Ambang persetujuan (M)</label>
             <input name="threshold" type="number" min="1" value="{{ old('threshold', 2) }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-blue-500 outline-none text-sm">
-            <p class="text-[11px] text-slate-400 mt-1">Butuh M anggota menyetujui sebelum dana terkirim.</p>
+            <p class="text-[11px] text-slate-400 mt-1">Butuh M dari penanda tangan yang ditunjuk menyetujui sebelum dana terkirim.</p>
         </div>
 
         <div>
@@ -46,13 +46,33 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     @foreach($friends as $f)
                         <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-400 text-sm">
-                            <input type="checkbox" name="members[]" value="{{ $f['id'] }}" class="accent-blue-600">
+                            <input type="checkbox" name="members[]" value="{{ $f['id'] }}" data-member="{{ $f['id'] }}" onchange="syncSigners()" class="accent-blue-600">
                             {{ $f['name'] }}
                         </label>
                     @endforeach
                 </div>
             @endif
             <p class="text-[11px] text-slate-400 mt-1.5">Kamu otomatis jadi anggota.</p>
+        </div>
+
+        {{-- PENANDA TANGAN WAJIB (khusus Multisig) — pilih orang spesifik (mis. boss, wakil, sekre) --}}
+        <div id="fieldSigners" class="hidden">
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Penanda tangan wajib</label>
+            <p class="text-[11px] text-slate-400 mb-2">Pilih orang spesifik yang persetujuannya dihitung (mis. boss, wakil, sekre). Hanya mereka yang bisa menyetujui usulan.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {{-- Kamu (pembuat) selalu jadi anggota; default penanda tangan --}}
+                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-violet-200 bg-violet-50/40 cursor-pointer text-sm">
+                    <input type="checkbox" name="signers[]" value="{{ auth()->id() }}" checked class="accent-violet-600">
+                    {{ auth()->user()->public_name ?: auth()->user()->name }} <span class="text-[10px] text-slate-400">(kamu)</span>
+                </label>
+                @foreach($friends as $f)
+                    <label data-signer="{{ $f['id'] }}" class="hidden items-center gap-2 p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-violet-400 text-sm">
+                        <input type="checkbox" name="signers[]" value="{{ $f['id'] }}" class="accent-violet-600">
+                        {{ $f['name'] }}
+                    </label>
+                @endforeach
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1.5">Kosong = semua anggota jadi penanda tangan. Ambang M di atas dihitung dari jumlah penanda tangan.</p>
         </div>
 
         <div class="flex gap-3">
@@ -65,7 +85,24 @@
 
 @section('scripts')
 <script>
-function onMode() { const b = document.getElementById('modeSel').value === 'B'; document.getElementById('fieldA').classList.toggle('hidden', b); document.getElementById('fieldB').classList.toggle('hidden', !b); }
+function onMode() {
+    const b = document.getElementById('modeSel').value === 'B';
+    document.getElementById('fieldA').classList.toggle('hidden', b);
+    document.getElementById('fieldB').classList.toggle('hidden', !b);
+    document.getElementById('fieldSigners').classList.toggle('hidden', !b);
+    if (b) syncSigners();
+}
+// Baris penanda tangan hanya muncul untuk teman yang dipilih jadi anggota.
+function syncSigners() {
+    document.querySelectorAll('[data-member]').forEach(cb => {
+        const row = document.querySelector('[data-signer="' + cb.value + '"]');
+        if (!row) return;
+        const on = cb.checked;
+        row.classList.toggle('hidden', !on);
+        row.classList.toggle('flex', on);
+        if (!on) { const s = row.querySelector('input'); if (s) s.checked = false; }
+    });
+}
 onMode();
 </script>
 @endsection

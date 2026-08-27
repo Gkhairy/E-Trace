@@ -378,6 +378,32 @@
         });
     }
 
+    // Modal INPUT (pengganti prompt() bawaan) -> Promise<string|null>
+    function uiPrompt({ title = 'Masukkan nilai', label = '', placeholder = '', value = '', type = 'text', min = null, step = null, confirmText = 'Lanjut', cancelText = 'Batal' } = {}) {
+        const attrs = [
+            `type="${type}"`, `value="${value}"`, `placeholder="${placeholder}"`,
+            min !== null ? `min="${min}"` : '', step !== null ? `step="${step}"` : '',
+        ].join(' ');
+        return new Promise((resolve) => {
+            openModal(`
+                <div class="p-6">
+                    <h3 class="text-lg font-bold text-slate-900 mb-1">${title}</h3>
+                    ${label ? `<p class="text-sm text-slate-500 mb-3">${label}</p>` : '<div class="mb-3"></div>'}
+                    <input id="mPromptInput" ${attrs} class="w-full px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 outline-none focus:bg-white focus:border-blue-500 text-sm mb-4">
+                    <div class="flex gap-3">
+                        <button id="mPromptOk" class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition">${confirmText}</button>
+                        <button id="mPromptCancel" class="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-sm font-medium transition">${cancelText}</button>
+                    </div>
+                </div>`);
+            const inp = document.getElementById('mPromptInput');
+            setTimeout(() => { inp.focus(); inp.select(); }, 50);
+            const done = (v) => { closeModal(); resolve(v); };
+            document.getElementById('mPromptOk').onclick = () => done(inp.value);
+            document.getElementById('mPromptCancel').onclick = () => done(null);
+            inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); done(inp.value); } });
+        });
+    }
+
     // ---- Modal PROGRES TRANSAKSI (multi-langkah) ----
     const txProgress = {
         steps: [],

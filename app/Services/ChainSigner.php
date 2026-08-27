@@ -22,7 +22,7 @@ class ChainSigner
         $this->chainId = (int) config('chain.chain_id', 11155111);
     }
 
-    private function rpc(string $method, array $params)
+    private function rpc(string $method, array $params = [])
     {
         $res = Http::timeout(25)->acceptJson()->post($this->rpc, [
             'jsonrpc' => '2.0', 'id' => 1, 'method' => $method, 'params' => $params,
@@ -32,6 +32,16 @@ class ChainSigner
         }
         $json = $res->json();
         return $json['result'] ?? null; // error → null (dilempar oleh pemanggil)
+    }
+
+    /** Saldo ETH (gas) sebuah alamat dalam ETH (float). Null bila RPC gagal. */
+    public function ethBalance(string $address): ?float
+    {
+        $res = $this->rpc('eth_getBalance', [$address, 'latest']);
+        if ($res === null) {
+            return null;
+        }
+        return (float) (gmp_strval(gmp_init($res, 16)) / 1e18);
     }
 
     /** Konversi jumlah token desimal (mis. "12.5") ke wei hex (18 desimal). */

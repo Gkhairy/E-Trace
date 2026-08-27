@@ -50,6 +50,8 @@ class CommunityWalletController extends Controller
             'description'   => 'nullable|string|max:500',
             'members'       => 'nullable|array',       // id teman yang diundang
             'members.*'     => 'integer',
+            'signers'       => 'nullable|array',       // id anggota penanda tangan wajib (Mode B)
+            'signers.*'     => 'integer',
             'monthly_limit' => 'nullable|numeric|min:0', // Mode A
             'threshold'     => 'nullable|integer|min:1',  // Mode B
         ]);
@@ -64,8 +66,17 @@ class CommunityWalletController extends Controller
             ->filter(fn ($id) => Friendship::where('user_id', auth()->id())->where('friend_id', $id)->where('status', 'accepted')->exists())
             ->push(auth()->id())->unique()->values();
 
+        // Penanda tangan wajib (Mode B): pilihan dari anggota; default = SEMUA anggota.
+        $signerIds = $data['mode'] === 'B'
+            ? collect($data['signers'] ?? [])->filter(fn ($id) => $memberIds->contains($id))->unique()->values()
+            : collect();
+        if ($data['mode'] === 'B' && $signerIds->isEmpty()) {
+            $signerIds = $memberIds; // fallback: semua anggota jadi penanda tangan
+        }
+
+        // Ambang M dibatasi jumlah PENANDA TANGAN (bukan seluruh anggota).
         $threshold = $data['mode'] === 'B'
-            ? max(1, min((int) ($data['threshold'] ?? 2), $memberIds->count()))
+            ? max(1, min((int) ($data['threshold'] ?? 2), $signerIds->count()))
             : null;
 
         $wallet = CommunityWallet::create([
@@ -82,6 +93,7 @@ class CommunityWalletController extends Controller
             CommunityMember::create([
                 'community_wallet_id' => $wallet->id,
                 'user_id'             => $uid,
+                'is_signer'           => $data['mode'] === 'B' ? $signerIds->contains($uid) : false,
                 'monthly_limit'       => $data['mode'] === 'A' ? ($data['monthly_limit'] ?? 0) : null,
                 'spent'               => 0,
                 'period_start'        => now(),
@@ -104,13 +116,17 @@ class CommunityWalletController extends Controller
         return redirect('/community/' . $wallet->id)->with('success', 'Dompet komunitas dibuat.');
     }
 
-    public function show(int $id, SepoliaVerifier $verifier)
+    public function show(int $id, SepoliaVerifier $verifier, ChainSigner $signer)
     {
         $wallet = CommunityWallet::with(['members.user', 'proposals'])->findOrFail($id);
         $this->authorizeMember($wallet);
 
         $balance = $verifier->tlkmBalance($wallet->address);
+        $gasEth  = $signer->ethBalance($wallet->address); // ETH untuk biaya gas
         $me = $wallet->members->firstWhere('user_id', auth()->id());
+
+        // Penanda tangan wajib (Mode B) untuk menghitung persetujuan yang sah.
+        $signerIds = $wallet->members->where('is_signer', true)->pluck('user_id');
 
         // Sisa jatah (Mode A) dgn reset 30 hari.
         $members = $wallet->members->map(function ($m) use ($wallet) {
@@ -120,17 +136,21 @@ class CommunityWalletController extends Controller
                 $remaining = max(0, (float) $m->monthly_limit - $spent);
             }
             return ['name' => $m->user->public_name ?: $m->user->name, 'wallet' => $m->user->wallet_address,
-                    'limit' => (float) $m->monthly_limit, 'remaining' => $remaining, 'is_me' => $m->user_id === auth()->id()];
+                    'limit' => (float) $m->monthly_limit, 'remaining' => $remaining, 'is_me' => $m->user_id === auth()->id(),
+                    'is_signer' => (bool) $m->is_signer];
         });
 
         $proposals = $wallet->proposals->map(fn ($p) => [
             'id' => $p->id, 'to_wallet' => $p->to_wallet, 'to_name' => $p->to_name,
             'amount' => (float) $p->amount, 'note' => $p->note, 'status' => $p->status, 'tx' => $p->tx_hash,
-            'approvals' => $p->approvals()->count(),
+            'approvals' => $p->approvals()->whereIn('user_id', $signerIds)->count(),
             'approved_by_me' => $p->approvals()->where('user_id', auth()->id())->exists(),
         ]);
 
-        return view('community.show', compact('wallet', 'balance', 'members', 'proposals', 'me'));
+        // Apakah user ini penanda tangan wajib?
+        $iAmSigner = $me ? (bool) $me->is_signer : false;
+
+        return view('community.show', compact('wallet', 'balance', 'gasEth', 'members', 'proposals', 'me', 'iAmSigner', 'signerIds'));
     }
 
     /** Mode A: tarik dana sampai jatah. Konfirmasi PIN. */
@@ -163,7 +183,7 @@ class CommunityWalletController extends Controller
         $data = $req->validate(['id' => 'required|integer', 'to' => 'required|string', 'amount' => 'required|numeric|min:0.000001', 'note' => 'nullable|string|max:120', 'pin' => 'required|digits:6']);
         $wallet = CommunityWallet::findOrFail($data['id']);
         abort_unless($wallet->mode === 'B', 422, 'Bukan mode multisig.');
-        CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
+        $member = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
         $this->requirePin($data['pin']);
 
         // Resolusi penerima.
@@ -174,12 +194,15 @@ class CommunityWalletController extends Controller
             'community_wallet_id' => $wallet->id, 'proposer_id' => auth()->id(),
             'to_wallet' => $toWallet, 'to_name' => $toName, 'amount' => $data['amount'], 'note' => $data['note'] ?? null,
         ]);
-        CommunityApproval::firstOrCreate(['proposal_id' => $p->id, 'user_id' => auth()->id()]); // pengusul auto-setuju
+        // Pengusul auto-setuju HANYA bila ia termasuk penanda tangan wajib.
+        if ($member->is_signer) {
+            CommunityApproval::firstOrCreate(['proposal_id' => $p->id, 'user_id' => auth()->id()]);
+        }
 
-        // Notifikasi ke anggota lain (penandatangan multisig) untuk menyetujui.
+        // Notifikasi ke PENANDA TANGAN lain untuk menyetujui.
         $proposerName = auth()->user()->public_name ?: auth()->user()->name;
         $amt = rtrim(rtrim(number_format((float) $data['amount'], 6, '.', ''), '0'), '.');
-        $others = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', '!=', auth()->id())->pluck('user_id');
+        $others = CommunityMember::where('community_wallet_id', $wallet->id)->where('is_signer', true)->where('user_id', '!=', auth()->id())->pluck('user_id');
         foreach ($others as $uid) {
             \App\Support\Notify::send($uid, 'community', 'Usulan butuh persetujuan',
                 "{$proposerName} mengusulkan kirim {$amt} TLKM dari \"{$wallet->name}\". Butuh persetujuanmu.",
@@ -194,14 +217,20 @@ class CommunityWalletController extends Controller
         $data = $req->validate(['proposal_id' => 'required|integer', 'pin' => 'required|digits:6']);
         $p = CommunityProposal::findOrFail($data['proposal_id']);
         $wallet = CommunityWallet::findOrFail($p->community_wallet_id);
-        CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
+        $member = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
         abort_unless($p->status === 'open', 422, 'Usulan sudah selesai.');
+        // Hanya PENANDA TANGAN yang ditunjuk yang bisa menyetujui.
+        abort_unless($member->is_signer, 403, 'Kamu bukan penanda tangan yang ditunjuk untuk dompet ini.');
         $this->requirePin($data['pin']);
 
         CommunityApproval::firstOrCreate(['proposal_id' => $p->id, 'user_id' => auth()->id()]);
 
+        // Hitung persetujuan HANYA dari penanda tangan wajib.
+        $signerIds = CommunityMember::where('community_wallet_id', $wallet->id)->where('is_signer', true)->pluck('user_id');
+        $approvalCount = $p->approvals()->whereIn('user_id', $signerIds)->count();
+
         // Cukup ambang? Eksekusi.
-        if ($p->approvals()->count() >= (int) $wallet->threshold) {
+        if ($approvalCount >= (int) $wallet->threshold) {
             $hash = $this->communitySign($wallet, $signer, $p->to_wallet, $p->amount);
             $p->update(['status' => 'executed', 'tx_hash' => $hash]);
 
@@ -239,6 +268,16 @@ class CommunityWalletController extends Controller
 
     private function communitySign(CommunityWallet $wallet, ChainSigner $signer, string $to, string|float $amount): string
     {
+        // Preflight: dompet komunitas butuh ETH untuk biaya gas.
+        $eth = $signer->ethBalance($wallet->address);
+        if ($eth !== null && $eth < 0.0003) {
+            // Coba isi otomatis bila funder gas tersedia; kalau tetap kosong, pesan jelas.
+            $this->gasDrip($wallet);
+            $eth = $signer->ethBalance($wallet->address);
+            abort_if($eth !== null && $eth < 0.0003, 422,
+                'Dompet komunitas belum punya ETH untuk biaya gas. Kirim sedikit ETH Sepolia ke alamat dompet (' . $wallet->address . ') lalu coba lagi.');
+        }
+
         $priv = (new EmbeddedWallet())->decryptServer($wallet->only(['wallet_enc', 'wallet_salt', 'wallet_iv', 'wallet_tag']));
         abort_unless($priv, 500, 'Kunci dompet komunitas gagal dibuka.');
         return $signer->sendContractCall($priv, config('chain.tlkm'), self::ERC20_ABI, 'transfer', [$to, $signer->toWei((string) $amount)]);
