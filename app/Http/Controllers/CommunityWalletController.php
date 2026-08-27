@@ -275,7 +275,7 @@ class CommunityWalletController extends Controller
             $this->gasDrip($wallet);
             $eth = $signer->ethBalance($wallet->address);
             abort_if($eth !== null && $eth < 0.0003, 422,
-                'Dompet komunitas belum punya ETH untuk biaya gas. Kirim sedikit ETH Sepolia ke alamat dompet (' . $wallet->address . ') lalu coba lagi.');
+                'Dompet komunitas belum punya gas (ETH testnet — gratis, bukan uang nyata). Isi sedikit ETH Sepolia dari faucet ke alamat dompet (' . $wallet->address . ') lalu coba lagi.');
         }
 
         $priv = (new EmbeddedWallet())->decryptServer($wallet->only(['wallet_enc', 'wallet_salt', 'wallet_iv', 'wallet_tag']));

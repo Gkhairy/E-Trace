@@ -36,9 +36,9 @@
     <div class="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4 mb-6 text-sm flex items-start gap-3">
         <svg class="w-5 h-5 shrink-0 text-amber-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
         <div>
-            <b>Dompet belum punya ETH untuk biaya gas.</b> Menarik/mengirim dana akan gagal sampai dompet diisi sedikit ETH Sepolia.
-            Kirim ETH ke <a href="https://sepolia.etherscan.io/address/{{ $wallet->address }}" target="_blank" class="font-mono underline break-all">{{ $wallet->address }}</a>
-            (mis. dari <a href="https://sepoliafaucet.com" target="_blank" class="underline">faucet Sepolia</a>), lalu muat ulang halaman.
+            <b>Dompet belum punya gas (ETH testnet).</b> Ini <b>bukan biaya uang nyata</b> — ETH Sepolia gratis dari faucet, hanya untuk testnet.
+            Isi sedikit ke <a href="https://sepolia.etherscan.io/address/{{ $wallet->address }}" target="_blank" class="font-mono underline break-all">{{ $wallet->address }}</a>
+            (dari <a href="https://sepoliafaucet.com" target="_blank" class="underline">faucet Sepolia</a>) lalu muat ulang, atau admin jalankan <code class="bg-white/60 px-1 rounded">php artisan community:fund-gas</code>.
         </div>
     </div>
 @endif
