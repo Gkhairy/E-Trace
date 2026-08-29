@@ -2,25 +2,81 @@
 
 @section('content')
 
-{{-- ===== HERO BANNER (banner berwarna, teks putih — disengaja) ===== --}}
-<section class="relative overflow-hidden rounded-2xl bg-blue-600 mb-8">
-    <div class="relative px-6 md:px-12 py-10 md:py-14 max-w-2xl">
-        <span class="inline-flex items-center gap-2 text-xs font-medium bg-white/15 border border-white/20 rounded-full px-3 py-1 text-white mb-4">
-            <span class="w-1.5 h-1.5 rounded-full bg-white"></span> {{ __('catalog.hero_badge') }}
-        </span>
-        <h1 class="text-3xl md:text-5xl font-extrabold leading-tight tracking-tight text-white">
-            {{ __('catalog.hero_title_1') }} <span class="text-yellow-300">TLKM</span>,
-            <br class="hidden md:block">{{ __('catalog.hero_title_2') }}
-        </h1>
-        <p class="text-blue-100 mt-4 text-sm md:text-base max-w-lg">
-            {{ __('catalog.hero_sub') }}
-        </p>
-        <div class="flex flex-wrap gap-3 mt-6">
-            <a href="#katalog" class="bg-white text-blue-700 hover:bg-blue-50 px-5 py-2.5 rounded-xl text-sm font-semibold transition shadow-sm">{{ __('catalog.see_products') }}</a>
-            <a href="/orders" class="bg-white/15 hover:bg-white/25 border border-white/25 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition">{{ __('catalog.order_history') }}</a>
-        </div>
+{{-- ===== HERO CAROUSEL (slide 1 = hero; slide 2+ = iklan admin) ===== --}}
+@php $slideCount = 1 + $banners->count(); @endphp
+<div id="heroCarousel" class="relative overflow-hidden rounded-2xl mb-8 group">
+    <div id="heroTrack" class="flex transition-transform duration-500 ease-out" style="transform: translateX(0%)">
+        {{-- Slide bawaan --}}
+        <section class="w-full shrink-0 bg-blue-600 min-h-[280px] md:min-h-[340px] flex items-center">
+            <div class="px-6 md:px-12 py-10 md:py-14 max-w-2xl">
+                <span class="inline-flex items-center gap-2 text-xs font-medium bg-white/15 border border-white/20 rounded-full px-3 py-1 text-white mb-4">
+                    <span class="w-1.5 h-1.5 rounded-full bg-white"></span> {{ __('catalog.hero_badge') }}
+                </span>
+                <h1 class="text-3xl md:text-5xl font-extrabold leading-tight tracking-tight text-white">
+                    {{ __('catalog.hero_title_1') }} <span class="text-yellow-300">TLKM</span>,
+                    <br class="hidden md:block">{{ __('catalog.hero_title_2') }}
+                </h1>
+                <p class="text-blue-100 mt-4 text-sm md:text-base max-w-lg">{{ __('catalog.hero_sub') }}</p>
+                <div class="flex flex-wrap gap-3 mt-6">
+                    <a href="#katalog" class="bg-white text-blue-700 hover:bg-blue-50 px-5 py-2.5 rounded-xl text-sm font-semibold transition shadow-sm">{{ __('catalog.see_products') }}</a>
+                    <a href="/orders" class="bg-white/15 hover:bg-white/25 border border-white/25 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition">{{ __('catalog.order_history') }}</a>
+                </div>
+            </div>
+        </section>
+        {{-- Slide iklan (dikelola admin) --}}
+        @foreach($banners as $b)
+            <a href="{{ $b->link ?: '#' }}" @if($b->link) target="_blank" rel="noopener" @endif class="w-full shrink-0 min-h-[280px] md:min-h-[340px] bg-slate-100 block">
+                <img src="{{ $b->imageUrl() }}" alt="{{ $b->title }}" class="w-full h-full min-h-[280px] md:min-h-[340px] object-cover">
+            </a>
+        @endforeach
     </div>
-</section>
+
+    @if($slideCount > 1)
+        {{-- Panah --}}
+        <button type="button" onclick="heroStep(-1)" aria-label="Sebelumnya" class="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 hover:bg-white text-slate-700 shadow flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <button type="button" onclick="heroStep(1)" aria-label="Berikutnya" class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 hover:bg-white text-slate-700 shadow flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </button>
+        {{-- Titik --}}
+        <div id="heroDots" class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+            @for($i = 0; $i < $slideCount; $i++)
+                <button type="button" onclick="heroGo({{ $i }})" data-dot class="w-2 h-2 rounded-full bg-white/50 hover:bg-white transition"></button>
+            @endfor
+        </div>
+    @endif
+
+    @auth
+        @if(auth()->user()->isSupervisor())
+            <a href="/admin/banners" class="absolute top-3 right-3 inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg bg-white/90 hover:bg-white text-slate-700 shadow transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 4v16m8-8H4"/></svg>
+                Kelola Iklan
+            </a>
+        @endif
+    @endauth
+</div>
+
+@if($slideCount > 1)
+<script>
+(function () {
+    const track = document.getElementById('heroTrack');
+    const dots = document.querySelectorAll('#heroDots [data-dot]');
+    const count = {{ $slideCount }};
+    let idx = 0, timer = null;
+    window.heroGo = function (i) {
+        idx = (i + count) % count;
+        track.style.transform = 'translateX(-' + (idx * 100) + '%)';
+        dots.forEach((d, k) => d.classList.toggle('!bg-white', k === idx));
+        dots.forEach((d, k) => d.classList.toggle('w-4', k === idx));
+        restart();
+    };
+    window.heroStep = (d) => heroGo(idx + d);
+    function restart() { if (timer) clearInterval(timer); timer = setInterval(() => heroGo(idx + 1), 5000); }
+    heroGo(0);
+})();
+</script>
+@endif
 
 {{-- ===== PINTASAN IKON (ala Shopee) ===== --}}
 @php

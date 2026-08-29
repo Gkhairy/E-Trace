@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Banner;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Support\Str;
@@ -20,7 +21,10 @@ class ProductController extends Controller
             ->when($activeCategory, fn ($q) => $q->where('category_id', $activeCategory->id))
             ->latest()->paginate(16)->withQueryString();
 
-        return view('products.index', compact('products', 'categories', 'activeCategory'));
+        // Banner iklan aktif (dikelola admin) untuk carousel hero.
+        $banners = Banner::where('is_active', true)->orderBy('sort')->orderByDesc('id')->get();
+
+        return view('products.index', compact('products', 'categories', 'activeCategory', 'banners'));
     }
 
     public function show($id)

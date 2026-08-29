@@ -52,7 +52,7 @@
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
     @foreach([
         ['Total Beli', $fmt($stats['bought_total']).' TLKM', $stats['bought_count'].' order', 'text-slate-900'],
-        ['Total Jual (net)', $fmt($stats['sold_net']).' TLKM', $stats['sold_count'].' item', 'text-green-600'],
+        ['Total Jual (net)', $fmt($stats['sold_net']).' TLKM', $stats['sold_count'].' item', 'text-red-600'],
         ['Escrow diterima', $fmt($stats['escrow_in']).' TLKM', 'masuk (sbg penjual)', 'text-green-600'],
         ['Escrow dibayar', $fmt($stats['escrow_out']).' TLKM', 'keluar (sbg pembeli)', 'text-blue-600'],
     ] as $c)

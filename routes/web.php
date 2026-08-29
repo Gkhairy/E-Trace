@@ -182,6 +182,12 @@ Route::middleware('auth')->group(function () {
     // ULASAN (pembeli)
     Route::post('/review', [ReviewController::class, 'store']);
 
+    // KELOLA IKLAN / BANNER CAROUSEL (admin/pengawas)
+    Route::get('/admin/banners', [\App\Http\Controllers\BannerController::class, 'index']);
+    Route::post('/admin/banners', [\App\Http\Controllers\BannerController::class, 'store']);
+    Route::post('/admin/banners/toggle', [\App\Http\Controllers\BannerController::class, 'toggle']);
+    Route::post('/admin/banners/delete', [\App\Http\Controllers\BannerController::class, 'destroy']);
+
     // PANEL PENGAWAS (dispute/arbiter)
     Route::get('/supervisor/disputes', [SupervisorController::class, 'disputes']);
     Route::post('/supervisor/resolve', [SupervisorController::class, 'resolve']);
