@@ -25,9 +25,10 @@ class ProductController extends Controller
 
     public function show($id)
     {
-        return view('products.show', [
-            'product' => Product::with(['store', 'reviews.user'])->findOrFail($id)
-        ]);
+        $product = Product::with(['store.user', 'reviews.user'])->findOrFail($id);
+        // Id user penjual (untuk fitur chat/nawar). Null bila produk penjualnya tak dikenal.
+        $sellerId = optional($product->store)->user_id;
+        return view('products.show', compact('product', 'sellerId'));
     }
 
     public function create()

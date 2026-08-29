@@ -810,6 +810,10 @@
         }
     </script>
 
+    @auth
+        @include('partials.chat-widget')
+    @endauth
+
     @yield('scripts')
 </body>
 </html>

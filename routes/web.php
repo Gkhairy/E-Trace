@@ -139,6 +139,14 @@ Route::middleware('auth')->group(function () {
     // BAYAR QRIS pakai stablecoin — PROTOTIPE (receipt simulasi, tanpa settlement nyata)
     Route::post('/qris/pay', [\App\Http\Controllers\QrisController::class, 'pay'])->middleware('throttle:15,1');
 
+    // CHAT (penjual ↔ pembeli, termasuk tawar-menawar)
+    Route::get('/chat/conversations', [\App\Http\Controllers\ChatController::class, 'conversations']);
+    Route::get('/chat/thread', [\App\Http\Controllers\ChatController::class, 'thread']);
+    Route::get('/chat/unread-count', [\App\Http\Controllers\ChatController::class, 'unreadCount']);
+    Route::post('/chat/send', [\App\Http\Controllers\ChatController::class, 'send'])->middleware('throttle:60,1');
+    Route::post('/chat/offer', [\App\Http\Controllers\ChatController::class, 'offer'])->middleware('throttle:30,1');
+    Route::post('/chat/respond', [\App\Http\Controllers\ChatController::class, 'respond'])->middleware('throttle:30,1');
+
     // NOTIFIKASI IN-APP
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
     Route::get('/notifications/unread-count', [\App\Http\Controllers\NotificationController::class, 'unreadCount']);

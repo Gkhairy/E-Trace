@@ -127,6 +127,22 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3M17 13l2.3 2.3M9 20a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0z"/></svg>
                     + Keranjang
                 </button>
+
+                {{-- Chat penjual + Nawar harga --}}
+                @if($sellerId && $sellerId !== auth()->id())
+                    <div class="mt-2 grid grid-cols-2 gap-2">
+                        <button onclick="startChat({{ $sellerId }}, @js($product->store->name ?? 'Penjual'))"
+                            class="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 10h8M8 14h5M21 12a8 8 0 01-11.6 7.1L4 20l1-4.3A8 8 0 1121 12z"/></svg>
+                            Chat Penjual
+                        </button>
+                        <button onclick="nawarProduct({{ $product->id }}, @js($product->name))"
+                            class="w-full bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 7h.01M7 3h5a2 2 0 011.41.59l7 7a2 2 0 010 2.82l-5.18 5.18a2 2 0 01-2.82 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/></svg>
+                            Nawar Harga
+                        </button>
+                    </div>
+                @endif
             @else
                 {{-- Guest: minta login dulu, simpan tujuan kembali ke produk ini (intended) --}}
                 <a href="/login?next={{ urlencode(url()->current()) }}"
