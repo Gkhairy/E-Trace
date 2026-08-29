@@ -753,12 +753,12 @@
         <div class="bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
             <div class="flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-green-300"></span>
-                <span class="font-semibold text-sm">Asisten E-Trace</span>
+                <span class="font-semibold text-sm">EVA</span>
             </div>
             <button onclick="toggleChat()" class="text-white/80 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
         </div>
         <div id="chatBody" class="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-50 text-sm">
-            <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-3 py-2 max-w-[85%] text-slate-700">Halo! Aku asisten E-Trace. Tanya soal cara belanja, TLKM, escrow, PIN, donasi, atau cari produk (mis. "cari sepatu").</div>
+            <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-3 py-2 max-w-[85%] text-slate-700">Halo! Aku EVA. Tanya soal cara belanja, TLKM, escrow, PIN, donasi, atau cari produk (mis. "cari sepatu").</div>
         </div>
         <div class="p-2.5 border-t border-slate-100 flex items-center gap-2">
             <input id="chatInput" onkeydown="if(event.key==='Enter')sendChat()" placeholder="Tulis pesan…" class="flex-1 px-3 py-2 rounded-xl bg-slate-100 border border-slate-200 focus:bg-white focus:border-blue-500 outline-none text-sm">

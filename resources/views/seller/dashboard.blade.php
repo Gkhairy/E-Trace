@@ -230,15 +230,24 @@
 @else
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         @foreach($products as $p)
-            <a href="/products/{{ $p->id }}" class="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-blue-400 hover:shadow-md transition">
-                <div class="aspect-square bg-white flex items-center justify-center p-3 border-b border-slate-100">
-                    <img src="{{ $p->image ? '/product_images/'.$p->image : 'https://placehold.co/300x300/f1f5f9/94a3b8?text=—' }}" onerror="this.src='https://placehold.co/300x300/f1f5f9/94a3b8?text=—'" class="max-w-full max-h-full object-contain">
+            <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-blue-400 hover:shadow-md transition flex flex-col">
+                <a href="/products/{{ $p->id }}" class="flex-1">
+                    <div class="aspect-square bg-white flex items-center justify-center p-3 border-b border-slate-100">
+                        <img src="{{ $p->imageUrl() ?? 'https://placehold.co/300x300/f1f5f9/94a3b8?text=—' }}" onerror="this.src='https://placehold.co/300x300/f1f5f9/94a3b8?text=—'" class="max-w-full max-h-full object-contain">
+                    </div>
+                    <div class="p-3">
+                        <p class="text-sm font-medium text-slate-800 line-clamp-1">{{ $p->name }}</p>
+                        <p class="text-sm font-bold text-slate-900 mt-0.5">{{ $fmt($p->price_usdc) }} <span class="text-xs text-blue-600">TLKM</span></p>
+                    </div>
+                </a>
+                <div class="flex border-t border-slate-100 divide-x divide-slate-100">
+                    <a href="/products/{{ $p->id }}/edit" class="flex-1 text-center py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Edit</a>
+                    <form action="/products/{{ $p->id }}/delete" method="POST" class="flex-1" onsubmit="return confirm('Hapus produk &quot;{{ addslashes($p->name) }}&quot;? Tindakan ini tidak bisa dibatalkan.')">
+                        @csrf
+                        <button class="w-full py-2 text-xs font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 transition">Hapus</button>
+                    </form>
                 </div>
-                <div class="p-3">
-                    <p class="text-sm font-medium text-slate-800 line-clamp-1">{{ $p->name }}</p>
-                    <p class="text-sm font-bold text-slate-900 mt-0.5">{{ $fmt($p->price_usdc) }} <span class="text-xs text-blue-600">TLKM</span></p>
-                </div>
-            </a>
+            </div>
         @endforeach
     </div>
 @endif

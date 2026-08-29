@@ -91,6 +91,67 @@ class DonationController extends Controller
         return redirect('/donate/' . $c->slug)->with('success', 'Campaign donasi dibuat.');
     }
 
+    /** Form edit campaign (pengawas). */
+    public function edit(string $slug)
+    {
+        $this->ensureSupervisor();
+        $campaign = Campaign::where('slug', $slug)->firstOrFail();
+        return view('donate.edit', compact('campaign'));
+    }
+
+    /** Simpan perubahan campaign (pengawas). */
+    public function update(Request $req, string $slug)
+    {
+        $this->ensureSupervisor();
+        $campaign = Campaign::where('slug', $slug)->firstOrFail();
+
+        $data = $req->validate([
+            'title'            => 'required|string|max:120',
+            'description'      => 'nullable|string|max:2000',
+            'recipient_wallet' => ['required', 'regex:/^0x[a-fA-F0-9]{40}$/'],
+            'goal_amount'      => 'nullable|numeric|min:0',
+            'closes_at'        => 'nullable|date',
+            'status'           => 'required|in:active,closed',
+            'image'            => 'nullable|image|mimes:jpg,jpeg,png,webp|max:3072',
+        ]);
+
+        if ($req->hasFile('image')) {
+            if ($campaign->image) {
+                @unlink(public_path('campaign_images/' . $campaign->image));
+            }
+            $imageName = Str::uuid() . '.' . $req->file('image')->getClientOriginalExtension();
+            $req->file('image')->move(public_path('campaign_images'), $imageName);
+            $campaign->image = $imageName;
+        }
+
+        $campaign->title            = $data['title'];
+        $campaign->description      = $data['description'] ?? null;
+        $campaign->recipient_wallet = strtolower($data['recipient_wallet']);
+        $campaign->goal_amount      = $data['goal_amount'] ?? null;
+        $campaign->closes_at        = $data['closes_at'] ?? null;
+        $campaign->status           = $data['status'];
+        $campaign->save();
+
+        return redirect('/donate/' . $campaign->slug)->with('success', 'Campaign donasi diperbarui.');
+    }
+
+    /** Hapus campaign (pengawas). */
+    public function destroy(string $slug)
+    {
+        $this->ensureSupervisor();
+        $campaign = Campaign::where('slug', $slug)->firstOrFail();
+
+        if ($campaign->image) {
+            @unlink(public_path('campaign_images/' . $campaign->image));
+        }
+        // Lepas tautan donasi/penyaluran (catatan tetap ada, tapi tak menunjuk campaign terhapus).
+        Donation::where('campaign_id', $campaign->id)->update(['campaign_id' => null]);
+        Disbursement::where('campaign_id', $campaign->id)->update(['campaign_id' => null]);
+        $campaign->delete();
+
+        return redirect('/donate')->with('success', 'Campaign donasi dihapus.');
+    }
+
     /** Detail campaign (publik) + form donasi + kartu penyalur (pengawas). */
     public function show(string $slug, SepoliaVerifier $verifier)
     {

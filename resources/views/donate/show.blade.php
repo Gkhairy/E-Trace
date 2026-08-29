@@ -26,7 +26,15 @@
         </div>
 
         <div>
-            <h1 class="text-2xl font-bold text-slate-900">{{ $campaign->title }}</h1>
+            <div class="flex items-start justify-between gap-3">
+                <h1 class="text-2xl font-bold text-slate-900">{{ $campaign->title }}</h1>
+                @if($isSup)
+                    <a href="/donate/{{ $campaign->slug }}/edit" class="shrink-0 inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600 transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.4-9.4a2 2 0 112.8 2.8L11 18l-4 1 1-4 9.6-9.6z"/></svg>
+                        Edit
+                    </a>
+                @endif
+            </div>
             <p class="text-sm text-slate-500 mt-2 whitespace-pre-line leading-relaxed">{{ $campaign->description ?: 'Tidak ada deskripsi.' }}</p>
         </div>
 

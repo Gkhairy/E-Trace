@@ -73,6 +73,9 @@ Route::get('/explorer/{address}', [ExplorerController::class, 'show'])->where('a
 Route::get('/donate', [DonationController::class, 'index']);
 Route::get('/donate/create', [DonationController::class, 'create'])->middleware('auth');
 Route::post('/donate/campaigns', [DonationController::class, 'store'])->middleware('auth');
+Route::get('/donate/{slug}/edit', [DonationController::class, 'edit'])->where('slug', '[a-z0-9\-]+')->middleware('auth');
+Route::post('/donate/{slug}/update', [DonationController::class, 'update'])->where('slug', '[a-z0-9\-]+')->middleware('auth');
+Route::post('/donate/{slug}/delete', [DonationController::class, 'destroy'])->where('slug', '[a-z0-9\-]+')->middleware('auth');
 Route::get('/donate/{slug}', [DonationController::class, 'show'])->where('slug', '[a-z0-9\-]+');
 Route::post('/donation/donate', [DonationController::class, 'donate'])->middleware('throttle:20,1');
 Route::post('/donation/disburse', [DonationController::class, 'disburse'])->middleware('auth');
@@ -90,6 +93,9 @@ Route::get('/products/{id}', [ProductController::class, 'show'])->whereNumber('i
 // Listing produk oleh admin tetap WAJIB login.
 Route::get('/products/create', [ProductController::class, 'create'])->middleware('auth');
 Route::post('/products/store', [ProductController::class, 'store'])->middleware('auth');
+Route::get('/products/{id}/edit', [ProductController::class, 'edit'])->whereNumber('id')->middleware('auth');
+Route::post('/products/{id}/update', [ProductController::class, 'update'])->whereNumber('id')->middleware('auth');
+Route::post('/products/{id}/delete', [ProductController::class, 'destroy'])->whereNumber('id')->middleware('auth');
 
 // CART (semua butuh login)
 Route::middleware('auth')->group(function () {
