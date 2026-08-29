@@ -146,7 +146,7 @@
                 <span class="text-sm text-slate-500">Total produk (on-chain)</span>
                 <span class="text-2xl font-extrabold text-slate-900">{{ rtrim(rtrim(number_format($total, 2), '0'), '.') }} <span class="text-sm text-blue-600 font-semibold">TLKM</span></span>
             </div>
-            <p class="text-[11px] text-slate-400 mt-1.5 leading-snug">*Ongkir dihitung via <b>J&amp;T</b> (bila aktif) atau estimasi jarak, dikonversi ke TLKM (Rp1.000 = 1 TLKM), diselesaikan terpisah dari escrow produk. {{ $buyerCity ? 'Kota tujuan: '.$buyerCity.'.' : 'Pilih/isi alamat untuk estimasi akurat.' }}</p>
+            <p class="text-[11px] text-slate-400 mt-1.5 leading-snug">*Ongkir dihitung via <b>RajaOngkir</b> (tarif kurir termurah) atau estimasi jarak bila kota tak dikenali, dikonversi ke TLKM (Rp1.000 = 1 TLKM), diselesaikan terpisah dari escrow produk. {{ $buyerCity ? 'Kota tujuan: '.$buyerCity.'.' : 'Pilih/isi alamat untuk estimasi akurat.' }}</p>
 
             <div class="flex items-center gap-2 text-xs text-green-700 mt-4 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>

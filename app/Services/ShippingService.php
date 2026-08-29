@@ -80,12 +80,13 @@ class ShippingService
         $rpPerTlkm = max(1, (int) config('chain.rp_per_tlkm', 1000));
         $toTlkm = fn (int $rp) => round($rp / $rpPerTlkm, 2);
 
-        // 1) Coba J&T (nyata) bila kredensial diisi.
-        $jnt = app(JntService::class)->tariff($fromCity, $toCity, (float) ($cfg['weight_kg'] ?? 1));
-        if ($jnt !== null) {
+        // 1) Coba RajaOngkir (nyata) bila API key diisi.
+        $weightGrams = (int) round(((float) ($cfg['weight_kg'] ?? 1)) * 1000);
+        $ro = app(RajaOngkirService::class)->tariff($fromCity, $toCity, $weightGrams);
+        if ($ro !== null) {
             return [
-                'fee' => $jnt, 'fee_tlkm' => $toTlkm($jnt), 'km' => null, 'known' => true,
-                'method' => 'J&T Express', 'note' => 'Tarif J&T Express.',
+                'fee' => $ro, 'fee_tlkm' => $toTlkm($ro), 'km' => null, 'known' => true,
+                'method' => 'RajaOngkir', 'note' => 'Tarif termurah via RajaOngkir.',
             ];
         }
 

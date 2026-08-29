@@ -29,8 +29,8 @@ return [
     'rp_per_tlkm' => (int) env('RP_PER_TLKM', 1000),
 
     // ============ ONGKOS KIRIM (H7) — configurable, produk fisik ============
-    // Utama: J&T Tariff API (butuh kredensial). Fallback: jarak garis lurus
-    // (haversine) antar kota dari koordinat bawaan (gratis, tanpa API).
+    // Utama: RajaOngkir (Komerce API v1). Fallback: jarak garis lurus (haversine)
+    // antar kota dari koordinat bawaan (gratis, tanpa API).
     'shipping' => [
         'base_fee'      => (int) env('SHIP_BASE_FEE', 20000),   // untuk 10 km pertama (Rupiah)
         'base_km'       => (int) env('SHIP_BASE_KM', 10),
@@ -39,13 +39,11 @@ return [
         'fallback_fee'  => (int) env('SHIP_FALLBACK_FEE', 30000), // kota tak dikenal
         'weight_kg'     => (float) env('SHIP_WEIGHT_KG', 1),      // berat default per order
 
-        // J&T Express Tariff API. Aktif hanya jika JNT_API_KEY diisi.
-        // Perlu registrasi di developer.jet.co.id + proses mapping area code.
-        'jnt' => [
-            'enabled' => (bool) env('JNT_API_KEY', false),
-            'url'     => env('JNT_TARIFF_URL', 'https://developer.jet.co.id/api/tariff'),
-            'api_key' => env('JNT_API_KEY', ''),
-            'sender'  => env('JNT_SENDER_CODE', ''), // area code asal (dari mapping J&T)
+        // RajaOngkir (Komerce). Aktif hanya jika RAJAONGKIR_API_KEY diisi (.env).
+        'rajaongkir' => [
+            'key'      => env('RAJAONGKIR_API_KEY', ''),
+            'base'     => env('RAJAONGKIR_BASE', 'https://rajaongkir.komerce.id/api/v1'),
+            'couriers' => env('RAJAONGKIR_COURIERS', 'jne:sicepat:jnt:ide:pos:tiki'),
         ],
     ],
 ];
