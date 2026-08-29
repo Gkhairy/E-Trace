@@ -106,6 +106,7 @@ Route::middleware('auth')->group(function () {
 
     // CHECKOUT
     Route::get('/checkout', [CheckoutController::class, 'index']);
+    Route::post('/shipping/quote', [\App\Http\Controllers\ShippingController::class, 'quote'])->middleware('throttle:60,1');
 
     // PROFIL PUBLIK (semua user)
     Route::get('/profile', [ProfileController::class, 'edit']);

@@ -42,7 +42,7 @@
                 <div class="space-y-2 mb-4">
                     @foreach($addresses as $a)
                         <label data-addrcard class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-400 transition">
-                            <input type="radio" name="addr" value="{{ $a->id }}" class="mt-1 accent-blue-600" onchange="selectAddr(this)" @checked($loop->first)>
+                            <input type="radio" name="addr" value="{{ $a->id }}" data-city="{{ $a->city }}" class="mt-1 accent-blue-600" onchange="selectAddr(this)" @checked($loop->first)>
                             <div class="min-w-0 text-sm">
                                 <p class="font-medium text-slate-800">{{ $a->recipient_name }} <span class="text-slate-400 font-normal">· {{ $a->phone }}</span>
                                     @if($a->label)<span class="ml-1 text-[11px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">{{ $a->label }}</span>@endif
@@ -115,8 +115,8 @@
                         </div>
                         @if(isset($shipEstimates[$seller]))
                             <div class="px-4 py-1.5 bg-slate-50/60 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                                <span>Ongkir · {{ $shipEstimates[$seller]['method'] }}{{ $shipEstimates[$seller]['km'] !== null ? ' (~'.$shipEstimates[$seller]['km'].' km)' : '' }}</span>
-                                <span>{{ rtrim(rtrim(number_format($shipEstimates[$seller]['fee_tlkm'], 2), '0'), '.') }} TLKM</span>
+                                <span data-ongkir-method="{{ $seller }}">Ongkir · {{ $shipEstimates[$seller]['method'] }}{{ $shipEstimates[$seller]['km'] !== null ? ' (~'.$shipEstimates[$seller]['km'].' km)' : '' }}</span>
+                                <span data-ongkir-seller="{{ $seller }}">{{ rtrim(rtrim(number_format($shipEstimates[$seller]['fee_tlkm'], 2), '0'), '.') }} TLKM</span>
                             </div>
                         @endif
                         <div class="divide-y divide-slate-100">
@@ -148,7 +148,7 @@
             {{-- H7: estimasi ongkir (produk fisik) dalam TLKM (Rp1.000 = 1 TLKM) --}}
             <div class="flex justify-between text-sm text-slate-600 mb-2 border-t border-slate-100 pt-3 mt-3">
                 <span>Estimasi ongkir<sup class="text-slate-400">*</sup></span>
-                <span>{{ rtrim(rtrim(number_format($shipTotalTlkm, 2), '0'), '.') }} TLKM</span>
+                <span id="ongkirTotal">{{ rtrim(rtrim(number_format($shipTotalTlkm, 2), '0'), '.') }} TLKM</span>
             </div>
             <div class="flex justify-between items-end">
                 <span class="text-sm text-slate-500">Total produk (on-chain)</span>
@@ -185,13 +185,14 @@ const TOTAL = @json($totalStr);
 
 function val(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 
-// Pilih alamat dari peta -> isi alamat, kota, kode pos otomatis.
+// Pilih alamat dari peta -> isi alamat, kota, kode pos otomatis + hitung ulang ongkir.
 function pilihAlamatPeta() {
     openMapPicker((loc) => {
         if (loc.address) document.getElementById('address').value = loc.address;
         if (loc.city) document.getElementById('city').value = loc.city;
         if (loc.postcode) document.getElementById('postal_code').value = loc.postcode;
         showToast('Lokasi terisi dari peta.', 'success');
+        updateOngkir(loc.city || '');
     });
 }
 
@@ -204,7 +205,44 @@ function selectAddr(radio) {
     radio.closest('[data-addrcard]')?.classList.add('border-blue-500', 'bg-blue-50/40');
     const form = document.getElementById('newAddrForm');
     if (form) form.classList.toggle('hidden', radio.value !== 'new');
+    // Hitung ulang ongkir untuk kota alamat yang dipilih.
+    const city = radio.value === 'new' ? val('city') : (radio.dataset.city || '');
+    updateOngkir(city);
 }
+
+// ===== Hitung ulang ongkir (TLKM) saat kota berganti =====
+let _ongkirTimer = null;
+function updateOngkir(city) {
+    if (_ongkirTimer) clearTimeout(_ongkirTimer);
+    _ongkirTimer = setTimeout(async () => {
+        const totalEl = document.getElementById('ongkirTotal');
+        if (totalEl) totalEl.textContent = '…';
+        try {
+            const res = await fetch('/shipping/quote', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' },
+                body: JSON.stringify({ city: city || '' }),
+            });
+            const d = await res.json();
+            const fmt = (n) => (Math.round(n * 100) / 100).toString();
+            if (totalEl) totalEl.textContent = fmt(d.total_tlkm) + ' TLKM';
+            Object.entries(d.sellers || {}).forEach(([wallet, s]) => {
+                const feeEl = document.querySelector(`[data-ongkir-seller="${wallet}"]`);
+                if (feeEl) feeEl.textContent = fmt(s.fee_tlkm) + ' TLKM';
+                const mEl = document.querySelector(`[data-ongkir-method="${wallet}"]`);
+                if (mEl) mEl.textContent = 'Ongkir · ' + s.method + (s.km != null ? ' (~' + s.km + ' km)' : '');
+            });
+        } catch (_) { if (totalEl) totalEl.textContent = '—'; }
+    }, 400);
+}
+
+// Ketik kota manual -> hitung ulang (debounced) + hitung awal sesuai alamat terpilih.
+document.addEventListener('DOMContentLoaded', () => {
+    const cityInput = document.getElementById('city');
+    if (cityInput) cityInput.addEventListener('input', () => updateOngkir(cityInput.value));
+    const checked = document.querySelector('input[name=addr]:checked');
+    if (checked && checked.value !== 'new' && checked.dataset.city) updateOngkir(checked.dataset.city);
+});
 
 async function checkoutPay() {
     const sel = selectedAddr();
