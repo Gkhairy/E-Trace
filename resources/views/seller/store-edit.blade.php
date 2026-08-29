@@ -34,8 +34,14 @@
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1.5">Alamat Asal Pengiriman <span class="text-red-500">*</span></label>
-            <textarea name="origin_address" rows="2" required placeholder="mis. Jl. Merdeka No.1, Bandung"
+            <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-sm font-medium text-slate-700">Alamat Asal Pengiriman <span class="text-red-500">*</span></label>
+                <button type="button" onclick="pilihOriginPeta()" class="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 21s-6-5.686-6-10a6 6 0 1112 0c0 4.314-6 10-6 10zM12 11a2 2 0 100-4 2 2 0 000 4z"/></svg>
+                    Pilih dari peta
+                </button>
+            </div>
+            <textarea name="origin_address" id="origin_address" rows="2" required placeholder="mis. Jl. Merdeka No.1, Bandung"
                 class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm transition resize-none">{{ old('origin_address', $store->origin_address) }}</textarea>
             <p class="text-[11px] text-slate-400 mt-1.5"><b>Wajib</b> — sertakan <b>nama kota</b> (mis. Bandung, Jakarta). Dipakai menghitung ongkir ke pembeli.</p>
         </div>
@@ -71,4 +77,20 @@
     </form>
 </div>
 
+@include('partials.map-picker')
+
+@endsection
+
+@section('scripts')
+<script>
+// Pilih alamat asal toko dari peta -> isi textarea (termasuk nama kota).
+function pilihOriginPeta() {
+    openMapPicker((loc) => {
+        if (loc.address) {
+            document.getElementById('origin_address').value = loc.address;
+            showToast('Alamat asal terisi dari peta.', 'success');
+        }
+    });
+}
+</script>
 @endsection

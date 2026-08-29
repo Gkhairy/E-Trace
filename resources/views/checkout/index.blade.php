@@ -60,6 +60,14 @@
             @endif
 
             <div id="newAddrForm" class="{{ $addresses->isNotEmpty() ? 'hidden' : '' }} grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="sm:col-span-2">
+                    <button type="button" onclick="pilihAlamatPeta()"
+                        class="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 text-sm font-semibold transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 21s-6-5.686-6-10a6 6 0 1112 0c0 4.314-6 10-6 10zM12 11a2 2 0 100-4 2 2 0 000 4z"/></svg>
+                        Pilih dari Peta
+                    </button>
+                    <p class="text-[11px] text-slate-400 mt-1.5">Geser pin ke lokasimu — alamat, kota & kode pos terisi otomatis (akurat untuk ongkir).</p>
+                </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">Nama Penerima</label>
                     <input id="recipient_name" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
@@ -166,6 +174,8 @@
     </div>
 </div>
 
+@include('partials.map-picker')
+
 @endsection
 
 @section('scripts')
@@ -174,6 +184,16 @@ const LINES = @json($lines);
 const TOTAL = @json($totalStr);
 
 function val(id) { const el = document.getElementById(id); return el ? el.value : ''; }
+
+// Pilih alamat dari peta -> isi alamat, kota, kode pos otomatis.
+function pilihAlamatPeta() {
+    openMapPicker((loc) => {
+        if (loc.address) document.getElementById('address').value = loc.address;
+        if (loc.city) document.getElementById('city').value = loc.city;
+        if (loc.postcode) document.getElementById('postal_code').value = loc.postcode;
+        showToast('Lokasi terisi dari peta.', 'success');
+    });
+}
 
 function selectedAddr() {
     const r = document.querySelector('input[name=addr]:checked');

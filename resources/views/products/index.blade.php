@@ -99,7 +99,7 @@
     }
 @endphp
 <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-8">
-    <div class="flex flex-wrap justify-center gap-x-6 sm:gap-x-10 gap-y-5">
+    <div class="flex flex-wrap justify-evenly gap-y-5">
         @foreach($sc as $s)
             <a href="{{ $s[0] }}" class="group flex flex-col items-center gap-2 text-center w-16">
                 <span class="w-12 h-12 rounded-2xl {{ $s[2] }} flex items-center justify-center group-hover:scale-105 transition">
