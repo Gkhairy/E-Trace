@@ -67,7 +67,7 @@ class SellerController extends Controller
         $data = $req->validate([
             'name'           => 'required|string|max:255',
             'description'    => 'nullable|string|max:1000',
-            'origin_address' => 'nullable|string|max:500',
+            'origin_address' => 'required|string|max:500', // wajib: dipakai hitung ongkir (kota asal)
             'contact_email'  => 'nullable|email|max:255',
             'logo'           => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'banner'         => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',

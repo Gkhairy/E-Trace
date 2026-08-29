@@ -29,20 +29,20 @@ class CheckoutController extends Controller
             ->orderByDesc('is_default')->latest()->get();
         $lastAddress = $addresses->first();
 
-        // H7: estimasi ongkir per penjual (jarak kota toko -> kota pembeli).
+        // H7: estimasi ongkir per penjual (J&T bila ada; fallback jarak). Dalam TLKM.
         $buyerCity = $lastAddress->city ?? null;
-        $shipEstimates = [];   // seller_wallet => ['fee'=>Rp, 'km'=>, 'known'=>, 'store'=>]
-        $shipTotal = 0;
+        $shipEstimates = [];   // seller_wallet => ['fee_tlkm'=>, 'km'=>, 'method'=>, 'store'=>]
+        $shipTotalTlkm = 0;
         foreach ($groups as $seller => $g) {
             $store = Store::where('payout_wallet', $seller)->first();
             $est = $shipping->estimate($store?->origin_address, $buyerCity);
-            $shipEstimates[$seller] = $est + ['store' => $store?->name];
-            $shipTotal += $est['fee'];
+            $shipEstimates[$seller] = $est + ['store' => $store?->name, 'origin' => $store?->origin_address];
+            $shipTotalTlkm += $est['fee_tlkm'];
         }
 
         return view('checkout.index', compact(
             'items', 'groups', 'total', 'addresses', 'lastAddress',
-            'shipEstimates', 'shipTotal', 'buyerCity'
+            'shipEstimates', 'shipTotalTlkm', 'buyerCity'
         ));
     }
 }

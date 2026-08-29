@@ -25,14 +25,27 @@ return [
     // H9: PPN/VAT (basis poin, 1100 = 11%) dihitung atas FEE platform (biaya jasa platform).
     'vat_bps'          => (int) env('VAT_BPS', 1100),
 
+    // Kurs tampilan: Rp per 1 TLKM (mis. Rp1.000 = 1 TLKM). Ongkir dikonversi ke TLKM.
+    'rp_per_tlkm' => (int) env('RP_PER_TLKM', 1000),
+
     // ============ ONGKOS KIRIM (H7) — configurable, produk fisik ============
-    // Metode: jarak garis lurus (haversine) antar kota berdasarkan koordinat bawaan
-    // (gratis, tanpa API). Batas area praktis: Jabodetabek / Pulau Jawa.
+    // Utama: J&T Tariff API (butuh kredensial). Fallback: jarak garis lurus
+    // (haversine) antar kota dari koordinat bawaan (gratis, tanpa API).
     'shipping' => [
         'base_fee'      => (int) env('SHIP_BASE_FEE', 20000),   // untuk 10 km pertama (Rupiah)
         'base_km'       => (int) env('SHIP_BASE_KM', 10),
         'step_km'       => (int) env('SHIP_STEP_KM', 5),        // tiap tambahan 5 km
         'step_fee'      => (int) env('SHIP_STEP_FEE', 5000),    // +Rp5.000 per step
         'fallback_fee'  => (int) env('SHIP_FALLBACK_FEE', 30000), // kota tak dikenal
+        'weight_kg'     => (float) env('SHIP_WEIGHT_KG', 1),      // berat default per order
+
+        // J&T Express Tariff API. Aktif hanya jika JNT_API_KEY diisi.
+        // Perlu registrasi di developer.jet.co.id + proses mapping area code.
+        'jnt' => [
+            'enabled' => (bool) env('JNT_API_KEY', false),
+            'url'     => env('JNT_TARIFF_URL', 'https://developer.jet.co.id/api/tariff'),
+            'api_key' => env('JNT_API_KEY', ''),
+            'sender'  => env('JNT_SENDER_CODE', ''), // area code asal (dari mapping J&T)
+        ],
     ],
 ];

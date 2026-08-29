@@ -107,8 +107,8 @@
                         </div>
                         @if(isset($shipEstimates[$seller]))
                             <div class="px-4 py-1.5 bg-slate-50/60 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                                <span>Estimasi ongkir{{ $shipEstimates[$seller]['km'] !== null ? ' (~'.$shipEstimates[$seller]['km'].' km)' : '' }}</span>
-                                <span>Rp {{ number_format($shipEstimates[$seller]['fee'], 0, ',', '.') }}</span>
+                                <span>Ongkir · {{ $shipEstimates[$seller]['method'] }}{{ $shipEstimates[$seller]['km'] !== null ? ' (~'.$shipEstimates[$seller]['km'].' km)' : '' }}</span>
+                                <span>{{ rtrim(rtrim(number_format($shipEstimates[$seller]['fee_tlkm'], 2), '0'), '.') }} TLKM</span>
                             </div>
                         @endif
                         <div class="divide-y divide-slate-100">
@@ -137,16 +137,16 @@
             <h3 class="font-semibold text-slate-900 mb-4">Pembayaran</h3>
             <div class="flex justify-between text-sm text-slate-600 mb-2"><span>Jumlah item</span><span>{{ $items->sum('quantity') }}</span></div>
             <div class="flex justify-between text-sm text-slate-600 mb-2"><span>Penjual</span><span>{{ $groups->count() }}</span></div>
-            {{-- H7: estimasi ongkir (produk fisik) — dihitung dari jarak kota toko ke kota pembeli --}}
+            {{-- H7: estimasi ongkir (produk fisik) dalam TLKM (Rp1.000 = 1 TLKM) --}}
             <div class="flex justify-between text-sm text-slate-600 mb-2 border-t border-slate-100 pt-3 mt-3">
                 <span>Estimasi ongkir<sup class="text-slate-400">*</sup></span>
-                <span>Rp {{ number_format($shipTotal, 0, ',', '.') }}</span>
+                <span>{{ rtrim(rtrim(number_format($shipTotalTlkm, 2), '0'), '.') }} TLKM</span>
             </div>
             <div class="flex justify-between items-end">
                 <span class="text-sm text-slate-500">Total produk (on-chain)</span>
                 <span class="text-2xl font-extrabold text-slate-900">{{ rtrim(rtrim(number_format($total, 2), '0'), '.') }} <span class="text-sm text-blue-600 font-semibold">TLKM</span></span>
             </div>
-            <p class="text-[11px] text-slate-400 mt-1.5 leading-snug">*Ongkir dihitung dari jarak (haversine) kota toko ke kota pembeli, diselesaikan terpisah dari escrow produk. {{ $buyerCity ? 'Untuk kota: '.$buyerCity.'.' : 'Pilih/isi alamat untuk estimasi akurat.' }}</p>
+            <p class="text-[11px] text-slate-400 mt-1.5 leading-snug">*Ongkir dihitung via <b>J&amp;T</b> (bila aktif) atau estimasi jarak, dikonversi ke TLKM (Rp1.000 = 1 TLKM), diselesaikan terpisah dari escrow produk. {{ $buyerCity ? 'Kota tujuan: '.$buyerCity.'.' : 'Pilih/isi alamat untuk estimasi akurat.' }}</p>
 
             <div class="flex items-center gap-2 text-xs text-green-700 mt-4 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>

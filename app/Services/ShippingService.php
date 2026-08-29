@@ -70,20 +70,34 @@ class ShippingService
 
     /**
      * Hitung estimasi ongkir dari kota toko ke kota pembeli.
-     * Return ['fee'=>int(Rp), 'km'=>float|null, 'known'=>bool, 'note'=>string].
+     * Utama: J&T Tariff API (bila dikonfigurasi). Fallback: jarak haversine.
+     * Return: ['fee'=>Rp int, 'fee_tlkm'=>float, 'km'=>float|null, 'known'=>bool,
+     *          'method'=>string, 'note'=>string].
      */
     public function estimate(?string $fromCity, ?string $toCity): array
     {
         $cfg = config('chain.shipping');
+        $rpPerTlkm = max(1, (int) config('chain.rp_per_tlkm', 1000));
+        $toTlkm = fn (int $rp) => round($rp / $rpPerTlkm, 2);
+
+        // 1) Coba J&T (nyata) bila kredensial diisi.
+        $jnt = app(JntService::class)->tariff($fromCity, $toCity, (float) ($cfg['weight_kg'] ?? 1));
+        if ($jnt !== null) {
+            return [
+                'fee' => $jnt, 'fee_tlkm' => $toTlkm($jnt), 'km' => null, 'known' => true,
+                'method' => 'J&T Express', 'note' => 'Tarif J&T Express.',
+            ];
+        }
+
+        // 2) Fallback: estimasi jarak garis lurus (gratis, tanpa API).
         $a = $this->coordsFor($fromCity);
         $b = $this->coordsFor($toCity);
 
         if (!$a || !$b) {
+            $fee = (int) $cfg['fallback_fee'];
             return [
-                'fee'   => (int) $cfg['fallback_fee'],
-                'km'    => null,
-                'known' => false,
-                'note'  => 'Kota tidak dikenal — memakai tarif dasar.',
+                'fee' => $fee, 'fee_tlkm' => $toTlkm($fee), 'km' => null, 'known' => false,
+                'method' => 'estimasi', 'note' => 'Kota tidak dikenal — tarif dasar.',
             ];
         }
 
@@ -96,10 +110,8 @@ class ShippingService
         }
 
         return [
-            'fee'   => $fee,
-            'km'    => round($km, 1),
-            'known' => true,
-            'note'  => 'Estimasi jarak garis lurus (haversine).',
+            'fee' => $fee, 'fee_tlkm' => $toTlkm($fee), 'km' => round($km, 1), 'known' => true,
+            'method' => 'estimasi jarak', 'note' => 'Estimasi jarak garis lurus (haversine).',
         ];
     }
 }
