@@ -234,7 +234,7 @@
 </div>
 
 {{-- ===== MODAL NOTIFIKASI (pengganti alert bawaan browser) ===== --}}
-<div id="notifyModal" class="hidden fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" onclick="closeNotify()">
+<div id="notifyModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" onclick="closeNotify()">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center" onclick="event.stopPropagation()">
         <div id="notifyIcon" class="mx-auto mb-3 w-12 h-12 rounded-full flex items-center justify-center"></div>
         <h3 id="notifyTitle" class="text-lg font-bold text-slate-900 mb-1"></h3>
