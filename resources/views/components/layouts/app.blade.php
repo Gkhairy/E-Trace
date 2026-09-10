@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    @include('partials.favicon')
     <title>{{ $title ?? 'Dashboard' }}</title>
 
     <!-- Tailwind CSS -->

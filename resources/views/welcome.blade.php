@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+@include('partials.favicon')
 <title>E-Trace — Marketplace On-Chain yang Transparan Sepenuhnya</title>
 <meta name="description" content="E-Trace: marketplace berbasis blockchain dengan escrow trustless, keranjang multi-penjual, dan transparansi on-chain penuh.">
 
