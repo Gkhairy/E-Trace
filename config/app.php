@@ -30,6 +30,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Force HTTPS
+    |--------------------------------------------------------------------------
+    |
+    | Bila true: semua URL yang dibuat memakai https, request http di-redirect
+    | ke https, cookie sesi ditandai secure, dan header HSTS dikirim. Default
+    | AKTIF di production dan MATI di lingkungan lain — jadi `php artisan serve`
+    | (http lokal) tetap jalan saat testing. Override eksplisit lewat .env.
+    |
+    */
+
+    'force_https' => (bool) env('FORCE_HTTPS', env('APP_ENV', 'production') === 'production'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Debug Mode
     |--------------------------------------------------------------------------
     |
