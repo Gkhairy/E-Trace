@@ -49,6 +49,13 @@ Route::get('/verify-otp', [AuthController::class, 'verifyOtpForm']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->middleware('throttle:10,1');
 Route::post('/resend-otp', [AuthController::class, 'resendOtp'])->middleware('throttle:5,1');
 
+// LUPA / RESET PASSWORD (via OTP email)
+Route::get('/forgot-password', [AuthController::class, 'forgotForm'])->name('password.request');
+Route::post('/forgot-password', [AuthController::class, 'forgotSend'])->middleware('throttle:5,1');
+Route::get('/reset-password', [AuthController::class, 'resetForm']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:10,1');
+Route::post('/reset-password/resend', [AuthController::class, 'resendReset'])->middleware('throttle:5,1');
+
 // 2FA — tantangan saat login (berbasis sesi)
 Route::get('/two-factor-challenge', [\App\Http\Controllers\TwoFactorController::class, 'challenge']);
 Route::post('/two-factor-challenge', [\App\Http\Controllers\TwoFactorController::class, 'verify'])->middleware('throttle:10,1');

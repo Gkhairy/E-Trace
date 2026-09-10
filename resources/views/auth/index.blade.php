@@ -88,6 +88,9 @@
             <h1 class="text-2xl font-bold text-slate-900">{{ __('auth.login_title') }}</h1>
             <p class="text-sm text-slate-500 mt-1 mb-5">{{ __('auth.login_sub') }}</p>
 
+            @if(session('success') && !$startRegister)
+                <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-2.5 rounded-xl mb-4 text-sm">{{ session('success') }}</div>
+            @endif
             @if($errors->any() && !$startRegister)
                 <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 rounded-xl mb-4 text-sm">{{ $errors->first() }}</div>
             @endif
@@ -108,6 +111,9 @@
                 @csrf
                 <input name="email" type="email" value="{{ !$startRegister ? old('email') : '' }}" required placeholder="{{ __('auth.email') }}" class="in-field">
                 <input name="password" type="password" required placeholder="{{ __('auth.password') }}" class="in-field">
+                <div class="text-right -mt-1">
+                    <a href="/forgot-password" class="text-xs text-blue-600 hover:underline">{{ __('auth.forgot_password') }}</a>
+                </div>
                 <button class="w-full py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm mt-1">{{ __('auth.sign_in') }}</button>
             </form>
             <p class="text-[11px] text-slate-400 text-center mt-2">{{ __('auth.pin_after_pw') }}</p>
@@ -227,10 +233,38 @@
     </div>
 </div>
 
+{{-- ===== MODAL NOTIFIKASI (pengganti alert bawaan browser) ===== --}}
+<div id="notifyModal" class="hidden fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" onclick="closeNotify()">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center" onclick="event.stopPropagation()">
+        <div id="notifyIcon" class="mx-auto mb-3 w-12 h-12 rounded-full flex items-center justify-center"></div>
+        <h3 id="notifyTitle" class="text-lg font-bold text-slate-900 mb-1"></h3>
+        <p id="notifyMsg" class="text-sm text-slate-600 mb-5"></p>
+        <button type="button" onclick="closeNotify()" class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">OK</button>
+    </div>
+</div>
+
 <script>
     const authCard = document.getElementById('authCard');
     function toRegister() { authCard.classList.add('show-signup'); }
     function toLogin()    { authCard.classList.remove('show-signup'); }
+
+    // Modal notifikasi — pengganti alert() browser agar konsisten dengan tema.
+    function notify(message, type = 'info', title = null) {
+        const map = {
+            error:   { cls: 'bg-red-100 text-red-600',    title: 'Gagal',     d: 'M6 18L18 6M6 6l12 12' },
+            warn:    { cls: 'bg-amber-100 text-amber-600', title: 'Perhatian', d: 'M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z' },
+            success: { cls: 'bg-green-100 text-green-600', title: 'Berhasil',  d: 'M5 13l4 4L19 7' },
+            info:    { cls: 'bg-blue-100 text-blue-600',   title: 'Info',      d: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+        };
+        const t = map[type] || map.info;
+        const icon = document.getElementById('notifyIcon');
+        icon.className = 'mx-auto mb-3 w-12 h-12 rounded-full flex items-center justify-center ' + t.cls;
+        icon.innerHTML = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${t.d}"/></svg>`;
+        document.getElementById('notifyTitle').textContent = title || t.title;
+        document.getElementById('notifyMsg').textContent = message;
+        document.getElementById('notifyModal').classList.remove('hidden');
+    }
+    function closeNotify() { document.getElementById('notifyModal').classList.add('hidden'); }
 
     // Metode wallet: 'pin' = wallet otomatis (embedded), 'mm' = MetaMask.
     // PIN SELALU wajib di kedua mode; hanya field wallet yang di-enable/disable.
@@ -264,10 +298,10 @@
         // Validasi field wajib dulu (nama/email/HP/password) sebelum minta PIN.
         if (!regForm.reportValidity()) return;
         // Bangun nomor telepon lengkap (kode negara + nomor).
-        if (!buildFullPhone()) { alert('Masukkan nomor HP yang valid.'); return; }
+        if (!buildFullPhone()) { notify('Masukkan nomor HP yang valid.', 'warn'); return; }
         // Mode MetaMask: pastikan wallet sudah terhubung.
         if (isMetamaskMode() && !document.getElementById('wallet_address').value) {
-            alert('Hubungkan MetaMask dulu (klik "Connect Wallet").');
+            notify('Hubungkan MetaMask dulu (klik "Connect Wallet").', 'warn');
             return;
         }
         document.getElementById('pinModalErr').classList.add('hidden');
@@ -294,7 +328,7 @@
 
     // ===== REGISTER: connect wallet + tanda tangan kepemilikan =====
     async function connectWallet() {
-        if (!window.ethereum) { alert("Install MetaMask dulu!"); return; }
+        if (!window.ethereum) { notify('MetaMask belum terpasang. Pasang ekstensinya dulu untuk melanjutkan.', 'warn'); return; }
         try {
             const accounts = await ethereum.request({ method: "eth_requestAccounts" });
             const wallet = accounts[0];
@@ -308,9 +342,9 @@
             document.getElementById("signature").value = signature;
             document.getElementById("cwLabel").textContent = "Wallet terhubung ✓";
         } catch (e) {
-            alert(e.code === 4001 || e.code === 'ACTION_REJECTED'
+            notify(e.code === 4001 || e.code === 'ACTION_REJECTED'
                 ? "Kamu membatalkan tanda tangan di MetaMask."
-                : ("Gagal menghubungkan wallet: " + (e.message || e)));
+                : ("Gagal menghubungkan wallet: " + (e.message || e)), 'error');
         }
     }
 
@@ -319,13 +353,13 @@
         const btn = document.getElementById('mmBtn');
         const orig = btn.innerHTML;
         try {
-            if (!window.ethereum) return alert("Install MetaMask dulu ya!");
+            if (!window.ethereum) { notify('MetaMask belum terpasang. Pasang ekstensinya dulu untuk melanjutkan.', 'warn'); return; }
             btn.disabled = true; btn.textContent = "Menghubungkan…";
             const accounts = await ethereum.request({ method: "eth_requestAccounts" });
             const wallet = accounts[0];
             const nonceRes = await fetch("/api/get-nonce?wallet=" + wallet);
             const nonceJson = await nonceRes.json();
-            if (!nonceJson.nonce) { alert("Wallet ini belum terdaftar. Silakan Daftar dulu."); return; }
+            if (!nonceJson.nonce) { notify("Wallet ini belum terdaftar. Silakan Daftar dulu.", 'warn'); return; }
             btn.textContent = "Menunggu tanda tangan…";
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
@@ -340,10 +374,10 @@
             try { loginRes = await loginReq.json(); }
             catch (_) { throw new Error("Server error (" + loginReq.status + "). Cek log Laravel."); }
             if (loginReq.ok && loginRes.success) { window.location.href = loginRes.redirect || "/products"; }
-            else { alert(loginRes.error || "Login gagal."); }
+            else { notify(loginRes.error || "Login gagal.", 'error'); }
         } catch (e) {
             console.error(e);
-            alert((e.code === 4001 || e.code === 'ACTION_REJECTED') ? "Kamu membatalkan tanda tangan di MetaMask." : (e.message || "Login gagal."));
+            notify((e.code === 4001 || e.code === 'ACTION_REJECTED') ? "Kamu membatalkan tanda tangan di MetaMask." : (e.message || "Login gagal."), 'error');
         } finally {
             btn.disabled = false; btn.innerHTML = orig;
         }

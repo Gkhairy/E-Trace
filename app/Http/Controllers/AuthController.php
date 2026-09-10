@@ -179,6 +179,94 @@ class AuthController extends Controller
     }
 
     // ============================
+    // LUPA / RESET PASSWORD (via OTP email, memakai infra OTP yang sama)
+    // ============================
+
+    public function forgotForm()
+    {
+        return view('auth.forgot');
+    }
+
+    public function forgotSend(Request $request)
+    {
+        $data = $request->validate(['email' => 'required|email']);
+
+        $user = User::where('email', $data['email'])->first();
+        // Kirim kode HANYA bila akun ada & sudah terverifikasi. Pesan dibuat netral
+        // (tidak membocorkan apakah email terdaftar).
+        if ($user && $user->email_verified_at) {
+            $this->sendOtp($user);
+            session(['pwreset_user_id' => $user->id]);
+            return redirect('/reset-password')->with('success', 'Kode reset dikirim ke ' . $user->email . '. Cek email kamu.');
+        }
+
+        return back()
+            ->withInput($request->only('email'))
+            ->with('success', 'Jika email terdaftar, kami sudah mengirim kode reset. Cek inbox kamu.');
+    }
+
+    public function resetForm()
+    {
+        $user = User::find(session('pwreset_user_id'));
+        if (!$user) {
+            return redirect('/forgot-password')->withErrors(['email' => 'Sesi reset berakhir. Minta kode lagi.']);
+        }
+        $cooldown = 0;
+        if ($user->otp_sent_at) {
+            $cooldown = max(0, 60 - (int) $user->otp_sent_at->diffInSeconds(now()));
+        }
+        return view('auth.reset', ['email' => $user->email, 'cooldown' => $cooldown]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'code'     => 'required|digits:6',
+            'password' => 'required|min:8|confirmed',
+        ]);
+
+        $user = User::find(session('pwreset_user_id'));
+        if (!$user) {
+            return redirect('/forgot-password')->withErrors(['email' => 'Sesi reset berakhir. Minta kode lagi.']);
+        }
+        if (!$user->otp_hash || !$user->otp_expires_at || now()->greaterThan($user->otp_expires_at)) {
+            return back()->withErrors(['code' => 'Kode kadaluarsa. Klik "Kirim ulang".']);
+        }
+        if ($user->otp_attempts >= 5) {
+            return back()->withErrors(['code' => 'Terlalu banyak percobaan. Klik "Kirim ulang" untuk kode baru.']);
+        }
+        if (!Hash::check($request->code, $user->otp_hash)) {
+            $user->increment('otp_attempts');
+            return back()->withErrors(['code' => 'Kode salah. Sisa percobaan: ' . max(0, 5 - $user->otp_attempts) . '.']);
+        }
+
+        // Sukses: ganti password, hapus OTP (sekali pakai), akhiri sesi reset.
+        $user->forceFill([
+            'password'       => Hash::make($request->password),
+            'otp_hash'       => null,
+            'otp_expires_at' => null,
+            'otp_attempts'   => 0,
+        ])->save();
+        session()->forget('pwreset_user_id');
+
+        return redirect('/login')->with('success', 'Password berhasil diubah. Silakan login dengan password baru.');
+    }
+
+    public function resendReset(Request $request)
+    {
+        $user = User::find(session('pwreset_user_id'));
+        if (!$user) {
+            return redirect('/forgot-password')->withErrors(['email' => 'Sesi reset berakhir. Minta kode lagi.']);
+        }
+        if ($user->otp_sent_at && $user->otp_sent_at->diffInSeconds(now()) < 60) {
+            $wait = 60 - $user->otp_sent_at->diffInSeconds(now());
+            return back()->withErrors(['code' => "Tunggu {$wait} detik sebelum kirim ulang."]);
+        }
+        $this->sendOtp($user);
+        return back()->with('success', 'Kode reset baru dikirim.');
+    }
+
+    // ============================
     // LOGIN FORM NORMAL
     // ============================
     public function login(Request $request)

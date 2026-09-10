@@ -14,6 +14,7 @@ return [
     'no_account'     => "Don't have an account?",
     'have_account'   => 'Already have an account?',
     'pin_after_pw'   => 'After your password, you will be asked for your PIN.',
+    'forgot_password' => 'Forgot password?',
 
     // Register
     'register_title' => 'Create Account',

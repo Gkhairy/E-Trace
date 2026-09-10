@@ -14,6 +14,7 @@ return [
     'no_account'     => 'Belum punya akun?',
     'have_account'   => 'Sudah punya akun?',
     'pin_after_pw'   => 'Setelah password, kamu akan diminta memasukkan PIN.',
+    'forgot_password' => 'Lupa password?',
 
     // Register
     'register_title' => 'Buat Akun',
