@@ -51,4 +51,27 @@ class SearchController extends Controller
 
         return view('search.index', compact('q', 'products', 'stores', 'people'));
     }
+
+    /** Saran cepat (autocomplete) untuk kotak pencarian — maks 6 produk. JSON ringan. */
+    public function suggest(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json(['products' => [], 'q' => $q]);
+        }
+
+        $products = Product::with('store')
+            ->where('name', 'like', '%' . $q . '%')
+            ->limit(6)->get()
+            ->map(fn ($p) => [
+                'id'    => $p->id,
+                'name'  => $p->name,
+                'price' => rtrim(rtrim(number_format($p->price_usdc, 2), '0'), '.'),
+                'image' => $p->imageUrl(),
+                'store' => $p->store->name ?? null,
+                'url'   => url('/products/' . $p->id),
+            ]);
+
+        return response()->json(['products' => $products, 'q' => $q]);
+    }
 }

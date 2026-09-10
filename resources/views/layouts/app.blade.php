@@ -68,9 +68,59 @@
             <!-- SEARCH (lebar, tengah) — cari produk, toko, orang -->
             <form action="/search" method="GET" role="search" class="relative flex-1 max-w-2xl">
                 <svg class="w-5 h-5 absolute left-3 top-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                <input type="text" name="q" value="{{ request('q') }}" placeholder="{{ __('nav.search_placeholder') }}" autocomplete="off"
+                <input id="navSearchInput" type="text" name="q" value="{{ request('q') }}" placeholder="{{ __('nav.search_placeholder') }}" autocomplete="off"
                     class="w-full bg-slate-100 focus:bg-white text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none text-slate-800 placeholder-slate-400 border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition">
+                {{-- Saran produk langsung (autocomplete) --}}
+                <div id="navSearchSuggest" class="hidden absolute left-0 right-0 top-full mt-2 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-[60]"></div>
             </form>
+            <script>
+            (function () {
+                const input = document.getElementById('navSearchInput');
+                const box = document.getElementById('navSearchSuggest');
+                if (!input || !box) return;
+                let timer = null, lastQ = null;
+                const esc = (s) => (s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+                const hide = () => { box.classList.add('hidden'); box.innerHTML = ''; };
+
+                function render(q, products) {
+                    if (!products.length) {
+                        box.innerHTML = `<div class="px-4 py-3 text-sm text-slate-400">Tidak ada produk untuk "${esc(q)}"</div>`;
+                        box.classList.remove('hidden');
+                        return;
+                    }
+                    const rows = products.map((p) => `
+                        <a href="${esc(p.url)}" class="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 transition">
+                            <div class="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
+                                ${p.image ? `<img src="${esc(p.image)}" onerror="this.style.display='none'" class="w-full h-full object-contain">` : '<svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M4 6h16v12H4z"/></svg>'}
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm text-slate-800 truncate">${esc(p.name)}</p>
+                                <p class="text-xs text-slate-400 truncate">${p.store ? esc(p.store) + ' · ' : ''}${esc(p.price)} TLKM</p>
+                            </div>
+                        </a>`).join('');
+                    const footer = `<a href="/search?q=${encodeURIComponent(q)}" class="block px-4 py-2.5 text-sm text-blue-600 hover:bg-slate-50 border-t border-slate-100 font-medium">Lihat semua hasil untuk "${esc(q)}" →</a>`;
+                    box.innerHTML = rows + footer;
+                    box.classList.remove('hidden');
+                }
+
+                async function run() {
+                    const q = input.value.trim();
+                    if (q.length < 2) { hide(); lastQ = null; return; }
+                    if (q === lastQ) { if (box.innerHTML) box.classList.remove('hidden'); return; }
+                    lastQ = q;
+                    try {
+                        const d = await (await fetch('/search/suggest?q=' + encodeURIComponent(q), { headers: { 'Accept': 'application/json' } })).json();
+                        if (input.value.trim() !== q) return; // hasil basi
+                        render(q, d.products || []);
+                    } catch (_) { hide(); }
+                }
+
+                input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 180); });
+                input.addEventListener('focus', () => { if (input.value.trim().length >= 2) run(); });
+                input.addEventListener('keydown', (e) => { if (e.key === 'Escape') hide(); });
+                document.addEventListener('click', (e) => { if (!box.contains(e.target) && e.target !== input) hide(); });
+            })();
+            </script>
 
             <!-- NAV (desktop) — ringkas; pintasan fitur ada sebagai ikon di halaman /products -->
             <nav class="hidden lg:flex items-center gap-6 text-slate-600 text-sm font-medium shrink-0">

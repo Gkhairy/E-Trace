@@ -71,6 +71,7 @@ Route::post('/chatbot', [\App\Http\Controllers\ChatbotController::class, 'chat']
 
 // PENCARIAN (produk, toko, orang) — publik
 Route::get('/search', [\App\Http\Controllers\SearchController::class, 'index'])->name('search');
+Route::get('/search/suggest', [\App\Http\Controllers\SearchController::class, 'suggest'])->middleware('throttle:60,1')->name('search.suggest');
 
 // EXPLORER TRANSPARANSI (PUBLIK)
 Route::get('/explorer', [ExplorerController::class, 'index'])->name('explorer.index');
