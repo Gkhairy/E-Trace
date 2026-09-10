@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ChatMessage;
+use App\Models\Friendship;
 use App\Models\Product;
 use App\Models\User;
 use App\Support\Notify;
@@ -40,6 +41,24 @@ class ChatController extends Controller
             if ($m->receiver_id === $me && $m->read_at === null) {
                 $convos[$partnerId]['unread']++;
             }
+        }
+
+        // Tambahkan TEMAN (accepted) yang belum punya percakapan, supaya bisa
+        // langsung mulai chat dari daftar (tanpa harus lewat halaman produk).
+        $friends = Friendship::where('user_id', $me)->where('status', 'accepted')->with('friend')->get();
+        foreach ($friends as $f) {
+            $pid = $f->friend_id;
+            if ($pid === $me || isset($convos[$pid]) || !$f->friend) {
+                continue;
+            }
+            $convos[$pid] = [
+                'partner_id' => $pid,
+                'name'       => $this->displayName($f->friend),
+                'last'       => 'Mulai percakapan',
+                'at'         => '',
+                'unread'     => 0,
+                'friend'     => true,
+            ];
         }
 
         return response()->json(['conversations' => array_values($convos)]);
