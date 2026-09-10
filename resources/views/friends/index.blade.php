@@ -61,7 +61,7 @@
                         <p class="font-medium text-slate-800">{{ $f->friend->public_name ?: $f->friend->name }}</p>
                         <a href="/explorer/{{ $f->friend->wallet_address }}" class="text-xs text-blue-600 hover:underline font-mono">{{ substr($f->friend->wallet_address,0,8) }}…{{ substr($f->friend->wallet_address,-6) }}</a>
                     </div>
-                    <form action="/friends/delete" method="POST" onsubmit="return confirm('Hapus teman ini?')">
+                    <form action="/friends/delete" method="POST" data-name="{{ $f->friend->public_name ?: $f->friend->name }}" onsubmit="return confirmDeleteFriend(this)">
                         @csrf<input type="hidden" name="id" value="{{ $f->friend_id }}">
                         <button class="text-xs text-slate-400 hover:text-red-600">Hapus</button>
                     </form>
@@ -70,4 +70,22 @@
         </div>
     @endif
 </div>
+@endsection
+
+@section('scripts')
+<script>
+// Konfirmasi hapus teman via modal tema (pengganti confirm() bawaan browser).
+function confirmDeleteFriend(form) {
+    const raw = form.dataset.name || 'teman ini';
+    const name = raw.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    uiConfirm({
+        title: 'Hapus Teman',
+        message: `Yakin mau menghapus <b>${name}</b> dari daftar teman?`,
+        confirmText: 'Ya, hapus',
+        cancelText: 'Batal',
+        danger: true,
+    }).then((ok) => { if (ok) form.submit(); });
+    return false; // cegah submit langsung; submit setelah konfirmasi
+}
+</script>
 @endsection
