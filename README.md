@@ -1,59 +1,149 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# E-Trace
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+**Marketplace e-commerce berbasis blockchain** — belanja pakai token kripto (TLKM) semudah e-wallet biasa, dengan pembayaran yang dijaga *smart contract escrow* dan setiap transaksi bisa diverifikasi publik di blockchain.
 
-## About Laravel
+> Status: **prototipe kompetisi (testnet, belum diaudit)**. Jangan digunakan dengan dana sungguhan.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Latar Belakang
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Di marketplace konvensional, uang pembeli dipegang oleh perusahaan — pembeli harus percaya platform, penjual menunggu pencairan, dan alur dana tidak transparan. E-Trace memindahkan kepercayaan itu dari perusahaan ke **kode**: dana pembeli ditahan oleh smart contract (escrow) dan baru lepas ke penjual setelah pembeli mengonfirmasi barang diterima. Setiap pembayaran punya jejak on-chain yang tidak bisa diubah siapa pun.
 
-## Learning Laravel
+## Fitur Utama
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+- **Pembayaran escrow via smart contract (token TLKM)** — dana ditahan kontrak, lepas ke penjual saat pembeli konfirmasi terima; bisa refund bila penjual tidak mengirim.
+- **Escrow multi-penjual** — satu keranjang berisi banyak penjual; escrow dipisah per item, konfirmasi satu item tidak melepas dana penjual lain.
+- **Verifikasi on-chain** — backend membaca kontrak sebagai sumber kebenaran (total, nominal, penjual), tidak mempercayai data dari browser.
+- **Embedded wallet (email/HP + PIN)** — pengguna awam tidak perlu paham MetaMask/seed phrase; tanda tangan sekali, transaksi berikutnya cukup PIN.
+- **Chatbot AI** — bantuan penggunaan aplikasi + pencarian produk (OpenAI, dibatasi ke ruang lingkup aplikasi).
+- **Laporan keuangan penjual** — rekap pembelian otomatis dengan perhitungan HPP, ekspor Excel/PDF.
+- **Dompet komunitas / donasi transparan** — alur donasi tercatat on-chain, **tanpa fee (gratis)**.
+- **Keamanan akun** — registrasi OTP email (via RabbitMQ) + opsi 2FA authenticator.
+- **Peran pengguna** — pembeli, penjual, dan pengawas (dispute).
+- **Dwibahasa** — Indonesia & Inggris (Laravel localization).
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Tech Stack
 
-## Laravel Sponsors
+| Lapisan | Teknologi |
+|---|---|
+| Backend | Laravel 12, PHP 8.2 |
+| Frontend | Blade, Tailwind CSS v4, Vite, ethers.js |
+| Database | MySQL |
+| Antrean | RabbitMQ (email OTP & notifikasi) |
+| Blockchain | Solidity 0.8.20, ERC-20 (TLKM), Ethereum **Sepolia** testnet |
+| Integrasi Web3 | web3.php, ethereum-tx, keccak, elliptic-php |
+| Lain-lain | google2fa (2FA), bacon-qr-code (QR), dompdf (PDF), maatwebsite/excel |
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Kebutuhan
 
-### Premium Partners
+- PHP 8.2+ dengan Composer
+- Node.js 18+ dengan npm
+- MySQL
+- RabbitMQ (untuk antrean email/OTP)
+- MetaMask (opsional, untuk penjual/pengujian on-chain)
+- Kunci OpenAI API (untuk fitur chatbot)
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Instalasi
 
-## Contributing
+```bash
+# 1. Install dependency PHP & JS
+composer install
+npm install
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# 2. Siapkan environment
+cp .env.example .env
+php artisan key:generate
 
-## Code of Conduct
+# 3. Atur .env (lihat bagian Konfigurasi di bawah), lalu migrasi + seed
+php artisan migrate --seed
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# 4. Build asset frontend
+npm run build      # atau: npm run dev (mode pengembangan)
 
-## Security Vulnerabilities
+# 5. Jalankan aplikasi
+php artisan serve
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Jalankan **worker antrean** di terminal terpisah agar email OTP & notifikasi terkirim:
 
-## License
+```bash
+php artisan queue:work
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Konfigurasi (.env)
+
+Isi minimal berikut di `.env`:
+
+```env
+# Database
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=crypto
+DB_USERNAME=root
+DB_PASSWORD=
+
+# Antrean (RabbitMQ)
+QUEUE_CONNECTION=rabbitmq
+RABBITMQ_HOST=127.0.0.1
+RABBITMQ_PORT=5672
+RABBITMQ_USER=guest
+RABBITMQ_PASSWORD=guest
+
+# Email (untuk OTP) — sesuaikan dengan SMTP kamu
+MAIL_MAILER=smtp
+
+# Chatbot
+OPENAI_API_KEY=sk-...      # RAHASIA — jangan commit ke repo
+
+# Blockchain (Ethereum Sepolia)
+CHAIN_ID=11155111
+```
+
+Alamat smart contract (TLKM & PaymentGateway) diisi di `resources/views/layouts/app.blade.php`. Cara deploy kontrak ada di **`contracts/PANDUAN-DEPLOY.md`**.
+
+> **Keamanan:** `.env` berisi rahasia (password DB, kunci OpenAI, konfigurasi wallet) dan **tidak** disertakan dalam paket ini. Jangan pernah commit `.env` ke repositori publik.
+
+## Menjadikan Akun Sebagai Penjual
+
+Agar tombol tambah produk muncul:
+
+```bash
+php artisan tinker
+>>> \App\Models\User::where('email','emailkamu@contoh.com')->update(['role'=>'seller']);
+```
+
+## Alur Uji Coba (End-to-End)
+
+1. Daftar / login (email + OTP, atau MetaMask).
+2. Sebagai penjual, buat produk (harga dalam TLKM).
+3. Sebagai pembeli (wallet punya TLKM), buka produk → **Beli** → approve token → bayar ke escrow.
+4. Order tersimpan; cek tx hash di **Etherscan Sepolia** sebagai bukti transparansi.
+5. Barang diterima → **Konfirmasi Terima** → dana lepas ke penjual. Bila tidak dikirim → **Refund**.
+
+## Model Bisnis
+
+Pendapatan platform = **fee 1% dari nilai transaksi**, ditanggung penjual (dipotong dari payout, tidak dibebankan ke pembeli). Donasi dan dompet komunitas **gratis (0% fee)** sebagai fitur sosial.
+
+## Catatan Penting
+
+- Berjalan di **testnet (Ethereum Sepolia)** dengan token uji coba — bukan uang sungguhan.
+- Smart contract **belum diaudit**; ini prototipe untuk keperluan kompetisi/edukasi.
+- Data pribadi (alamat, nomor telepon) disimpan di database dan **tidak** ditaruh on-chain — sejalan dengan UU PDP. Blockchain hanya menyimpan hash/data transaksi.
+- Fitur QRIS masih dalam pengembangan (belum live).
+
+## Struktur Ringkas
+
+```
+app/          Controller, Model, Service (SepoliaVerifier), Job
+contracts/    Smart contract Solidity (TLKMToken, PaymentGateway) + panduan deploy
+database/     Migrasi & seeder
+resources/    Tampilan Blade + aset frontend
+routes/       Definisi rute
+lang/         Berkas terjemahan (ID/EN)
+```
+
+---
+
+*E-Trace — dibangun sebagai proyek kompetisi. Belanja transparan, dana dijaga kode, bukan janji perusahaan.*
