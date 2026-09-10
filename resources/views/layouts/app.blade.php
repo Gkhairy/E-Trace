@@ -758,7 +758,7 @@
             <button onclick="toggleChat()" class="text-white/80 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
         </div>
         <div id="chatBody" class="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-50 text-sm">
-            <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-3 py-2 max-w-[85%] text-slate-700">Halo! Aku EVA. Tanya soal cara belanja, TLKM, escrow, PIN, donasi, atau cari produk (mis. "cari sepatu").</div>
+            <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-3 py-2 max-w-[85%] text-slate-700">Halo! Aku EVA. Tanya soal cara belanja, TLKM, escrow, PIN, donasi, cari produk (mis. "cari sepatu"), atau transparansi Explorer (mis. "berapa pengeluaran KPK bulan ini?").</div>
         </div>
         <div class="p-2.5 border-t border-slate-100 flex items-center gap-2">
             <input id="chatInput" onkeydown="if(event.key==='Enter')sendChat()" placeholder="Tulis pesan…" class="flex-1 px-3 py-2 rounded-xl bg-slate-100 border border-slate-200 focus:bg-white focus:border-blue-500 outline-none text-sm">
@@ -795,11 +795,23 @@
                     body: JSON.stringify({ message: msg, history: chatHistory.slice(-8) })
                 });
                 const data = await res.json();
-                let html = (data.reply || 'Maaf, terjadi kendala.').replace(/</g,'&lt;').replace(/\n/g,'<br>');
+                // Tebalkan **teks** jadi <b> lalu escape sisanya secukupnya.
+                let html = (data.reply || 'Maaf, terjadi kendala.')
+                    .replace(/</g,'&lt;')
+                    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+                    .replace(/\n/g,'<br>');
                 if (Array.isArray(data.products) && data.products.length) {
                     html += '<div class="mt-2 space-y-1">' + data.products.map(p =>
                         `<a href="${p.url}" class="block text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 hover:border-blue-400"><b>${(p.name||'').replace(/</g,'&lt;')}</b> · ${p.price} TLKM ↗</a>`
                     ).join('') + '</div>';
+                }
+                // Tombol menuju halaman Explorer wallet (fitur transparansi).
+                if (data.explorer && data.explorer.url) {
+                    const nm = (data.explorer.name || 'wallet').replace(/</g,'&lt;');
+                    const vb = data.explorer.verified ? ' <span class="text-green-600">✓</span>' : '';
+                    html += `<a href="${data.explorer.url}" class="mt-2 flex items-center justify-center gap-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-3 py-2 transition">`
+                        + `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>`
+                        + `Lihat ${nm}${vb} di Explorer ↗</a>`;
                 }
                 typing.innerHTML = html;
                 chatHistory.push({ role: 'assistant', content: data.reply || '' });
