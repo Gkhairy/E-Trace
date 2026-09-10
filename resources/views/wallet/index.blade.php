@@ -204,8 +204,14 @@ function qrisStart() {
     openModal(`
         <div class="p-5">
             <h3 class="text-lg font-bold text-slate-900 mb-1">Scan QRIS / GPN</h3>
-            <p class="text-xs text-slate-500 mb-3">Arahkan kamera ke kode QRIS, tempel kodenya, atau pakai contoh demo.</p>
+            <p class="text-xs text-slate-500 mb-3">Arahkan kamera ke kode QRIS, unggah gambar/screenshot QR, tempel kodenya, atau pakai contoh demo.</p>
             <div id="qrReader" class="rounded-xl overflow-hidden bg-slate-100 mb-3" style="min-height:200px"></div>
+            <div id="qrFileReader" class="hidden"></div>
+            <input type="file" id="qrFile" accept="image/*" class="hidden" onchange="qrisFromImage(this)">
+            <button onclick="qrisPickImage()" class="w-full mb-2 py-2.5 rounded-xl bg-slate-50 border border-dashed border-slate-300 text-slate-600 hover:border-blue-500 hover:text-blue-600 text-sm font-medium transition inline-flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                Unggah gambar QRIS
+            </button>
             <textarea id="qrPaste" rows="2" placeholder="…atau tempel payload QRIS di sini" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs outline-none focus:border-blue-500 resize-none mb-2"></textarea>
             <div class="flex gap-2">
                 <button onclick="qrisUseText()" class="flex-1 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold">Gunakan kode</button>
@@ -222,6 +228,20 @@ function qrisStart() {
     }, 80);
 }
 function qrisUseText() { const v = (document.getElementById('qrPaste').value || '').trim(); if (!v) return showToast('Tempel kode QRIS dulu.', 'warn'); stopScanner(); qrisFromRaw(v); }
+function qrisPickImage() { const f = document.getElementById('qrFile'); if (f) f.click(); }
+async function qrisFromImage(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    stopScanner(); // lepas kamera dulu agar tak bentrok dengan decode file
+    try {
+        const fileScanner = new Html5Qrcode('qrFileReader');
+        const txt = await fileScanner.scanFile(file, false);
+        try { await fileScanner.clear(); } catch (e) {}
+        qrisFromRaw(txt);
+    } catch (e) {
+        showToast('QR tidak terbaca dari gambar. Pastikan kode QRIS jelas & tidak terpotong.', 'warn');
+    } finally { input.value = ''; }
+}
 function qrisDemo() { stopScanner(); qrisReview('WARUNG MADURA BAROKAH', 'JAKARTA'); }
 function qrisFromRaw(raw) { const p = parseQris(raw); qrisReview(p.merchant || 'Merchant QRIS', p.city || ''); }
 

@@ -61,15 +61,28 @@
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1.5">Gambar Produk</label>
-            <div class="flex items-center gap-4">
-                <div id="preview" class="w-24 h-24 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 overflow-hidden shrink-0">
-                    <img src="{{ $product->imageUrl() ?? 'https://placehold.co/200x200/f1f5f9/94a3b8?text=—' }}" onerror="this.src='https://placehold.co/200x200/f1f5f9/94a3b8?text=—'" class="w-full h-full object-contain">
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Foto Produk</label>
+
+            @php $imgs = $product->images(); @endphp
+            @if(count($imgs))
+                <p class="text-xs text-slate-500 mb-2">Foto saat ini:</p>
+                <div class="flex flex-wrap gap-3 mb-3">
+                    @foreach($imgs as $i => $u)
+                        <div class="relative w-24 h-24 rounded-xl bg-slate-50 border {{ $i === 0 ? 'border-blue-500' : 'border-slate-200' }} overflow-hidden">
+                            <img src="{{ $u }}" onerror="this.src='https://placehold.co/200x200/f1f5f9/94a3b8?text=—'" class="w-full h-full object-contain">
+                            @if($i === 0)<span class="absolute bottom-0 inset-x-0 bg-blue-600 text-white text-[10px] font-semibold text-center py-0.5">Thumbnail</span>@endif
+                        </div>
+                    @endforeach
                 </div>
-                <input type="file" name="image" accept="image/*" onchange="previewImg(event)"
-                    class="text-sm text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white file:text-sm file:font-medium hover:file:bg-blue-700 file:cursor-pointer">
+            @endif
+
+            <div id="preview" class="flex flex-wrap gap-3 mb-3"></div>
+            <input type="file" name="images[]" accept="image/*" multiple onchange="previewImgs(event)"
+                class="text-sm text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white file:text-sm file:font-medium hover:file:bg-blue-700 file:cursor-pointer">
+            <div class="mt-2 flex items-start gap-2 text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+                <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>Unggah foto baru untuk <b>mengganti semua foto</b> (maks 6). <b>Foto pertama</b> jadi thumbnail. Biarkan kosong untuk mempertahankan foto saat ini.</span>
             </div>
-            <p class="text-xs text-slate-400 mt-2">Biarkan kosong untuk mempertahankan gambar saat ini. JPG/PNG/WEBP, maks 2MB.</p>
         </div>
 
         <div class="flex gap-3 pt-2">
@@ -83,10 +96,15 @@
 
 @section('scripts')
 <script>
-function previewImg(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    document.getElementById('preview').innerHTML = `<img src="${URL.createObjectURL(file)}" class="w-full h-full object-contain">`;
+function previewImgs(e) {
+    const files = Array.from(e.target.files || []).slice(0, 6);
+    const box = document.getElementById('preview');
+    if (!files.length) { box.innerHTML = ''; return; }
+    box.innerHTML = `<p class="w-full text-xs text-blue-600 font-medium">Foto baru (akan menggantikan yang lama):</p>` + files.map((f, i) => `
+        <div class="relative w-24 h-24 rounded-xl bg-slate-50 border ${i === 0 ? 'border-blue-500' : 'border-slate-200'} overflow-hidden">
+            <img src="${URL.createObjectURL(f)}" class="w-full h-full object-contain">
+            ${i === 0 ? '<span class="absolute bottom-0 inset-x-0 bg-blue-600 text-white text-[10px] font-semibold text-center py-0.5">Thumbnail</span>' : ''}
+        </div>`).join('');
 }
 </script>
 @endsection

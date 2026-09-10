@@ -53,15 +53,12 @@ class ProductController extends Controller
             'price_usdc' => 'required|numeric|min:0',
             'stock' => 'nullable|integer|min:0',
             'category_id' => 'nullable|exists:categories,id',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048'
+            'images'   => 'nullable|array|max:6',
+            'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-        $imageName = null;
-        if ($req->hasFile('image')) {
-            // Nama file acak (hindari nama dari klien / overwrite).
-            $imageName = Str::uuid() . '.' . $req->image->getClientOriginalExtension();
-            $req->image->move(public_path('product_images'), $imageName);
-        }
+        // Simpan semua gambar; urutan unggah = urutan galeri (elemen 0 = thumbnail).
+        $gallery = $this->storeImages($req);
 
         Product::create([
             'name'          => $req->name,
@@ -72,7 +69,8 @@ class ProductController extends Controller
             'category_id'   => $req->filled('category_id') ? (int) $req->category_id : null,
             'seller_wallet' => $store->payout_wallet, // dana escrow -> wallet payout toko
             'product_id'    => Str::uuid(),
-            'image'         => $imageName,
+            'image'         => $gallery[0] ?? null, // thumbnail = gambar pertama
+            'gallery'       => $gallery ?: null,
         ]);
 
         return redirect('/products')->with('success', 'Produk berhasil ditambahkan!');
@@ -108,7 +106,8 @@ class ProductController extends Controller
             'price_usdc'  => 'required|numeric|min:0',
             'stock'       => 'nullable|integer|min:0',
             'category_id' => 'nullable|exists:categories,id',
-            'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'images'      => 'nullable|array|max:6',
+            'images.*'    => 'image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $product->name        = $req->name;
@@ -117,14 +116,12 @@ class ProductController extends Controller
         $product->stock       = $req->filled('stock') ? (int) $req->stock : null;
         $product->category_id = $req->filled('category_id') ? (int) $req->category_id : null;
 
-        if ($req->hasFile('image')) {
-            // Hapus gambar lokal lama (bukan URL remote).
-            if ($product->image && !str_starts_with($product->image, 'http')) {
-                @unlink(public_path('product_images/' . $product->image));
-            }
-            $imageName = Str::uuid() . '.' . $req->image->getClientOriginalExtension();
-            $req->image->move(public_path('product_images'), $imageName);
-            $product->image = $imageName;
+        // Unggahan baru MENGGANTI seluruh galeri; kosong = pertahankan galeri lama.
+        if ($req->hasFile('images')) {
+            $this->deleteLocalImages($product);
+            $gallery = $this->storeImages($req);
+            $product->gallery = $gallery ?: null;
+            $product->image   = $gallery[0] ?? null; // thumbnail = gambar pertama
         }
         $product->save();
 
@@ -136,11 +133,41 @@ class ProductController extends Controller
         abort_unless(auth()->user()->isSeller(), 403, 'Hanya penjual.');
         $product = $this->ownedProduct($id);
 
-        if ($product->image && !str_starts_with($product->image, 'http')) {
-            @unlink(public_path('product_images/' . $product->image));
-        }
+        $this->deleteLocalImages($product);
         $product->delete();
 
         return redirect('/seller')->with('success', 'Produk dihapus.');
+    }
+
+    /**
+     * Simpan file dari input `images[]` ke public/product_images.
+     * Kembalikan array nama file (urut sesuai unggahan; elemen 0 = thumbnail).
+     */
+    private function storeImages(Request $req): array
+    {
+        $names = [];
+        foreach ((array) $req->file('images', []) as $file) {
+            if (!$file) {
+                continue;
+            }
+            $name = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('product_images'), $name);
+            $names[] = $name;
+        }
+        return $names;
+    }
+
+    /** Hapus semua gambar lokal milik produk (kolom image + gallery). URL remote dilewati. */
+    private function deleteLocalImages(Product $product): void
+    {
+        $refs = is_array($product->gallery) ? $product->gallery : [];
+        if ($product->image) {
+            $refs[] = $product->image;
+        }
+        foreach (array_unique(array_filter($refs)) as $ref) {
+            if (!str_starts_with($ref, 'http')) {
+                @unlink(public_path('product_images/' . $ref));
+            }
+        }
     }
 }

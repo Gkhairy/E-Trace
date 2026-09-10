@@ -62,15 +62,14 @@
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1.5">Gambar Produk</label>
-            <div class="flex items-center gap-4">
-                <div id="preview" class="w-24 h-24 rounded-xl bg-slate-50 border border-dashed border-slate-300 flex items-center justify-center text-slate-400 overflow-hidden shrink-0">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                </div>
-                <input type="file" name="image" accept="image/*" onchange="previewImg(event)"
-                    class="text-sm text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white file:text-sm file:font-medium hover:file:bg-blue-700 file:cursor-pointer">
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Foto Produk</label>
+            <div id="preview" class="flex flex-wrap gap-3 mb-3"></div>
+            <input type="file" name="images[]" accept="image/*" multiple onchange="previewImgs(event)"
+                class="text-sm text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white file:text-sm file:font-medium hover:file:bg-blue-700 file:cursor-pointer">
+            <div class="mt-2 flex items-start gap-2 text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+                <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>Bisa pilih <b>beberapa foto sekaligus</b> (maks 6). <b>Foto pertama</b> jadi thumbnail produk. JPG/PNG/WEBP, maks 2MB per foto.</span>
             </div>
-            <p class="text-xs text-slate-400 mt-2">JPG, PNG, atau WEBP. Maksimal 2MB.</p>
         </div>
 
         <div class="flex gap-3 pt-2">
@@ -84,11 +83,14 @@
 
 @section('scripts')
 <script>
-function previewImg(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    document.getElementById('preview').innerHTML = `<img src="${url}" class="w-full h-full object-contain">`;
+function previewImgs(e) {
+    const files = Array.from(e.target.files || []).slice(0, 6);
+    const box = document.getElementById('preview');
+    box.innerHTML = files.map((f, i) => `
+        <div class="relative w-24 h-24 rounded-xl bg-slate-50 border ${i === 0 ? 'border-blue-500' : 'border-slate-200'} overflow-hidden">
+            <img src="${URL.createObjectURL(f)}" class="w-full h-full object-contain">
+            ${i === 0 ? '<span class="absolute bottom-0 inset-x-0 bg-blue-600 text-white text-[10px] font-semibold text-center py-0.5">Thumbnail</span>' : ''}
+        </div>`).join('');
 }
 </script>
 @endsection

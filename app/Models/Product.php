@@ -7,8 +7,31 @@ use Illuminate\Database\Eloquent\Model;
 class Product extends Model
 {
     protected $fillable = [
-        'name', 'description', 'price_usdc', 'stock', 'seller_wallet', 'product_id', 'image', 'store_id', 'category_id',
+        'name', 'description', 'price_usdc', 'stock', 'seller_wallet', 'product_id', 'image', 'gallery', 'store_id', 'category_id',
     ];
+
+    protected $casts = [
+        'gallery' => 'array',
+    ];
+
+    /** Ubah satu referensi gambar (nama file lokal ATAU URL) menjadi URL tayang. */
+    public static function resolveImage(string $ref): string
+    {
+        return str_starts_with($ref, 'http') ? $ref : '/product_images/' . $ref;
+    }
+
+    /**
+     * Semua gambar produk (urut) sebagai URL siap tayang, untuk galeri/carousel.
+     * Elemen pertama = thumbnail. Fallback ke kolom `image` untuk produk lama.
+     */
+    public function images(): array
+    {
+        $refs = is_array($this->gallery) ? array_values(array_filter($this->gallery)) : [];
+        if (empty($refs) && $this->image) {
+            $refs = [$this->image];
+        }
+        return array_map(fn ($r) => self::resolveImage($r), $refs);
+    }
 
     public function store()
     {

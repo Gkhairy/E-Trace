@@ -4,7 +4,9 @@
 
 @php
     $priceFmt = rtrim(rtrim(number_format($product->price_usdc, 2), '0'), '.');
-    $img = $product->imageUrl() ?? 'https://placehold.co/600x600/f1f5f9/94a3b8?text=No+Image';
+    $gallery = $product->images();
+    if (empty($gallery)) { $gallery = ['https://placehold.co/600x600/f1f5f9/94a3b8?text=No+Image']; }
+    $img = $gallery[0];
 @endphp
 
 {{-- ===== BREADCRUMB ===== --}}
@@ -16,20 +18,38 @@
 
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
 
-    {{-- ===== GALERI (kiri) ===== --}}
+    {{-- ===== GALERI (kiri) — carousel yang bisa di-slide ===== --}}
     <div class="lg:col-span-5">
-        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden aspect-square flex items-center justify-center p-6">
+        <div class="relative group bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden aspect-square flex items-center justify-center p-6">
             <img id="mainImg" src="{{ $img }}"
                  onerror="this.src='https://placehold.co/600x600/f1f5f9/94a3b8?text=No+Image'"
                  class="max-w-full max-h-full object-contain">
+
+            @if(count($gallery) > 1)
+                {{-- Panah prev/next --}}
+                <button type="button" onclick="galPrev()" aria-label="Sebelumnya"
+                    class="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 border border-slate-200 shadow-sm flex items-center justify-center text-slate-600 hover:bg-white opacity-0 group-hover:opacity-100 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <button type="button" onclick="galNext()" aria-label="Berikutnya"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 border border-slate-200 shadow-sm flex items-center justify-center text-slate-600 hover:bg-white opacity-0 group-hover:opacity-100 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </button>
+                {{-- Indikator jumlah --}}
+                <span id="galCounter" class="absolute bottom-3 right-3 text-[11px] font-medium bg-slate-900/60 text-white rounded-full px-2 py-0.5">1 / {{ count($gallery) }}</span>
+            @endif
         </div>
-        <div class="flex gap-3 mt-3">
-            <div class="w-16 h-16 rounded-xl overflow-hidden border-2 border-blue-500 bg-white flex items-center justify-center p-1">
-                <img src="{{ $img }}" onerror="this.src='https://placehold.co/100x100/f1f5f9/94a3b8?text=—'" class="max-w-full max-h-full object-contain">
+
+        @if(count($gallery) > 1)
+            <div class="flex gap-3 mt-3 overflow-x-auto pb-1">
+                @foreach($gallery as $i => $u)
+                    <button type="button" onclick="galGo({{ $i }})" data-thumb="{{ $i }}"
+                        class="shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-white flex items-center justify-center p-1 border-2 {{ $i === 0 ? 'border-blue-500' : 'border-slate-200' }} transition">
+                        <img src="{{ $u }}" onerror="this.src='https://placehold.co/100x100/f1f5f9/94a3b8?text=—'" class="max-w-full max-h-full object-contain">
+                    </button>
+                @endforeach
             </div>
-            <div class="w-16 h-16 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 text-xs">360°</div>
-            <div class="w-16 h-16 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 text-xs">HD</div>
-        </div>
+        @endif
     </div>
 
     {{-- ===== INFO (tengah) ===== --}}
@@ -193,6 +213,24 @@
 @section('scripts')
 <script>
 const PRODUCT_DB_ID = @json($product->id);
+
+// ===== Galeri produk (carousel) =====
+const GALLERY = @json($gallery);
+let galIdx = 0;
+function galRender() {
+    const main = document.getElementById('mainImg');
+    if (main) main.src = GALLERY[galIdx];
+    const c = document.getElementById('galCounter');
+    if (c) c.textContent = `${galIdx + 1} / ${GALLERY.length}`;
+    document.querySelectorAll('[data-thumb]').forEach(el => {
+        const on = Number(el.dataset.thumb) === galIdx;
+        el.classList.toggle('border-blue-500', on);
+        el.classList.toggle('border-slate-200', !on);
+    });
+}
+function galGo(i) { galIdx = (i + GALLERY.length) % GALLERY.length; galRender(); }
+function galPrev() { galGo(galIdx - 1); }
+function galNext() { galGo(galIdx + 1); }
 
 function qtyStep(d) {
     const el = document.getElementById('qty');
