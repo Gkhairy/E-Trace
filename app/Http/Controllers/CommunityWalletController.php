@@ -32,7 +32,11 @@ class CommunityWalletController extends Controller
     {
         $ids = CommunityMember::where('user_id', auth()->id())->pluck('community_wallet_id');
         $wallets = CommunityWallet::whereIn('id', $ids)->orWhere('created_by', auth()->id())->latest()->get();
-        return view('community.index', compact('wallets'));
+        // Nickname pribadi per dompet (hanya untuk user ini).
+        $nicknames = CommunityMember::where('user_id', auth()->id())
+            ->whereIn('community_wallet_id', $wallets->pluck('id'))
+            ->pluck('nickname', 'community_wallet_id');
+        return view('community.index', compact('wallets', 'nicknames'));
     }
 
     public function create()
@@ -178,7 +182,11 @@ class CommunityWalletController extends Controller
                 ->values();
         }
 
-        return view('community.show', compact('wallet', 'balance', 'gasEth', 'members', 'proposals', 'deposits', 'me', 'iAmSigner', 'iAmOwner', 'signerIds', 'required', 'inviteCandidates'));
+        // Nickname PRIBADI (hanya user ini yang melihatnya) untuk judul dompet.
+        $myNickname  = $me?->nickname;
+        $displayName = $myNickname ?: $wallet->name;
+
+        return view('community.show', compact('wallet', 'balance', 'gasEth', 'members', 'proposals', 'deposits', 'me', 'iAmSigner', 'iAmOwner', 'signerIds', 'required', 'inviteCandidates', 'myNickname', 'displayName'));
     }
 
     /** Mode A: tarik dana sampai jatah. Konfirmasi PIN. */
@@ -308,6 +316,32 @@ class CommunityWalletController extends Controller
 
         CommunityApproval::firstOrCreate(['proposal_id' => $p->id, 'user_id' => auth()->id()]);
         return response()->json(['success' => true] + $this->maybeExecute($p, $wallet, $signer));
+    }
+
+    /** Mode B: TOLAK usulan (PIN). Karena persetujuan bulat, 1 penolakan membatalkan usulan. */
+    public function reject(Request $req)
+    {
+        $data = $req->validate(['proposal_id' => 'required|integer', 'pin' => 'required|digits:6']);
+        $p = CommunityProposal::findOrFail($data['proposal_id']);
+        $wallet = CommunityWallet::findOrFail($p->community_wallet_id);
+        $member = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
+        abort_unless($p->status === 'open', 422, 'Usulan sudah selesai.');
+        abort_unless($member->is_signer, 403, 'Kamu bukan penanda tangan yang ditunjuk untuk dompet ini.');
+        $this->requirePin($data['pin']);
+
+        $p->update(['status' => 'rejected']);
+        $this->notifyAllMembers($wallet, 'Usulan ditolak', $this->meName() . " menolak sebuah usulan di \"{$wallet->name}\".", '❌');
+        return response()->json(['success' => true, 'rejected' => true]);
+    }
+
+    /** Setel nickname PRIBADI untuk dompet ini — hanya kamu yang melihatnya. */
+    public function setNickname(Request $req)
+    {
+        $data = $req->validate(['id' => 'required|integer', 'nickname' => 'nullable|string|max:60']);
+        $wallet = CommunityWallet::findOrFail($data['id']);
+        $member = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
+        $member->update(['nickname' => trim((string) $data['nickname']) ?: null]);
+        return response()->json(['success' => true]);
     }
 
     /** Catat setoran (mutasi) setelah transfer TLKM ke kas berhasil. */

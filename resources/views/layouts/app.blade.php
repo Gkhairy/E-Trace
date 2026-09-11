@@ -233,7 +233,7 @@
                 <div class="p-6">
                     <h3 class="text-lg font-bold text-slate-900 mb-1">${title}</h3>
                     <p class="text-sm text-slate-500 mb-4">Masukkan PIN 6 angka untuk menandatangani transaksi.</p>
-                    <input id="pinModalInput" type="password" inputmode="numeric" maxlength="6" autofocus class="w-full text-center tracking-[0.4em] text-xl font-bold px-4 py-3 rounded-xl bg-slate-100 border border-slate-200 focus:bg-white focus:border-blue-500 outline-none mb-4" placeholder="••••••">
+                    <input id="pinModalInput" type="password" inputmode="numeric" maxlength="6" autofocus autocomplete="one-time-code" data-lpignore="true" data-1p-ignore data-form-type="other" class="w-full text-center tracking-[0.4em] text-xl font-bold px-4 py-3 rounded-xl bg-slate-100 border border-slate-200 focus:bg-white focus:border-blue-500 outline-none mb-4" placeholder="••••••">
                     <div class="flex gap-3">
                         <button id="pinCancel" class="flex-1 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-sm font-medium">Batal</button>
                         <button id="pinOk" class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">Konfirmasi</button>
@@ -269,8 +269,8 @@
                 <h3 class="text-lg font-bold text-slate-900 mb-1">Buat PIN Transaksi</h3>
                 <p class="text-sm text-slate-500 mb-4">Akunmu belum punya PIN. Buat PIN 6 angka untuk login cepat &amp; konfirmasi pembayaran.</p>
                 <div id="pinSetupErr" class="hidden bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm mb-3"></div>
-                <input id="psPin" type="password" inputmode="numeric" maxlength="6" placeholder="PIN 6 angka" class="w-full text-center tracking-[0.4em] text-lg font-bold px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 outline-none focus:bg-white focus:border-blue-500 mb-2">
-                <input id="psPin2" type="password" inputmode="numeric" maxlength="6" placeholder="Ulangi PIN" class="w-full text-center tracking-[0.4em] text-lg font-bold px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 outline-none focus:bg-white focus:border-blue-500 mb-2">
+                <input id="psPin" type="password" inputmode="numeric" maxlength="6" autocomplete="one-time-code" data-lpignore="true" data-1p-ignore data-form-type="other" placeholder="PIN 6 angka" class="w-full text-center tracking-[0.4em] text-lg font-bold px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 outline-none focus:bg-white focus:border-blue-500 mb-2">
+                <input id="psPin2" type="password" inputmode="numeric" maxlength="6" autocomplete="one-time-code" data-lpignore="true" data-1p-ignore data-form-type="other" placeholder="Ulangi PIN" class="w-full text-center tracking-[0.4em] text-lg font-bold px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 outline-none focus:bg-white focus:border-blue-500 mb-2">
                 <input id="psPass" type="password" placeholder="Password akun (konfirmasi)" class="w-full px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 outline-none focus:bg-white focus:border-blue-500 text-sm mb-4">
                 <div class="flex gap-3">
                     <button onclick="try{sessionStorage.setItem('pinPromptDismissed','1')}catch(e){}; closeModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-sm font-medium">Nanti saja</button>

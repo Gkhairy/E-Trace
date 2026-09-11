@@ -9,16 +9,20 @@
 
 <nav class="flex items-center gap-2 text-xs text-slate-500 mb-4">
     <a href="/community" class="hover:text-blue-600 transition">Dompet Komunitas</a>
-    <span class="text-slate-300">/</span><span class="text-slate-700 truncate">{{ $wallet->name }}</span>
+    <span class="text-slate-300">/</span><span class="text-slate-700 truncate">{{ $displayName }}</span>
 </nav>
 
 <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mb-6">
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
-            <div class="flex items-center gap-2">
-                <h1 class="text-2xl font-bold text-slate-900">{{ $wallet->name }}</h1>
+            <div class="flex items-center gap-2 flex-wrap">
+                <h1 class="text-2xl font-bold text-slate-900">{{ $displayName }}</h1>
                 <span class="text-[11px] px-2 py-0.5 rounded-full {{ $wallet->isMultisig() ? 'bg-violet-50 text-violet-700 border border-violet-200' : 'bg-blue-50 text-blue-700 border border-blue-200' }}">{{ $wallet->modeLabel() }}</span>
+                <button onclick="doNickname()" title="Beri nama pribadi (hanya kamu yang lihat)" class="text-slate-400 hover:text-blue-600">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                </button>
             </div>
+            @if($myNickname)<p class="text-[11px] text-slate-400">🔒 Nama pribadi (hanya kamu) · asli: {{ $wallet->name }}</p>@endif
             <a href="https://sepolia.etherscan.io/address/{{ $wallet->address }}" target="_blank" class="text-xs text-blue-600 hover:underline font-mono">{{ $wallet->address }} ↗</a>
         </div>
         <div class="text-right">
@@ -125,10 +129,15 @@
                             @else
                                 <span class="text-xs text-green-600">Selesai ✓</span>
                             @endif
+                        @elseif($p['status'] === 'rejected')
+                            <span class="text-xs text-red-500 font-medium">Ditolak ✕</span>
                         @elseif($p['approved_by_me'])
                             <span class="text-xs text-slate-400">Kamu sudah setuju</span>
                         @elseif($iAmSigner)
-                            <button onclick="doApprove({{ $p['id'] }})" class="text-xs text-blue-600 font-semibold">Setujui</button>
+                            <div class="flex items-center gap-3">
+                                <button onclick="doApprove({{ $p['id'] }})" class="text-xs text-blue-600 font-semibold hover:underline">Setujui</button>
+                                <button onclick="doReject({{ $p['id'] }})" class="text-xs text-red-500 font-semibold hover:underline">Tolak</button>
+                            </div>
                         @else
                             <span class="text-xs text-slate-300">Bukan penanda tangan</span>
                         @endif
@@ -166,6 +175,7 @@
 <script>
 const WID = @json($wallet->id);
 const CADDR = @json($wallet->address);
+const MY_NICKNAME = @json($myNickname);
 const INVITE_CANDIDATES = @json($inviteCandidates->values());
 const OWNER_CANDIDATES = @json(collect($members)->filter(fn($m) => $m['is_signer'] && !$m['is_owner'])->map(fn($m) => ['id' => $m['user_id'], 'name' => $m['name']])->values());
 const escapeHtml = (s) => (s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -206,8 +216,11 @@ function doInvite() {
     openModal(`<div class="p-6">
         <h3 class="text-lg font-bold text-slate-900 mb-1">Undang Anggota</h3>
         <p class="text-sm text-slate-500 mb-3">Usulan undang butuh persetujuan <b>semua</b> penanda tangan.</p>
-        <select id="invSel" class="w-full px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 outline-none text-sm mb-3">${opts}</select>
-        <label class="flex items-center gap-2 text-sm text-slate-700 mb-4"><input id="invSigner" type="checkbox" class="rounded border-slate-300"> Jadikan penanda tangan (punya hak suara)</label>
+        <div class="relative mb-3">
+            <select id="invSel" class="appearance-none w-full pl-4 pr-10 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm text-slate-800 cursor-pointer transition">${opts}</select>
+            <svg class="w-4 h-4 absolute right-3 top-3 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+        <label class="flex items-center gap-2 text-sm text-slate-700 mb-4 cursor-pointer"><input id="invSigner" type="checkbox" class="rounded border-slate-300"> Jadikan penanda tangan (punya hak suara)</label>
         <div class="flex gap-3">
             <button onclick="closeModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-sm font-medium">Batal</button>
             <button id="invGo" class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">Buat Usulan</button>
@@ -239,7 +252,10 @@ function doTransferOwner() {
     openModal(`<div class="p-6">
         <h3 class="text-lg font-bold text-slate-900 mb-1">Transfer Kepemilikan</h3>
         <p class="text-sm text-slate-500 mb-3">Pemilik baru harus penanda tangan. Butuh persetujuan <b>semua</b> penanda tangan (termasuk kamu).</p>
-        <select id="ownSel" class="w-full px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 outline-none text-sm mb-4">${opts}</select>
+        <div class="relative mb-4">
+            <select id="ownSel" class="appearance-none w-full pl-4 pr-10 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm text-slate-800 cursor-pointer transition">${opts}</select>
+            <svg class="w-4 h-4 absolute right-3 top-3 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
         <div class="flex gap-3">
             <button onclick="closeModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-sm font-medium">Batal</button>
             <button id="ownGo" class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">Buat Usulan</button>
@@ -278,6 +294,21 @@ async function doApprove(pid) {
     const pin = await askPin('Setujui Usulan'); if (!pin) return;
     txProgress.open('Menyetujui', ['Verifikasi PIN', 'Eksekusi bila cukup']);
     try { txProgress.active(0); const d = await post('/community/approve', { proposal_id: pid, pin }); txProgress.done(0); txProgress.active(1); txProgress.done(1); ok(d.tx_hash); } catch (e) { fail(e); }
+}
+
+async function doReject(pid) {
+    const okc = await uiConfirm({ title: 'Tolak Usulan', message: 'Tolak usulan ini? Karena persetujuan <b>bulat</b>, penolakanmu langsung membatalkannya.', confirmText: 'Ya, tolak', cancelText: 'Batal', danger: true });
+    if (!okc) return;
+    const pin = await askPin('Tolak Usulan'); if (!pin) return;
+    txProgress.open('Menolak usulan', ['Verifikasi PIN']);
+    try { txProgress.active(0); await post('/community/reject', { proposal_id: pid, pin }); txProgress.done(0); ok(null); } catch (e) { fail(e); }
+}
+
+// Nama pribadi dompet (hanya kamu yang lihat).
+async function doNickname() {
+    const nn = await uiPrompt({ title: 'Nama Pribadi Dompet', label: '🔒 Hanya kamu yang melihat nama ini. Kosongkan untuk pakai nama asli.', placeholder: 'mis. Kas RT 05', value: MY_NICKNAME || '', confirmText: 'Simpan' });
+    if (nn === null) return;
+    try { await post('/community/nickname', { id: WID, nickname: nn }); showToast('Nama pribadi disimpan.', 'success'); setTimeout(() => location.reload(), 500); } catch (e) { fail(e); }
 }
 </script>
 @endsection
