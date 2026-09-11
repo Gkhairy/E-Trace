@@ -64,40 +64,67 @@
         </table>
     </div>
 @else
-    {{-- MODE B: multisig --}}
+    {{-- MODE B: multisig (persetujuan BULAT) --}}
     <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-6">
-        <h2 class="font-bold text-slate-900 mb-1">Multisig {{ $wallet->threshold }} dari {{ $signers->count() }} penanda tangan</h2>
-        <p class="text-xs text-slate-500 mb-3">Kirim dana butuh persetujuan <b>{{ $wallet->threshold }}</b> dari <b>{{ $signers->count() }}</b> penanda tangan yang ditunjuk.</p>
+        <h2 class="font-bold text-slate-900 mb-1">Multisig — persetujuan bulat ({{ $signers->count() }} penanda tangan)</h2>
+        <p class="text-xs text-slate-500 mb-3">Setiap aksi (kirim dana, undang/kick anggota, transfer kepemilikan) butuh persetujuan <b>semua {{ $signers->count() }}</b> penanda tangan.</p>
 
-        {{-- Daftar anggota + penanda tangan --}}
+        {{-- Daftar anggota + penanda tangan + pemilik --}}
         <div class="flex flex-wrap gap-2 mb-4">
             @foreach($members as $m)
                 <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border {{ $m['is_signer'] ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-slate-50 text-slate-500 border-slate-200' }}">
+                    @if($m['is_owner'])<span title="Pemilik">👑</span>@endif
                     {{ $m['name'] }}@if($m['is_me']) (kamu)@endif
                     @if($m['is_signer'])<span title="Penanda tangan wajib">🖊️</span>@endif
+                    @if($iAmOwner && !$m['is_owner'])
+                        <button onclick="doKick({{ $m['user_id'] }}, @js($m['name']))" title="Usulkan keluarkan" class="ml-0.5 text-slate-400 hover:text-red-600">✕</button>
+                    @endif
                 </span>
             @endforeach
         </div>
 
-        <button onclick="doPropose()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold">Usulkan Kirim Dana</button>
+        <div class="flex flex-wrap gap-2">
+            <button onclick="doPropose()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold">Usulkan Kirim Dana</button>
+            @if($iAmOwner)
+                <button onclick="doInvite()" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-semibold">Undang Anggota</button>
+                <button onclick="doTransferOwner()" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-semibold">Transfer Kepemilikan</button>
+            @endif
+        </div>
+        @if($iAmOwner)
+            <p class="text-[11px] text-slate-400 mt-2">👑 Kamu <b>pemilik</b>: bisa mengusulkan undang/kick & transfer kepemilikan — tapi tetap butuh persetujuan semua penanda tangan.</p>
+        @endif
         @unless($iAmSigner)
             <p class="text-[11px] text-slate-400 mt-2">Kamu bukan penanda tangan — bisa mengusulkan, tapi tidak menghitung sebagai persetujuan.</p>
         @endunless
     </div>
-    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+
+    {{-- Usulan (semua jenis) --}}
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-6">
         <div class="px-5 py-4 border-b border-slate-100"><h2 class="font-bold text-slate-900">Usulan</h2></div>
         @if($proposals->isEmpty())
             <p class="px-5 py-8 text-center text-sm text-slate-400">Belum ada usulan.</p>
         @else
             @foreach($proposals as $p)
+                @php
+                    $label = match($p['type']) {
+                        'add_member'         => '👥 Undang <b>'.e($p['target_name'] ?: $p['to_name']).'</b>'.($p['as_signer'] ? ' (sebagai penanda tangan)' : ' (anggota biasa)'),
+                        'remove_member'      => '👋 Keluarkan <b>'.e($p['target_name'] ?: $p['to_name']).'</b>',
+                        'transfer_ownership' => '🔑 Transfer kepemilikan ke <b>'.e($p['target_name'] ?: $p['to_name']).'</b>',
+                        default              => $fmt($p['amount']).' TLKM → <b>'.e($p['to_name'] ?: (substr($p['to_wallet'],0,8).'…'.substr($p['to_wallet'],-4))).'</b>',
+                    };
+                @endphp
                 <div class="px-5 py-3 border-t border-slate-100 flex items-center justify-between gap-3">
                     <div class="min-w-0">
-                        <p class="text-sm text-slate-800">{{ $fmt($p['amount']) }} TLKM → <b>{{ $p['to_name'] ?: (substr($p['to_wallet'],0,8).'…'.substr($p['to_wallet'],-4)) }}</b></p>
-                        <p class="text-[11px] text-slate-400">{{ $p['approvals'] }}/{{ $wallet->threshold }} setuju @if($p['note'])· {{ $p['note'] }}@endif</p>
+                        <p class="text-sm text-slate-800">{!! $label !!}</p>
+                        <p class="text-[11px] text-slate-400">{{ $p['approvals'] }}/{{ $p['required'] }} setuju (bulat) @if($p['note'])· {{ $p['note'] }}@endif</p>
                     </div>
                     <div class="shrink-0">
                         @if($p['status'] === 'executed')
-                            <a href="https://sepolia.etherscan.io/tx/{{ $p['tx'] }}" target="_blank" class="text-xs text-green-600 hover:underline">Terkirim ↗</a>
+                            @if($p['tx'])
+                                <a href="https://sepolia.etherscan.io/tx/{{ $p['tx'] }}" target="_blank" class="text-xs text-green-600 hover:underline">Terkirim ↗</a>
+                            @else
+                                <span class="text-xs text-green-600">Selesai ✓</span>
+                            @endif
                         @elseif($p['approved_by_me'])
                             <span class="text-xs text-slate-400">Kamu sudah setuju</span>
                         @elseif($iAmSigner)
@@ -112,12 +139,36 @@
     </div>
 @endif
 
+{{-- Mutasi setoran (siapa menyetor ke kas) --}}
+<div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-slate-100"><h2 class="font-bold text-slate-900">Mutasi Setoran</h2></div>
+    @if($deposits->isEmpty())
+        <p class="px-5 py-8 text-center text-sm text-slate-400">Belum ada setoran tercatat.</p>
+    @else
+        @foreach($deposits as $d)
+            <div class="px-5 py-3 border-t border-slate-100 flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <p class="text-sm text-slate-800"><b>{{ $d['name'] }}</b> menyetor</p>
+                    <p class="text-[11px] text-slate-400">{{ $d['at']->diffForHumans() }}@if($d['wallet']) · {{ substr($d['wallet'],0,6) }}…{{ substr($d['wallet'],-4) }}@endif</p>
+                </div>
+                <div class="shrink-0 text-right">
+                    <p class="text-sm font-semibold text-green-600">+{{ $fmt($d['amount']) }} TLKM</p>
+                    @if($d['tx'])<a href="https://sepolia.etherscan.io/tx/{{ $d['tx'] }}" target="_blank" class="text-[11px] text-blue-600 hover:underline">Lihat tx ↗</a>@endif
+                </div>
+            </div>
+        @endforeach
+    @endif
+</div>
+
 @endsection
 
 @section('scripts')
 <script>
 const WID = @json($wallet->id);
 const CADDR = @json($wallet->address);
+const INVITE_CANDIDATES = @json($inviteCandidates->values());
+const OWNER_CANDIDATES = @json(collect($members)->filter(fn($m) => $m['is_signer'] && !$m['is_owner'])->map(fn($m) => ['id' => $m['user_id'], 'name' => $m['name']])->values());
+const escapeHtml = (s) => (s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 async function post(url, body) {
     const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN }, body: JSON.stringify(body) });
@@ -138,8 +189,68 @@ async function doDeposit() {
     try {
         txProgress.active(0);
         const hash = IS_EMBEDDED ? await pinTx('/pin/transfer', { pin, to: CADDR, amount: amt }) : await sendTLKM(CADDR, amt);
-        txProgress.done(0); txProgress.active(1); txProgress.done(1); ok(hash);
+        txProgress.done(0); txProgress.active(1); txProgress.done(1);
+        // Catat mutasi: siapa yang menyetor (dana sudah terkirim; kegagalan catat tak membatalkan).
+        try { await post('/community/deposit-record', { id: WID, amount: amt, tx_hash: hash }); } catch (_) {}
+        ok(hash);
     } catch (e) { fail(e); }
+}
+
+// ===== Owner: undang / kick anggota, transfer kepemilikan (semua jadi usulan bulat) =====
+function doInvite() {
+    if (!INVITE_CANDIDATES.length) {
+        uiAlert({ title: 'Tidak ada kandidat', message: 'Semua temanmu sudah jadi anggota, atau kamu belum punya teman untuk diundang.', type: 'info' });
+        return;
+    }
+    const opts = INVITE_CANDIDATES.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+    openModal(`<div class="p-6">
+        <h3 class="text-lg font-bold text-slate-900 mb-1">Undang Anggota</h3>
+        <p class="text-sm text-slate-500 mb-3">Usulan undang butuh persetujuan <b>semua</b> penanda tangan.</p>
+        <select id="invSel" class="w-full px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 outline-none text-sm mb-3">${opts}</select>
+        <label class="flex items-center gap-2 text-sm text-slate-700 mb-4"><input id="invSigner" type="checkbox" class="rounded border-slate-300"> Jadikan penanda tangan (punya hak suara)</label>
+        <div class="flex gap-3">
+            <button onclick="closeModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-sm font-medium">Batal</button>
+            <button id="invGo" class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">Buat Usulan</button>
+        </div></div>`);
+    document.getElementById('invGo').onclick = async () => {
+        const target_id = +document.getElementById('invSel').value;
+        const as_signer = document.getElementById('invSigner').checked;
+        closeModal();
+        const pin = await askPin('Undang Anggota'); if (!pin) return;
+        txProgress.open('Membuat usulan undang', ['Verifikasi PIN']);
+        try { txProgress.active(0); await post('/community/member-propose', { id: WID, action: 'add', target_id, as_signer, pin }); txProgress.done(0); ok(null); } catch (e) { fail(e); }
+    };
+}
+
+async function doKick(userId, name) {
+    const okc = await uiConfirm({ title: 'Keluarkan Anggota', message: `Buat usulan mengeluarkan <b>${escapeHtml(name)}</b>? Butuh persetujuan <b>semua</b> penanda tangan.`, confirmText: 'Ya, usulkan', cancelText: 'Batal', danger: true });
+    if (!okc) return;
+    const pin = await askPin('Keluarkan Anggota'); if (!pin) return;
+    txProgress.open('Membuat usulan keluarkan', ['Verifikasi PIN']);
+    try { txProgress.active(0); await post('/community/member-propose', { id: WID, action: 'remove', target_id: userId, pin }); txProgress.done(0); ok(null); } catch (e) { fail(e); }
+}
+
+function doTransferOwner() {
+    if (!OWNER_CANDIDATES.length) {
+        uiAlert({ title: 'Tidak ada kandidat', message: 'Pemilik baru harus salah satu penanda tangan (selain kamu). Tambahkan/tetapkan penanda tangan lain dulu.', type: 'info' });
+        return;
+    }
+    const opts = OWNER_CANDIDATES.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+    openModal(`<div class="p-6">
+        <h3 class="text-lg font-bold text-slate-900 mb-1">Transfer Kepemilikan</h3>
+        <p class="text-sm text-slate-500 mb-3">Pemilik baru harus penanda tangan. Butuh persetujuan <b>semua</b> penanda tangan (termasuk kamu).</p>
+        <select id="ownSel" class="w-full px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 outline-none text-sm mb-4">${opts}</select>
+        <div class="flex gap-3">
+            <button onclick="closeModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-sm font-medium">Batal</button>
+            <button id="ownGo" class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">Buat Usulan</button>
+        </div></div>`);
+    document.getElementById('ownGo').onclick = async () => {
+        const target_id = +document.getElementById('ownSel').value;
+        closeModal();
+        const pin = await askPin('Transfer Kepemilikan'); if (!pin) return;
+        txProgress.open('Membuat usulan transfer', ['Verifikasi PIN']);
+        try { txProgress.active(0); await post('/community/owner-propose', { id: WID, target_id, pin }); txProgress.done(0); ok(null); } catch (e) { fail(e); }
+    };
 }
 
 // Mode A: tarik jatah (ditandatangani backend pakai kunci komunitas).

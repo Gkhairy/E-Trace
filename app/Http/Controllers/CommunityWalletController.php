@@ -6,6 +6,7 @@ use App\Models\CommunityWallet;
 use App\Models\CommunityMember;
 use App\Models\CommunityProposal;
 use App\Models\CommunityApproval;
+use App\Models\CommunityDeposit;
 use App\Models\Friendship;
 use App\Models\User;
 use App\Services\EmbeddedWallet;
@@ -86,7 +87,9 @@ class CommunityWalletController extends Controller
             'address'     => $w['address'],
             'description' => $data['description'] ?? null,
             'created_by'  => auth()->id(),
-            'threshold'   => $threshold,
+            'owner_id'    => auth()->id(), // pembuat = pemilik awal
+            // Semua aksi BULAT: ambang = jumlah penanda tangan.
+            'threshold'   => $data['mode'] === 'B' ? $signerIds->count() : null,
         ] + $enc);
 
         foreach ($memberIds as $uid) {
@@ -135,22 +138,47 @@ class CommunityWalletController extends Controller
                 $spent = ($m->period_start && now()->greaterThanOrEqualTo($m->period_start->copy()->addDays(30))) ? 0 : (float) $m->spent;
                 $remaining = max(0, (float) $m->monthly_limit - $spent);
             }
-            return ['name' => $m->user->public_name ?: $m->user->name, 'wallet' => $m->user->wallet_address,
+            return ['user_id' => $m->user_id, 'name' => $m->user->public_name ?: $m->user->name, 'wallet' => $m->user->wallet_address,
                     'limit' => (float) $m->monthly_limit, 'remaining' => $remaining, 'is_me' => $m->user_id === auth()->id(),
-                    'is_signer' => (bool) $m->is_signer];
+                    'is_signer' => (bool) $m->is_signer, 'is_owner' => $wallet->isOwner($m->user_id)];
         });
 
-        $proposals = $wallet->proposals->map(fn ($p) => [
-            'id' => $p->id, 'to_wallet' => $p->to_wallet, 'to_name' => $p->to_name,
+        $required = $wallet->requiredApprovals();
+        $proposals = $wallet->proposals->load('targetUser')->map(fn ($p) => [
+            'id' => $p->id, 'type' => $p->type ?: 'transfer',
+            'to_wallet' => $p->to_wallet, 'to_name' => $p->to_name,
+            'target_name' => $p->targetUser ? ($p->targetUser->public_name ?: $p->targetUser->name) : null,
+            'as_signer' => (bool) ($p->meta['as_signer'] ?? false),
             'amount' => (float) $p->amount, 'note' => $p->note, 'status' => $p->status, 'tx' => $p->tx_hash,
+            'required' => $required,
             'approvals' => $p->approvals()->whereIn('user_id', $signerIds)->count(),
             'approved_by_me' => $p->approvals()->where('user_id', auth()->id())->exists(),
         ]);
 
-        // Apakah user ini penanda tangan wajib?
-        $iAmSigner = $me ? (bool) $me->is_signer : false;
+        // Riwayat setoran (mutasi): siapa menyetor, berapa, kapan.
+        $deposits = $wallet->deposits->load('user')->map(fn ($d) => [
+            'name'   => $d->user ? ($d->user->public_name ?: $d->user->name) : 'Eksternal',
+            'wallet' => $d->from_wallet,
+            'amount' => (float) $d->amount,
+            'tx'     => $d->tx_hash,
+            'at'     => $d->created_at,
+        ]);
 
-        return view('community.show', compact('wallet', 'balance', 'gasEth', 'members', 'proposals', 'me', 'iAmSigner', 'signerIds'));
+        // Apakah user ini penanda tangan wajib? Pemilik dompet?
+        $iAmSigner = $me ? (bool) $me->is_signer : false;
+        $iAmOwner  = $wallet->isOwner(auth()->id());
+
+        // Teman pemilik yang BELUM jadi anggota — kandidat untuk diundang.
+        $inviteCandidates = collect();
+        if ($iAmOwner && $wallet->mode === 'B') {
+            $memberIds = $wallet->members->pluck('user_id');
+            $inviteCandidates = Friendship::where('user_id', auth()->id())->where('status', 'accepted')->with('friend')->get()
+                ->map(fn ($f) => ['id' => $f->friend_id, 'name' => $f->friend->public_name ?: $f->friend->name])
+                ->filter(fn ($c) => $c['name'] && !$memberIds->contains($c['id']))
+                ->values();
+        }
+
+        return view('community.show', compact('wallet', 'balance', 'gasEth', 'members', 'proposals', 'deposits', 'me', 'iAmSigner', 'iAmOwner', 'signerIds', 'required', 'inviteCandidates'));
     }
 
     /** Mode A: tarik dana sampai jatah. Konfirmasi PIN. */
@@ -177,8 +205,8 @@ class CommunityWalletController extends Controller
         return response()->json(['success' => true, 'tx_hash' => $hash]);
     }
 
-    /** Mode B: usulkan pengiriman (penerima via No HP/wallet). */
-    public function propose(Request $req)
+    /** Mode B: usulkan pengiriman dana (penerima via No HP/wallet). BULAT: butuh semua signer. */
+    public function propose(Request $req, ChainSigner $signer)
     {
         $data = $req->validate(['id' => 'required|integer', 'to' => 'required|string', 'amount' => 'required|numeric|min:0.000001', 'note' => 'nullable|string|max:120', 'pin' => 'required|digits:6']);
         $wallet = CommunityWallet::findOrFail($data['id']);
@@ -186,32 +214,88 @@ class CommunityWalletController extends Controller
         $member = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
         $this->requirePin($data['pin']);
 
-        // Resolusi penerima.
         [$toWallet, $toName] = $this->resolveRecipient($data['to']);
         abort_unless($toWallet, 422, 'Penerima tidak ditemukan.');
 
         $p = CommunityProposal::create([
-            'community_wallet_id' => $wallet->id, 'proposer_id' => auth()->id(),
+            'community_wallet_id' => $wallet->id, 'proposer_id' => auth()->id(), 'type' => 'transfer',
             'to_wallet' => $toWallet, 'to_name' => $toName, 'amount' => $data['amount'], 'note' => $data['note'] ?? null,
         ]);
-        // Pengusul auto-setuju HANYA bila ia termasuk penanda tangan wajib.
-        if ($member->is_signer) {
-            CommunityApproval::firstOrCreate(['proposal_id' => $p->id, 'user_id' => auth()->id()]);
-        }
+        $this->autoApprove($p, $member);
+        $amt = $this->fmtAmt($data['amount']);
+        $this->notifyOtherSigners($wallet, 'Usulan butuh persetujuan',
+            $this->meName() . " mengusulkan kirim {$amt} TLKM dari \"{$wallet->name}\". Butuh persetujuan semua penanda tangan.", '🗳️');
 
-        // Notifikasi ke PENANDA TANGAN lain untuk menyetujui.
-        $proposerName = auth()->user()->public_name ?: auth()->user()->name;
-        $amt = rtrim(rtrim(number_format((float) $data['amount'], 6, '.', ''), '0'), '.');
-        $others = CommunityMember::where('community_wallet_id', $wallet->id)->where('is_signer', true)->where('user_id', '!=', auth()->id())->pluck('user_id');
-        foreach ($others as $uid) {
-            \App\Support\Notify::send($uid, 'community', 'Usulan butuh persetujuan',
-                "{$proposerName} mengusulkan kirim {$amt} TLKM dari \"{$wallet->name}\". Butuh persetujuanmu.",
-                '/community/' . $wallet->id, '🗳️');
-        }
-        return response()->json(['success' => true]);
+        return response()->json(['success' => true] + $this->maybeExecute($p, $wallet, $signer));
     }
 
-    /** Mode B: setujui usulan (PIN). Bila ambang tercapai → otomatis eksekusi. */
+    /** Owner: usulkan UNDANG (add) / KICK (remove) anggota. BULAT: butuh semua signer. */
+    public function memberPropose(Request $req, ChainSigner $signer)
+    {
+        $data = $req->validate([
+            'id' => 'required|integer', 'action' => 'required|in:add,remove',
+            'target_id' => 'required|integer', 'as_signer' => 'nullable|boolean', 'pin' => 'required|digits:6',
+        ]);
+        $wallet = CommunityWallet::findOrFail($data['id']);
+        abort_unless($wallet->mode === 'B', 422, 'Hanya untuk dompet multisig.');
+        abort_unless($wallet->isOwner(auth()->id()), 403, 'Hanya pemilik yang bisa mengundang / mengeluarkan anggota.');
+        $member = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
+        $this->requirePin($data['pin']);
+
+        $targetId = (int) $data['target_id'];
+        $meta = null;
+        if ($data['action'] === 'add') {
+            abort_unless(Friendship::where('user_id', auth()->id())->where('friend_id', $targetId)->where('status', 'accepted')->exists(), 422, 'Hanya bisa mengundang teman.');
+            abort_if(CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', $targetId)->exists(), 422, 'Orang ini sudah jadi anggota.');
+            $meta = ['as_signer' => (bool) ($data['as_signer'] ?? false)];
+        } else {
+            abort_if($targetId === $wallet->ownerId(), 422, 'Pemilik tidak bisa dikeluarkan. Transfer kepemilikan dulu.');
+            abort_unless(CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', $targetId)->exists(), 422, 'Bukan anggota dompet ini.');
+        }
+        $target = User::find($targetId);
+        $targetName = $target ? ($target->public_name ?: $target->name) : 'Pengguna';
+
+        $p = CommunityProposal::create([
+            'community_wallet_id' => $wallet->id, 'proposer_id' => auth()->id(),
+            'type' => $data['action'] === 'add' ? 'add_member' : 'remove_member',
+            'to_wallet' => '', 'amount' => 0, 'target_user_id' => $targetId, 'to_name' => $targetName, 'meta' => $meta,
+        ]);
+        $this->autoApprove($p, $member);
+        $verb = $data['action'] === 'add' ? 'mengundang' : 'mengeluarkan';
+        $this->notifyOtherSigners($wallet, 'Usulan anggota butuh persetujuan',
+            $this->meName() . " ingin {$verb} \"{$targetName}\" di \"{$wallet->name}\". Butuh persetujuan semua penanda tangan.", '👥');
+
+        return response()->json(['success' => true] + $this->maybeExecute($p, $wallet, $signer));
+    }
+
+    /** Owner: usulkan TRANSFER KEPEMILIKAN ke signer lain. BULAT: butuh semua signer. */
+    public function ownerPropose(Request $req, ChainSigner $signer)
+    {
+        $data = $req->validate(['id' => 'required|integer', 'target_id' => 'required|integer', 'pin' => 'required|digits:6']);
+        $wallet = CommunityWallet::findOrFail($data['id']);
+        abort_unless($wallet->mode === 'B', 422, 'Hanya untuk dompet multisig.');
+        abort_unless($wallet->isOwner(auth()->id()), 403, 'Hanya pemilik yang bisa memindahkan kepemilikan.');
+        $member = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
+        $this->requirePin($data['pin']);
+
+        $targetId = (int) $data['target_id'];
+        abort_if($targetId === $wallet->ownerId(), 422, 'Sudah menjadi pemilik.');
+        abort_unless(CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', $targetId)->where('is_signer', true)->exists(), 422, 'Pemilik baru harus salah satu penanda tangan.');
+        $target = User::find($targetId);
+        $targetName = $target ? ($target->public_name ?: $target->name) : 'Pengguna';
+
+        $p = CommunityProposal::create([
+            'community_wallet_id' => $wallet->id, 'proposer_id' => auth()->id(), 'type' => 'transfer_ownership',
+            'to_wallet' => '', 'amount' => 0, 'target_user_id' => $targetId, 'to_name' => $targetName,
+        ]);
+        $this->autoApprove($p, $member);
+        $this->notifyOtherSigners($wallet, 'Usulan transfer kepemilikan',
+            $this->meName() . " ingin memindahkan kepemilikan \"{$wallet->name}\" ke \"{$targetName}\". Butuh persetujuan semua penanda tangan.", '🔑');
+
+        return response()->json(['success' => true] + $this->maybeExecute($p, $wallet, $signer));
+    }
+
+    /** Mode B: setujui usulan apa pun (PIN). Bila semua signer setuju → eksekusi. */
     public function approve(Request $req, ChainSigner $signer)
     {
         $data = $req->validate(['proposal_id' => 'required|integer', 'pin' => 'required|digits:6']);
@@ -219,34 +303,126 @@ class CommunityWalletController extends Controller
         $wallet = CommunityWallet::findOrFail($p->community_wallet_id);
         $member = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
         abort_unless($p->status === 'open', 422, 'Usulan sudah selesai.');
-        // Hanya PENANDA TANGAN yang ditunjuk yang bisa menyetujui.
         abort_unless($member->is_signer, 403, 'Kamu bukan penanda tangan yang ditunjuk untuk dompet ini.');
         $this->requirePin($data['pin']);
 
         CommunityApproval::firstOrCreate(['proposal_id' => $p->id, 'user_id' => auth()->id()]);
+        return response()->json(['success' => true] + $this->maybeExecute($p, $wallet, $signer));
+    }
 
-        // Hitung persetujuan HANYA dari penanda tangan wajib.
-        $signerIds = CommunityMember::where('community_wallet_id', $wallet->id)->where('is_signer', true)->pluck('user_id');
-        $approvalCount = $p->approvals()->whereIn('user_id', $signerIds)->count();
-
-        // Cukup ambang? Eksekusi.
-        if ($approvalCount >= (int) $wallet->threshold) {
-            $hash = $this->communitySign($wallet, $signer, $p->to_wallet, $p->amount);
-            $p->update(['status' => 'executed', 'tx_hash' => $hash]);
-
-            // Notifikasi ke semua anggota bahwa usulan dieksekusi.
-            $amt = rtrim(rtrim(number_format((float) $p->amount, 6, '.', ''), '0'), '.');
-            foreach (CommunityMember::where('community_wallet_id', $wallet->id)->pluck('user_id') as $uid) {
-                \App\Support\Notify::send($uid, 'community', 'Dana komunitas dikirim',
-                    "Usulan disetujui — {$amt} TLKM dikirim dari \"{$wallet->name}\".",
-                    '/community/' . $wallet->id, '✅');
-            }
-            return response()->json(['success' => true, 'executed' => true, 'tx_hash' => $hash]);
-        }
-        return response()->json(['success' => true, 'executed' => false]);
+    /** Catat setoran (mutasi) setelah transfer TLKM ke kas berhasil. */
+    public function recordDeposit(Request $req)
+    {
+        $data = $req->validate(['id' => 'required|integer', 'amount' => 'required|numeric|min:0.000001', 'tx_hash' => 'nullable|string|max:66']);
+        $wallet = CommunityWallet::findOrFail($data['id']);
+        $this->authorizeMember($wallet);
+        CommunityDeposit::create([
+            'community_wallet_id' => $wallet->id,
+            'user_id'             => auth()->id(),
+            'from_wallet'         => auth()->user()->wallet_address,
+            'amount'              => $data['amount'],
+            'tx_hash'             => $data['tx_hash'] ?? null,
+        ]);
+        return response()->json(['success' => true]);
     }
 
     // ===== helpers =====
+
+    /** Pengusul auto-setuju HANYA bila ia penanda tangan. */
+    private function autoApprove(CommunityProposal $p, CommunityMember $member): void
+    {
+        if ($member->is_signer) {
+            CommunityApproval::firstOrCreate(['proposal_id' => $p->id, 'user_id' => auth()->id()]);
+        }
+    }
+
+    /** Eksekusi usulan bila SEMUA penanda tangan sudah setuju (bulat). */
+    private function maybeExecute(CommunityProposal $p, CommunityWallet $wallet, ChainSigner $signer): array
+    {
+        if ($p->status !== 'open') {
+            return ['executed' => false];
+        }
+        $signerIds = CommunityMember::where('community_wallet_id', $wallet->id)->where('is_signer', true)->pluck('user_id');
+        $count = $p->approvals()->whereIn('user_id', $signerIds)->count();
+        if ($count < $wallet->requiredApprovals()) {
+            return ['executed' => false, 'approvals' => $count, 'required' => $wallet->requiredApprovals()];
+        }
+        return $this->executeProposal($p, $wallet, $signer);
+    }
+
+    /** Jalankan aksi sesuai jenis usulan setelah persetujuan bulat tercapai. */
+    private function executeProposal(CommunityProposal $p, CommunityWallet $wallet, ChainSigner $signer): array
+    {
+        switch ($p->type ?: 'transfer') {
+            case 'add_member':
+                CommunityMember::firstOrCreate(
+                    ['community_wallet_id' => $wallet->id, 'user_id' => $p->target_user_id],
+                    ['is_signer' => (bool) ($p->meta['as_signer'] ?? false), 'monthly_limit' => null, 'spent' => 0, 'period_start' => now()]
+                );
+                $this->syncThreshold($wallet);
+                $p->update(['status' => 'executed']);
+                $this->notifyAllMembers($wallet, 'Anggota baru ditambahkan', "\"{$p->to_name}\" ditambahkan ke \"{$wallet->name}\".", '👥');
+                \App\Support\Notify::send((int) $p->target_user_id, 'community', 'Kamu ditambahkan ke dompet komunitas',
+                    "Kamu kini anggota \"{$wallet->name}\".", '/community/' . $wallet->id, '👥');
+                return ['executed' => true];
+
+            case 'remove_member':
+                CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', $p->target_user_id)->delete();
+                $this->syncThreshold($wallet);
+                $p->update(['status' => 'executed']);
+                $this->notifyAllMembers($wallet, 'Anggota dikeluarkan', "\"{$p->to_name}\" dikeluarkan dari \"{$wallet->name}\".", '👋');
+                \App\Support\Notify::send((int) $p->target_user_id, 'community', 'Kamu dikeluarkan dari dompet komunitas',
+                    "Kamu dikeluarkan dari \"{$wallet->name}\".", '/community', '👋');
+                return ['executed' => true];
+
+            case 'transfer_ownership':
+                $wallet->update(['owner_id' => $p->target_user_id]);
+                $p->update(['status' => 'executed']);
+                $this->notifyAllMembers($wallet, 'Kepemilikan dipindahkan', "Kepemilikan \"{$wallet->name}\" dipindahkan ke \"{$p->to_name}\".", '🔑');
+                return ['executed' => true];
+
+            default: // transfer dana
+                $hash = $this->communitySign($wallet, $signer, $p->to_wallet, $p->amount);
+                $p->update(['status' => 'executed', 'tx_hash' => $hash]);
+                $amt = $this->fmtAmt($p->amount);
+                $this->notifyAllMembers($wallet, 'Dana komunitas dikirim', "Usulan disetujui — {$amt} TLKM dikirim dari \"{$wallet->name}\".", '✅');
+                return ['executed' => true, 'tx_hash' => $hash];
+        }
+    }
+
+    /** Samakan ambang tersimpan dengan jumlah penanda tangan (bulat). */
+    private function syncThreshold(CommunityWallet $wallet): void
+    {
+        $n = $wallet->members()->where('is_signer', true)->count();
+        $wallet->update(['threshold' => max(1, $n)]);
+    }
+
+    private function meName(): string
+    {
+        return auth()->user()->public_name ?: auth()->user()->name;
+    }
+
+    private function fmtAmt(string|float $n): string
+    {
+        return rtrim(rtrim(number_format((float) $n, 6, '.', ''), '0'), '.');
+    }
+
+    private function notifyOtherSigners(CommunityWallet $wallet, string $title, string $body, string $icon): void
+    {
+        $others = CommunityMember::where('community_wallet_id', $wallet->id)->where('is_signer', true)->where('user_id', '!=', auth()->id())->pluck('user_id');
+        foreach ($others as $uid) {
+            \App\Support\Notify::send($uid, 'community', $title, $body, '/community/' . $wallet->id, $icon);
+        }
+    }
+
+    private function notifyAllMembers(CommunityWallet $wallet, string $title, string $body, string $icon): void
+    {
+        foreach (CommunityMember::where('community_wallet_id', $wallet->id)->pluck('user_id') as $uid) {
+            \App\Support\Notify::send((int) $uid, 'community', $title, $body, '/community/' . $wallet->id, $icon);
+        }
+    }
+
+    // ===== authorization / signing helpers =====
     private function authorizeMember(CommunityWallet $wallet): void
     {
         $isMember = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->exists();

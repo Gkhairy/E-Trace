@@ -177,6 +177,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/community/withdraw', [CommunityWalletController::class, 'withdraw'])->middleware('throttle:15,1');
     Route::post('/community/propose', [CommunityWalletController::class, 'propose'])->middleware('throttle:15,1');
     Route::post('/community/approve', [CommunityWalletController::class, 'approve'])->middleware('throttle:15,1');
+    Route::post('/community/member-propose', [CommunityWalletController::class, 'memberPropose'])->middleware('throttle:15,1');
+    Route::post('/community/owner-propose', [CommunityWalletController::class, 'ownerPropose'])->middleware('throttle:15,1');
+    Route::post('/community/deposit-record', [CommunityWalletController::class, 'recordDeposit'])->middleware('throttle:30,1');
 
     // DASHBOARD SELLER
     Route::get('/seller', [SellerController::class, 'dashboard']);
