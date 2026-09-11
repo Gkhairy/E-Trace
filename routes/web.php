@@ -181,7 +181,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/community/owner-propose', [CommunityWalletController::class, 'ownerPropose'])->middleware('throttle:15,1');
     Route::post('/community/deposit-record', [CommunityWalletController::class, 'recordDeposit'])->middleware('throttle:30,1');
     Route::post('/community/reject', [CommunityWalletController::class, 'reject'])->middleware('throttle:15,1');
-    Route::post('/community/nickname', [CommunityWalletController::class, 'setNickname'])->middleware('throttle:20,1');
+    Route::post('/community/member-nickname', [CommunityWalletController::class, 'setMemberNickname'])->middleware('throttle:20,1');
 
     // DASHBOARD SELLER
     Route::get('/seller', [SellerController::class, 'dashboard']);

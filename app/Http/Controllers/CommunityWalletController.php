@@ -7,6 +7,7 @@ use App\Models\CommunityMember;
 use App\Models\CommunityProposal;
 use App\Models\CommunityApproval;
 use App\Models\CommunityDeposit;
+use App\Models\CommunityMemberNickname;
 use App\Models\Friendship;
 use App\Models\User;
 use App\Services\EmbeddedWallet;
@@ -32,11 +33,7 @@ class CommunityWalletController extends Controller
     {
         $ids = CommunityMember::where('user_id', auth()->id())->pluck('community_wallet_id');
         $wallets = CommunityWallet::whereIn('id', $ids)->orWhere('created_by', auth()->id())->latest()->get();
-        // Nickname pribadi per dompet (hanya untuk user ini).
-        $nicknames = CommunityMember::where('user_id', auth()->id())
-            ->whereIn('community_wallet_id', $wallets->pluck('id'))
-            ->pluck('nickname', 'community_wallet_id');
-        return view('community.index', compact('wallets', 'nicknames'));
+        return view('community.index', compact('wallets'));
     }
 
     public function create()
@@ -135,14 +132,23 @@ class CommunityWalletController extends Controller
         // Penanda tangan wajib (Mode B) untuk menghitung persetujuan yang sah.
         $signerIds = $wallet->members->where('is_signer', true)->pluck('user_id');
 
+        // Nickname PRIBADI: julukan yang KAMU (penatap) beri ke anggota lain di dompet
+        // ini — hanya kamu yang melihatnya. Map: target_user_id => nickname.
+        $nickMap = CommunityMemberNickname::where('community_wallet_id', $wallet->id)
+            ->where('viewer_id', auth()->id())->pluck('nickname', 'target_user_id');
+        $nameFor = fn ($uid, $real) => $nickMap[$uid] ?? $real;
+
         // Sisa jatah (Mode A) dgn reset 30 hari.
-        $members = $wallet->members->map(function ($m) use ($wallet) {
+        $members = $wallet->members->map(function ($m) use ($wallet, $nickMap) {
             $remaining = null;
             if ($wallet->mode === 'A') {
                 $spent = ($m->period_start && now()->greaterThanOrEqualTo($m->period_start->copy()->addDays(30))) ? 0 : (float) $m->spent;
                 $remaining = max(0, (float) $m->monthly_limit - $spent);
             }
-            return ['user_id' => $m->user_id, 'name' => $m->user->public_name ?: $m->user->name, 'wallet' => $m->user->wallet_address,
+            $real = $m->user->public_name ?: $m->user->name;
+            $nick = $nickMap[$m->user_id] ?? null;
+            return ['user_id' => $m->user_id, 'name' => $nick ?: $real, 'real_name' => $real, 'nickname' => $nick,
+                    'wallet' => $m->user->wallet_address,
                     'limit' => (float) $m->monthly_limit, 'remaining' => $remaining, 'is_me' => $m->user_id === auth()->id(),
                     'is_signer' => (bool) $m->is_signer, 'is_owner' => $wallet->isOwner($m->user_id)];
         });
@@ -151,7 +157,7 @@ class CommunityWalletController extends Controller
         $proposals = $wallet->proposals->load('targetUser')->map(fn ($p) => [
             'id' => $p->id, 'type' => $p->type ?: 'transfer',
             'to_wallet' => $p->to_wallet, 'to_name' => $p->to_name,
-            'target_name' => $p->targetUser ? ($p->targetUser->public_name ?: $p->targetUser->name) : null,
+            'target_name' => $p->targetUser ? $nameFor($p->target_user_id, $p->targetUser->public_name ?: $p->targetUser->name) : null,
             'as_signer' => (bool) ($p->meta['as_signer'] ?? false),
             'amount' => (float) $p->amount, 'note' => $p->note, 'status' => $p->status, 'tx' => $p->tx_hash,
             'required' => $required,
@@ -159,9 +165,9 @@ class CommunityWalletController extends Controller
             'approved_by_me' => $p->approvals()->where('user_id', auth()->id())->exists(),
         ]);
 
-        // Riwayat setoran (mutasi): siapa menyetor, berapa, kapan.
+        // Riwayat setoran (mutasi): siapa menyetor, berapa, kapan (pakai nickname pribadi).
         $deposits = $wallet->deposits->load('user')->map(fn ($d) => [
-            'name'   => $d->user ? ($d->user->public_name ?: $d->user->name) : 'Eksternal',
+            'name'   => $d->user ? $nameFor($d->user_id, $d->user->public_name ?: $d->user->name) : 'Eksternal',
             'wallet' => $d->from_wallet,
             'amount' => (float) $d->amount,
             'tx'     => $d->tx_hash,
@@ -182,11 +188,7 @@ class CommunityWalletController extends Controller
                 ->values();
         }
 
-        // Nickname PRIBADI (hanya user ini yang melihatnya) untuk judul dompet.
-        $myNickname  = $me?->nickname;
-        $displayName = $myNickname ?: $wallet->name;
-
-        return view('community.show', compact('wallet', 'balance', 'gasEth', 'members', 'proposals', 'deposits', 'me', 'iAmSigner', 'iAmOwner', 'signerIds', 'required', 'inviteCandidates', 'myNickname', 'displayName'));
+        return view('community.show', compact('wallet', 'balance', 'gasEth', 'members', 'proposals', 'deposits', 'me', 'iAmSigner', 'iAmOwner', 'signerIds', 'required', 'inviteCandidates'));
     }
 
     /** Mode A: tarik dana sampai jatah. Konfirmasi PIN. */
@@ -334,13 +336,23 @@ class CommunityWalletController extends Controller
         return response()->json(['success' => true, 'rejected' => true]);
     }
 
-    /** Setel nickname PRIBADI untuk dompet ini — hanya kamu yang melihatnya. */
-    public function setNickname(Request $req)
+    /** Setel nickname PRIBADI untuk seorang ANGGOTA — hanya kamu (penatap) yang melihatnya. */
+    public function setMemberNickname(Request $req)
     {
-        $data = $req->validate(['id' => 'required|integer', 'nickname' => 'nullable|string|max:60']);
+        $data = $req->validate(['id' => 'required|integer', 'target_id' => 'required|integer', 'nickname' => 'nullable|string|max:60']);
         $wallet = CommunityWallet::findOrFail($data['id']);
-        $member = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
-        $member->update(['nickname' => trim((string) $data['nickname']) ?: null]);
+        $this->authorizeMember($wallet); // penatap harus anggota
+        $targetId = (int) $data['target_id'];
+        abort_if($targetId === auth()->id(), 422, 'Tidak perlu nickname untuk diri sendiri.');
+        abort_unless(CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', $targetId)->exists(), 422, 'Bukan anggota dompet ini.');
+
+        $nick = trim((string) $data['nickname']);
+        $keys = ['community_wallet_id' => $wallet->id, 'viewer_id' => auth()->id(), 'target_user_id' => $targetId];
+        if ($nick === '') {
+            CommunityMemberNickname::where($keys)->delete(); // kosong = hapus (pakai nama asli)
+        } else {
+            CommunityMemberNickname::updateOrCreate($keys, ['nickname' => $nick]);
+        }
         return response()->json(['success' => true]);
     }
 

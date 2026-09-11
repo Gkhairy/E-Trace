@@ -9,20 +9,16 @@
 
 <nav class="flex items-center gap-2 text-xs text-slate-500 mb-4">
     <a href="/community" class="hover:text-blue-600 transition">Dompet Komunitas</a>
-    <span class="text-slate-300">/</span><span class="text-slate-700 truncate">{{ $displayName }}</span>
+    <span class="text-slate-300">/</span><span class="text-slate-700 truncate">{{ $wallet->name }}</span>
 </nav>
 
 <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mb-6">
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
             <div class="flex items-center gap-2 flex-wrap">
-                <h1 class="text-2xl font-bold text-slate-900">{{ $displayName }}</h1>
+                <h1 class="text-2xl font-bold text-slate-900">{{ $wallet->name }}</h1>
                 <span class="text-[11px] px-2 py-0.5 rounded-full {{ $wallet->isMultisig() ? 'bg-violet-50 text-violet-700 border border-violet-200' : 'bg-blue-50 text-blue-700 border border-blue-200' }}">{{ $wallet->modeLabel() }}</span>
-                <button onclick="doNickname()" title="Beri nama pribadi (hanya kamu yang lihat)" class="text-slate-400 hover:text-blue-600">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                </button>
             </div>
-            @if($myNickname)<p class="text-[11px] text-slate-400">🔒 Nama pribadi (hanya kamu) · asli: {{ $wallet->name }}</p>@endif
             <a href="https://sepolia.etherscan.io/address/{{ $wallet->address }}" target="_blank" class="text-xs text-blue-600 hover:underline font-mono">{{ $wallet->address }} ↗</a>
         </div>
         <div class="text-right">
@@ -59,7 +55,11 @@
             <tbody>
                 @foreach($members as $m)
                     <tr class="border-t border-slate-100">
-                        <td class="px-5 py-2">{{ $m['name'] }} @if($m['is_me'])<span class="text-[10px] text-blue-600">(kamu)</span>@endif</td>
+                        <td class="px-5 py-2">
+                            {{ $m['name'] }} @if($m['is_me'])<span class="text-[10px] text-blue-600">(kamu)</span>@endif
+                            @if($m['nickname'])<span title="Nickname pribadimu · asli: {{ $m['real_name'] }}" class="text-slate-400">🔒</span>@endif
+                            @unless($m['is_me'])<button onclick="doMemberNickname({{ $m['user_id'] }}, @js($m['nickname']), @js($m['real_name']))" title="Beri nickname (hanya kamu yang lihat)" class="ml-1 text-slate-400 hover:text-blue-600 text-xs">✎</button>@endunless
+                        </td>
                         <td class="px-5 py-2">{{ $fmt($m['limit']) }} TLKM</td>
                         <td class="px-5 py-2 text-green-600">{{ $m['remaining'] !== null ? $fmt($m['remaining']).' TLKM' : '—' }}</td>
                     </tr>
@@ -73,19 +73,25 @@
         <h2 class="font-bold text-slate-900 mb-1">Multisig — persetujuan bulat ({{ $signers->count() }} penanda tangan)</h2>
         <p class="text-xs text-slate-500 mb-3">Setiap aksi (kirim dana, undang/kick anggota, transfer kepemilikan) butuh persetujuan <b>semua {{ $signers->count() }}</b> penanda tangan.</p>
 
-        {{-- Daftar anggota + penanda tangan + pemilik --}}
-        <div class="flex flex-wrap gap-2 mb-4">
+        {{-- Daftar anggota + penanda tangan + pemilik. Nickname (✎) = julukan pribadi
+             yang HANYA kamu lihat untuk tiap anggota. --}}
+        <div class="flex flex-wrap gap-2 mb-2">
             @foreach($members as $m)
                 <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border {{ $m['is_signer'] ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-slate-50 text-slate-500 border-slate-200' }}">
                     @if($m['is_owner'])<span title="Pemilik">👑</span>@endif
                     {{ $m['name'] }}@if($m['is_me']) (kamu)@endif
+                    @if($m['nickname'])<span title="Nickname pribadimu · asli: {{ $m['real_name'] }}" class="text-slate-400">🔒</span>@endif
                     @if($m['is_signer'])<span title="Penanda tangan wajib">🖊️</span>@endif
+                    @unless($m['is_me'])
+                        <button onclick="doMemberNickname({{ $m['user_id'] }}, @js($m['nickname']), @js($m['real_name']))" title="Beri nickname (hanya kamu yang lihat)" class="ml-0.5 text-slate-400 hover:text-blue-600">✎</button>
+                    @endunless
                     @if($iAmOwner && !$m['is_owner'])
-                        <button onclick="doKick({{ $m['user_id'] }}, @js($m['name']))" title="Usulkan keluarkan" class="ml-0.5 text-slate-400 hover:text-red-600">✕</button>
+                        <button onclick="doKick({{ $m['user_id'] }}, @js($m['name']))" title="Usulkan keluarkan" class="text-slate-400 hover:text-red-600">✕</button>
                     @endif
                 </span>
             @endforeach
         </div>
+        <p class="text-[11px] text-slate-400 mb-4">✎ = beri nickname pribadi (mis. “Budi”); 🔒 = kamu sudah memberi nickname. Hanya kamu yang melihatnya.</p>
 
         <div class="flex flex-wrap gap-2">
             <button onclick="doPropose()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold">Usulkan Kirim Dana</button>
@@ -175,7 +181,6 @@
 <script>
 const WID = @json($wallet->id);
 const CADDR = @json($wallet->address);
-const MY_NICKNAME = @json($myNickname);
 const INVITE_CANDIDATES = @json($inviteCandidates->values());
 const OWNER_CANDIDATES = @json(collect($members)->filter(fn($m) => $m['is_signer'] && !$m['is_owner'])->map(fn($m) => ['id' => $m['user_id'], 'name' => $m['name']])->values());
 const escapeHtml = (s) => (s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -304,11 +309,11 @@ async function doReject(pid) {
     try { txProgress.active(0); await post('/community/reject', { proposal_id: pid, pin }); txProgress.done(0); ok(null); } catch (e) { fail(e); }
 }
 
-// Nama pribadi dompet (hanya kamu yang lihat).
-async function doNickname() {
-    const nn = await uiPrompt({ title: 'Nama Pribadi Dompet', label: '🔒 Hanya kamu yang melihat nama ini. Kosongkan untuk pakai nama asli.', placeholder: 'mis. Kas RT 05', value: MY_NICKNAME || '', confirmText: 'Simpan' });
+// Nickname pribadi untuk seorang ANGGOTA (hanya kamu yang lihat).
+async function doMemberNickname(userId, currentNick, realName) {
+    const nn = await uiPrompt({ title: 'Nickname untuk ' + realName, label: '🔒 Hanya kamu yang melihat julukan ini. Kosongkan untuk pakai nama asli.', placeholder: 'mis. Budi', value: currentNick || '', confirmText: 'Simpan' });
     if (nn === null) return;
-    try { await post('/community/nickname', { id: WID, nickname: nn }); showToast('Nama pribadi disimpan.', 'success'); setTimeout(() => location.reload(), 500); } catch (e) { fail(e); }
+    try { await post('/community/member-nickname', { id: WID, target_id: userId, nickname: nn }); showToast('Nickname disimpan.', 'success'); setTimeout(() => location.reload(), 500); } catch (e) { fail(e); }
 }
 </script>
 @endsection

@@ -20,12 +20,10 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         @foreach($wallets as $w)
             <a href="/community/{{ $w->id }}" class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 hover:border-blue-500 hover:shadow-md transition">
-                @php $nick = $nicknames[$w->id] ?? null; @endphp
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="font-bold text-slate-900 truncate">{{ $nick ?: $w->name }}</h3>
+                    <h3 class="font-bold text-slate-900 truncate">{{ $w->name }}</h3>
                     <span class="text-[11px] px-2 py-0.5 rounded-full {{ $w->isMultisig() ? 'bg-violet-50 text-violet-700 border border-violet-200' : 'bg-blue-50 text-blue-700 border border-blue-200' }}">{{ $w->modeLabel() }}</span>
                 </div>
-                @if($nick)<p class="text-[11px] text-slate-400 mb-1">🔒 asli: {{ $w->name }}</p>@endif
                 @if($w->description)<p class="text-sm text-slate-500 line-clamp-2 mb-2">{{ $w->description }}</p>@endif
                 <p class="text-xs text-slate-400 font-mono truncate">{{ $w->address }}</p>
             </a>

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class CommunityMember extends Model
 {
-    protected $fillable = ['community_wallet_id', 'user_id', 'nickname', 'is_signer', 'monthly_limit', 'spent', 'period_start'];
+    protected $fillable = ['community_wallet_id', 'user_id', 'is_signer', 'monthly_limit', 'spent', 'period_start'];
     protected $casts = ['period_start' => 'datetime', 'is_signer' => 'boolean'];
 
     public function user() { return $this->belongsTo(User::class); }
