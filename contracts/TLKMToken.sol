@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 // =============================================================
-//  TLKM Token (ERC-20)
+//  TLKM Token (BEP-20 — kompatibel ERC-20, dipakai di BNB Smart Chain)
 //  -------------------------------------------------------------
 //  Ini token buatan kamu sendiri, dipakai sebagai alat bayar
 //  di toko crypto. Dideploy di jaringan BNB Smart Chain Testnet (testnet).

@@ -31,7 +31,7 @@ Di marketplace konvensional, uang pembeli dipegang oleh perusahaan — pembeli h
 | Frontend | Blade, Tailwind CSS v4, Vite, ethers.js |
 | Database | MySQL |
 | Antrean | RabbitMQ (email OTP & notifikasi) |
-| Blockchain | Solidity 0.8.20, ERC-20 (TLKM), **BNB Smart Chain Testnet** (chainId 97) |
+| Blockchain | Solidity 0.8.20, BEP-20 (TLKM), **BNB Smart Chain Testnet** (chainId 97) |
 | Integrasi Web3 | web3.php, ethereum-tx, keccak, elliptic-php |
 | Lain-lain | google2fa (2FA), bacon-qr-code (QR), dompdf (PDF), maatwebsite/excel |
 

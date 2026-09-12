@@ -93,7 +93,7 @@
             </div>
             <div class="flex items-center justify-between">
                 <span class="text-slate-500">Metode bayar</span>
-                <span class="text-slate-700 font-medium">Token TLKM (ERC-20)</span>
+                <span class="text-slate-700 font-medium">Token TLKM (BEP-20)</span>
             </div>
             <div class="flex items-center justify-between">
                 <span class="text-slate-500">Jaringan</span>

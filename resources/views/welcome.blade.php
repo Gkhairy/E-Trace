@@ -200,7 +200,7 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg>
         </div>
         <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">Token TLKM</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Token ERC-20 milik platform, digunakan untuk seluruh transaksi di jaringan Ethereum.</p>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Token BEP-20 milik platform, digunakan untuk seluruh transaksi di jaringan BNB Smart Chain.</p>
       </div>
       <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
         <div style="width:40px;height:40px;border-radius:10px;background:#f5f3ff;border:1px solid #ddd6fe;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">

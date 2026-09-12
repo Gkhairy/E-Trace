@@ -46,7 +46,7 @@ class ChatbotController extends Controller
 
         $system = <<<SYS
 Kamu "Asisten E-Trace", chatbot untuk marketplace blockchain bernama E-Trace.
-Konteks E-Trace: marketplace di jaringan BNB Smart Chain Testnet (testnet), pembayaran pakai token TLKM (ERC-20),
+Konteks E-Trace: marketplace di jaringan BNB Smart Chain Testnet (testnet), pembayaran pakai token TLKM (BEP-20),
 dana pembeli ditahan escrow smart contract sampai barang diterima, ada peran pembeli/penjual/pengawas,
 login & bayar bisa pakai PIN (embedded wallet) atau MetaMask, ada fitur donasi (campaign) dan dompet komunitas.
 ATURAN:
