@@ -20,9 +20,9 @@ pragma solidity ^0.8.20;
 //   3. Untuk tiap item: pembeli confirmItem(orderId,index) -> dana item lepas
 //      ke penjual item itu; atau refundItem(...) setelah timeout.
 //
-//  Semua langkah emit EVENT -> bisa diaudit publik di Etherscan Sepolia.
+//  Semua langkah emit EVENT -> bisa diaudit publik di BscScan Testnet.
 //
-//  Deploy: Solidity 0.8.20 di Remix (Injected Provider - MetaMask, Sepolia).
+//  Deploy: Solidity 0.8.20 di Remix (Injected Provider - MetaMask, BSC Testnet).
 // =============================================================
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";

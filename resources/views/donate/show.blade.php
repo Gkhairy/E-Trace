@@ -55,7 +55,7 @@
                             </div>
                             <div class="text-right shrink-0">
                                 <p class="text-sm font-semibold text-green-600">{{ $fmt($d['amount']) }} TLKM</p>
-                                <a href="https://sepolia.etherscan.io/tx/{{ $d['tx'] }}" target="_blank" rel="noopener" class="text-[11px] text-slate-400 hover:text-blue-600 font-mono">tx ↗</a>
+                                <a href="{{ config('chain.explorer_url') }}/tx/{{ $d['tx'] }}" target="_blank" rel="noopener" class="text-[11px] text-slate-400 hover:text-blue-600 font-mono">tx ↗</a>
                             </div>
                         </div>
                     @endforeach
@@ -146,7 +146,7 @@
                             <div class="flex items-center justify-between text-xs">
                                 <span class="text-slate-500">{{ $d->created_at->format('d M Y') }}</span>
                                 <span class="font-semibold text-slate-700">{{ $fmt($d->amount) }} TLKM
-                                    <a href="https://sepolia.etherscan.io/tx/{{ $d->tx_hash }}" target="_blank" class="text-blue-600 hover:underline font-mono ml-1">↗</a>
+                                    <a href="{{ config('chain.explorer_url') }}/tx/{{ $d->tx_hash }}" target="_blank" class="text-blue-600 hover:underline font-mono ml-1">↗</a>
                                 </span>
                             </div>
                         @endforeach
@@ -185,7 +185,7 @@
                 body: JSON.stringify({ slug: CAMPAIGN_SLUG, tx_hash: hash })
             });
             txProgress.done(2);
-            setTimeout(() => { txProgress.close(); uiAlert({ title: 'Terima kasih atas donasimu', message: `Donasi ${amt} TLKM tercatat on-chain.<br><a href="https://sepolia.etherscan.io/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type: 'success' }).then(() => location.reload()); }, 400);
+            setTimeout(() => { txProgress.close(); uiAlert({ title: 'Terima kasih atas donasimu', message: `Donasi ${amt} TLKM tercatat on-chain.<br><a href="${EXPLORER_URL}/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type: 'success' }).then(() => location.reload()); }, 400);
         } catch (e) {
             txProgress.close();
             uiAlert({ title: 'Donasi gagal', message: niceError(e), type: 'error' });
@@ -213,7 +213,7 @@
                 body: JSON.stringify({ slug: CAMPAIGN_SLUG, tx_hash: hash })
             });
             txProgress.done(2);
-            setTimeout(() => { txProgress.close(); uiAlert({ title: 'Dana Disalurkan', message: `Seluruh saldo campaign dikirim ke penerima.<br><a href="https://sepolia.etherscan.io/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type: 'success' }).then(() => location.reload()); }, 400);
+            setTimeout(() => { txProgress.close(); uiAlert({ title: 'Dana Disalurkan', message: `Seluruh saldo campaign dikirim ke penerima.<br><a href="${EXPLORER_URL}/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type: 'success' }).then(() => location.reload()); }, 400);
         } catch (e) {
             txProgress.close();
             uiAlert({ title: 'Penyaluran gagal', message: niceError(e), type: 'error' });

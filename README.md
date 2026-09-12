@@ -31,7 +31,7 @@ Di marketplace konvensional, uang pembeli dipegang oleh perusahaan — pembeli h
 | Frontend | Blade, Tailwind CSS v4, Vite, ethers.js |
 | Database | MySQL |
 | Antrean | RabbitMQ (email OTP & notifikasi) |
-| Blockchain | Solidity 0.8.20, ERC-20 (TLKM), Ethereum **Sepolia** testnet |
+| Blockchain | Solidity 0.8.20, ERC-20 (TLKM), **BNB Smart Chain Testnet** (chainId 97) |
 | Integrasi Web3 | web3.php, ethereum-tx, keccak, elliptic-php |
 | Lain-lain | google2fa (2FA), bacon-qr-code (QR), dompdf (PDF), maatwebsite/excel |
 
@@ -97,11 +97,17 @@ MAIL_MAILER=smtp
 # Chatbot
 OPENAI_API_KEY=sk-...      # RAHASIA — jangan commit ke repo
 
-# Blockchain (Ethereum Sepolia)
-CHAIN_ID=11155111
+# Blockchain (BNB Smart Chain Testnet)
+CHAIN_ID=97
+CHAIN_RPC_URL=https://data-seed-prebsc-1-s1.bnbchain.org:8545/
+CHAIN_EXPLORER_URL=https://testnet.bscscan.com
+CHAIN_NAME="BNB Smart Chain Testnet"
+TLKM_ADDRESS=0x...              # setelah deploy
+PAYMENT_GATEWAY_ADDRESS=0x...   # setelah deploy
+DONATION_POOL_ADDRESS=0x...     # opsional
 ```
 
-Alamat smart contract (TLKM & PaymentGateway) diisi di `resources/views/layouts/app.blade.php`. Cara deploy kontrak ada di **`contracts/PANDUAN-DEPLOY.md`**.
+Alamat smart contract dibaca dari `.env` via `config/chain.php` (satu sumber kebenaran). Cara deploy kontrak ke BSC Testnet ada di **`contracts/PANDUAN-DEPLOY.md`**.
 
 > **Keamanan:** `.env` berisi rahasia (password DB, kunci OpenAI, konfigurasi wallet) dan **tidak** disertakan dalam paket ini. Jangan pernah commit `.env` ke repositori publik.
 
@@ -119,7 +125,7 @@ php artisan tinker
 1. Daftar / login (email + OTP, atau MetaMask).
 2. Sebagai penjual, buat produk (harga dalam TLKM).
 3. Sebagai pembeli (wallet punya TLKM), buka produk → **Beli** → approve token → bayar ke escrow.
-4. Order tersimpan; cek tx hash di **Etherscan Sepolia** sebagai bukti transparansi.
+4. Order tersimpan; cek tx hash di **BscScan Testnet** sebagai bukti transparansi.
 5. Barang diterima → **Konfirmasi Terima** → dana lepas ke penjual. Bila tidak dikirim → **Refund**.
 
 ## Model Bisnis
@@ -128,7 +134,7 @@ Pendapatan platform = **fee 1% dari nilai transaksi**, ditanggung penjual (dipot
 
 ## Catatan Penting
 
-- Berjalan di **testnet (Ethereum Sepolia)** dengan token uji coba — bukan uang sungguhan.
+- Berjalan di **testnet (BNB Smart Chain Testnet, chainId 97)** dengan token uji coba — bukan uang sungguhan.
 - Smart contract **belum diaudit**; ini prototipe untuk keperluan kompetisi/edukasi.
 - Data pribadi (alamat, nomor telepon) disimpan di database dan **tidak** ditaruh on-chain — sejalan dengan UU PDP. Blockchain hanya menyimpan hash/data transaksi.
 - Fitur QRIS masih dalam pengembangan (belum live).

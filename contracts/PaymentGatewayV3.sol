@@ -21,7 +21,7 @@ pragma solidity ^0.8.20;
 //  Konfirmasi/finality (1 -> 6 conf -> finalized) ditangani OFF-CHAIN oleh indexer,
 //  bukan di kontrak ini.
 //
-//  Deploy (Remix, Solidity 0.8.20, Sepolia):
+//  Deploy (Remix, Solidity 0.8.20, BNB Smart Chain Testnet / chainId 97):
 //   constructor(tlkm, feeRecipient, feeBps, arbiter)
 //     - tlkm         : alamat kontrak TLKM
 //     - feeRecipient : wallet platform penerima fee

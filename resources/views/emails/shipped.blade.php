@@ -1,4 +1,4 @@
-@php $addr = $item->order->shippingAddress ?? null; $expl = 'https://sepolia.etherscan.io/tx/'.$item->order->tx_hash; @endphp
+@php $addr = $item->order->shippingAddress ?? null; $expl = config('chain.explorer_url').'/tx/'.$item->order->tx_hash; @endphp
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;color:#1e293b;">
     <div style="background:#4f46e5;color:#fff;padding:20px 24px;border-radius:12px 12px 0 0;">
         <h2 style="margin:0;font-size:18px;">Pesananmu Dikirim</h2>

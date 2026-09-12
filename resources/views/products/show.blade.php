@@ -88,7 +88,7 @@
             </div>
             <div class="flex items-center justify-between">
                 <span class="text-slate-500">Wallet penjual</span>
-                <a href="https://sepolia.etherscan.io/address/{{ $product->seller_wallet }}" target="_blank" rel="noopener"
+                <a href="{{ config('chain.explorer_url') }}/address/{{ $product->seller_wallet }}" target="_blank" rel="noopener"
                    class="font-mono text-blue-600 hover:underline text-xs">{{ substr($product->seller_wallet, 0, 8) }}…{{ substr($product->seller_wallet, -6) }} ↗</a>
             </div>
             <div class="flex items-center justify-between">
@@ -97,7 +97,7 @@
             </div>
             <div class="flex items-center justify-between">
                 <span class="text-slate-500">Jaringan</span>
-                <span class="text-slate-700 font-medium">Ethereum Sepolia</span>
+                <span class="text-slate-700 font-medium">{{ config('chain.name', 'BNB Smart Chain Testnet') }}</span>
             </div>
         </div>
     </div>

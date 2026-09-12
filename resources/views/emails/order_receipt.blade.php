@@ -1,4 +1,4 @@
-@php $expl = 'https://sepolia.etherscan.io/tx/'.$order->tx_hash; @endphp
+@php $expl = config('chain.explorer_url').'/tx/'.$order->tx_hash; @endphp
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;color:#1e293b;">
     <div style="background:#2563eb;color:#fff;padding:20px 24px;border-radius:12px 12px 0 0;">
         <h2 style="margin:0;font-size:18px;">Struk Pembelian</h2>
@@ -37,7 +37,7 @@
         <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;font-size:13px;">
             <p style="margin:0 0 4px;"><b>Order ID:</b> <span style="font-family:monospace;">{{ $order->order_id }}</span></p>
             <p style="margin:0 0 4px;"><b>Status:</b> Dana ditahan escrow — dilepas ke penjual setelah kamu konfirmasi barang diterima.</p>
-            <p style="margin:0;"><b>Bukti on-chain:</b> <a href="{{ $expl }}" style="color:#2563eb;">Lihat transaksi di Etherscan ↗</a></p>
+            <p style="margin:0;"><b>Bukti on-chain:</b> <a href="{{ $expl }}" style="color:#2563eb;">Lihat transaksi di BscScan ↗</a></p>
         </div>
 
         @if($order->shippingAddress)

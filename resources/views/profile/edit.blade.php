@@ -23,7 +23,7 @@
                 <p class="text-2xl font-extrabold text-slate-900 mt-0.5">{{ $balance !== null ? rtrim(rtrim(number_format((float)$balance, 2), '0'), '.') : '—' }} <span class="text-sm text-blue-600">TLKM</span></p>
                 <p class="text-[11px] text-slate-400 mt-0.5 font-mono truncate">{{ substr($user->wallet_address, 0, 12) }}…{{ substr($user->wallet_address, -6) }}</p>
             </div>
-            <a href="https://sepolia.etherscan.io/token/{{ config('chain.tlkm') }}?a={{ $user->wallet_address }}" target="_blank" rel="noopener" class="shrink-0 text-xs text-blue-600 hover:underline">Etherscan ↗</a>
+            <a href="{{ config('chain.explorer_url') }}/token/{{ config('chain.tlkm') }}?a={{ $user->wallet_address }}" target="_blank" rel="noopener" class="shrink-0 text-xs text-blue-600 hover:underline">BscScan ↗</a>
         </div>
     @endif
 

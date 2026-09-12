@@ -49,7 +49,7 @@
                         </div>
                     </div>
                     <div class="flex flex-col gap-2 shrink-0">
-                        <a href="https://sepolia.etherscan.io/tx/{{ $it->order->tx_hash }}" target="_blank" rel="noopener" class="text-xs text-slate-400 hover:text-blue-600 font-mono text-right">tx ↗</a>
+                        <a href="{{ config('chain.explorer_url') }}/tx/{{ $it->order->tx_hash }}" target="_blank" rel="noopener" class="text-xs text-slate-400 hover:text-blue-600 font-mono text-right">tx ↗</a>
                         <button onclick="arbiterResolve('{{ $it->order->order_id }}', {{ $it->item_index }}, {{ $it->id }}, 'release', this)"
                             class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-xs font-semibold transition whitespace-nowrap">Lepas ke Penjual</button>
                         <button onclick="arbiterResolve('{{ $it->order->order_id }}', {{ $it->item_index }}, {{ $it->id }}, 'refund', this)"
@@ -84,7 +84,7 @@ async function arbiterResolve(orderId, index, itemId, action, btn) {
             body: JSON.stringify({ order_item_id: itemId, status: action === 'release' ? 'completed' : 'refunded' })
         });
         txProgress.done(1);
-        setTimeout(() => { txProgress.close(); uiAlert({ title:'Putusan Dieksekusi', message:`<a href="https://sepolia.etherscan.io/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type:'success' }).then(()=>location.reload()); }, 400);
+        setTimeout(() => { txProgress.close(); uiAlert({ title:'Putusan Dieksekusi', message:`<a href="${EXPLORER_URL}/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type:'success' }).then(()=>location.reload()); }, 400);
     } catch (e) {
         txProgress.close();
         uiAlert({ title:'Gagal', message: niceError(e), type:'error' });

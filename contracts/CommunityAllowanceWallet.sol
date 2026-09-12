@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 /// @notice Satu dompet menampung TLKM. Penanggung jawab (owner) menunjuk anggota dan
 ///         mengatur BATAS penarikan per bulan tiap anggota. Anggota bisa menarik sampai
 ///         batasnya; jatah reset otomatis tiap 30 hari (berbasis waktu on-chain).
-/// @dev    Pakai SafeERC20 + ReentrancyGuard. Semua aksi emit event untuk audit di Etherscan.
+/// @dev    Pakai SafeERC20 + ReentrancyGuard. Semua aksi emit event untuk audit di BscScan.
 contract CommunityAllowanceWallet is ReentrancyGuard {
     using SafeERC20 for IERC20;
 

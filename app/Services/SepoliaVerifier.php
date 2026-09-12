@@ -6,7 +6,9 @@ use kornrunner\Keccak;
 use Illuminate\Support\Facades\Http;
 
 /**
- * Verifikasi transaksi PaymentGateway v3 langsung ke jaringan (RPC Sepolia).
+ * Verifikasi transaksi PaymentGateway v3 langsung ke jaringan via RPC dari
+ * config/chain.php — kini BNB Smart Chain Testnet (chainId 97). (Nama class tetap
+ * "SepoliaVerifier" demi kompatibilitas pemanggil; isinya jaringan-agnostik.)
  * Sumber kebenaran = on-chain. Data dari browser TIDAK dipercaya mentah.
  */
 class SepoliaVerifier

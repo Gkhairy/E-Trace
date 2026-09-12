@@ -84,7 +84,7 @@ class AuthController extends Controller
         ] + $extra);
 
         if (!$usesMetamask) {
-            GasDrip::dispatch($user->id); // kirim sedikit ETH Sepolia untuk gas
+            GasDrip::dispatch($user->id); // kirim sedikit tBNB (BSC Testnet) untuk gas
         }
 
         $this->sendOtp($user);

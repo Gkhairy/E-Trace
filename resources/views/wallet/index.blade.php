@@ -100,7 +100,7 @@
                     </div>
                     <div class="text-right shrink-0">
                         <p class="text-sm font-semibold {{ $t['dir']==='out' ? 'text-red-500' : 'text-green-600' }}">{{ $t['dir']==='out' ? '−' : '+' }}{{ $fmt($t['amount']) }} TLKM</p>
-                        <a href="https://sepolia.etherscan.io/tx/{{ $t['tx'] }}" target="_blank" rel="noopener" class="text-[11px] text-slate-400 hover:text-blue-600 font-mono">{{ $t['at']->format('d M H:i') }} ↗</a>
+                        <a href="{{ config('chain.explorer_url') }}/tx/{{ $t['tx'] }}" target="_blank" rel="noopener" class="text-[11px] text-slate-400 hover:text-blue-600 font-mono">{{ $t['at']->format('d M H:i') }} ↗</a>
                     </div>
                 </div>
             @endforeach
@@ -167,7 +167,7 @@ async function doSend() {
         txProgress.active(2, 'Verifikasi on-chain…');
         await fetch('/wallet/send', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN }, body: JSON.stringify({ tx_hash: hash, note }) });
         txProgress.done(2);
-        setTimeout(() => { txProgress.close(); uiAlert({ title: 'TLKM Terkirim', message: `${amt} TLKM terkirim.<br><a href="https://sepolia.etherscan.io/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type: 'success' }).then(() => location.reload()); }, 400);
+        setTimeout(() => { txProgress.close(); uiAlert({ title: 'TLKM Terkirim', message: `${amt} TLKM terkirim.<br><a href="${EXPLORER_URL}/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type: 'success' }).then(() => location.reload()); }, 400);
     } catch (e) {
         txProgress.close();
         uiAlert({ title: 'Gagal mengirim', message: niceError(e), type: 'error' });

@@ -9,9 +9,9 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 
 /**
- * "Gas drip" testnet: wallet operator platform mengirim sedikit ETH Sepolia ke
+ * "Gas drip" testnet: wallet operator platform mengirim sedikit tBNB (BSC Testnet) ke
  * wallet embedded baru agar bisa bayar gas. Gratis (testnet). Lewat queue.
- * Butuh PLATFORM_GAS_PRIVATE_KEY (.env) yang wallet-nya sudah berisi ETH Sepolia.
+ * Butuh PLATFORM_GAS_PRIVATE_KEY (.env) yang wallet-nya sudah berisi tBNB (BSC Testnet).
  */
 class GasDrip implements ShouldQueue
 {

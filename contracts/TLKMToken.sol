@@ -5,14 +5,14 @@ pragma solidity ^0.8.20;
 //  TLKM Token (ERC-20)
 //  -------------------------------------------------------------
 //  Ini token buatan kamu sendiri, dipakai sebagai alat bayar
-//  di toko crypto. Dideploy di jaringan Arbitrum Sepolia (testnet).
+//  di toko crypto. Dideploy di jaringan BNB Smart Chain Testnet (testnet).
 //
 //  Cara pakai di Remix:
 //   1. Buka https://remix.ethereum.org
 //   2. Buat file baru: TLKMToken.sol, tempel isi file ini.
 //   3. Di tab "Solidity Compiler" pilih versi 0.8.20+ lalu Compile.
 //   4. Di tab "Deploy & Run", Environment = "Injected Provider - MetaMask"
-//      (pastikan MetaMask lagi di jaringan Arbitrum Sepolia).
+//      (pastikan MetaMask lagi di jaringan BNB Smart Chain Testnet).
 //   5. Deploy. Simpan alamat kontraknya -> ini "TLKM_ADDRESS".
 //
 //  Import OpenZeppelin lewat URL (Remix otomatis mengunduhnya).

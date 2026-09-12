@@ -1,17 +1,26 @@
 <?php
 
 return [
-    // RPC untuk verifikasi on-chain sisi server (bisa diganti Alchemy/Infura di .env).
-    'rpc_url'  => env('SEPOLIA_RPC_URL', 'https://ethereum-sepolia-rpc.publicnode.com'),
-    'chain_id' => (int) env('CHAIN_ID', 11155111),
+    // ============ JARINGAN — BNB Smart Chain Testnet (chainId 97) ============
+    // SUMBER KEBENARAN TUNGGAL jaringan. Frontend & backend membaca dari sini.
+    // RPC untuk verifikasi on-chain sisi server (cadangan: https://bsc-testnet.publicnode.com).
+    'rpc_url'      => env('CHAIN_RPC_URL', 'https://data-seed-prebsc-1-s1.bnbchain.org:8545/'),
+    'chain_id'     => (int) env('CHAIN_ID', 97),
+    'name'         => env('CHAIN_NAME', 'BNB Smart Chain Testnet'),
+    'explorer_url' => rtrim(env('CHAIN_EXPLORER_URL', 'https://testnet.bscscan.com'), '/'),
 
     // Alamat kontrak — HARUS sama dengan yang dipakai frontend (layouts/app.blade.php).
-    'gateway'  => env('PAYMENT_GATEWAY_ADDRESS', '0x0D6F824F6734B6369EdeBbfD6db37f965fa55f26'),
-    'tlkm'     => env('TLKM_ADDRESS', '0xFbaa7F02bE3f151920D036cA4Eed2Fb1Ca3e0aEB'),
+    // Diisi lewat .env setelah redeploy ke BSC Testnet. Default = alamat nol (fitur
+    // nonaktif sampai alamat asli dipasang) agar tak menunjuk kontrak jaringan lain.
+    'gateway'  => env('PAYMENT_GATEWAY_ADDRESS', '0x0000000000000000000000000000000000000000'),
+    'tlkm'     => env('TLKM_ADDRESS', '0x0000000000000000000000000000000000000000'),
 
-    // Kotak donasi (DonationPool.sol) — isi setelah deploy di Remix. Placeholder =
-    // fitur donasi nonaktif di UI sampai alamat asli dipasang.
+    // Kotak donasi (DonationPool.sol) — isi setelah deploy. Placeholder = donasi
+    // nonaktif di UI sampai alamat asli dipasang.
     'donation_pool' => env('DONATION_POOL_ADDRESS', '0x0000000000000000000000000000000000000000'),
+
+    // Dompet komunitas on-chain (opsional; alur custodial saat ini tak memakainya).
+    'community_wallet' => env('COMMUNITY_WALLET_ADDRESS', '0x0000000000000000000000000000000000000000'),
 
     // Konfirmasi: 1 = terdeteksi, >= paid_confirmations dianggap 'paid',
     // >= finalized_confirmations dianggap final (catatan audit).

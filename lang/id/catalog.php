@@ -30,7 +30,7 @@ return [
     'trust_instant_t' => 'Instan',
     'trust_instant_s' => 'Bayar langsung on-chain',
     'trust_token_t'   => 'Token TLKM',
-    'trust_token_s'   => 'ERC-20 di Sepolia',
+    'trust_token_s'   => 'ERC-20 di BSC Testnet',
 
     // Kategori & katalog
     'categories'   => 'Kategori',

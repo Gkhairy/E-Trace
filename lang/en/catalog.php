@@ -30,7 +30,7 @@ return [
     'trust_instant_t' => 'Instant',
     'trust_instant_s' => 'Pay directly on-chain',
     'trust_token_t'   => 'TLKM Token',
-    'trust_token_s'   => 'ERC-20 on Sepolia',
+    'trust_token_s'   => 'ERC-20 on BSC Testnet',
 
     // Categories & catalog
     'categories'   => 'Categories',

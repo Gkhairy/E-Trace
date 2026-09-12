@@ -9,7 +9,7 @@
     <h1 class="text-2xl font-bold text-slate-900">Riwayat Order</h1>
 </div>
 <p class="text-sm text-slate-500 mb-3 max-w-3xl">
-    Setiap item ditahan di <b class="text-slate-700">escrow terpisah per penjual</b> di blockchain Ethereum Sepolia.
+    Setiap item ditahan di <b class="text-slate-700">escrow terpisah per penjual</b> di blockchain {{ config('chain.name', 'BNB Smart Chain Testnet') }}.
     Konfirmasi 1 item hanya melepas dana item itu ke penjualnya — item lain tidak terpengaruh.
 </p>
 {{-- H6: kebijakan refund yang jelas & adil --}}
@@ -58,7 +58,7 @@
                             <span class="inline-flex items-center mt-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border {{ $c[1] }}">{{ $c[0] }}</span>
                         @endif
                     </div>
-                    <a href="https://sepolia.etherscan.io/tx/{{ $order->tx_hash }}" target="_blank" rel="noopener"
+                    <a href="{{ config('chain.explorer_url') }}/tx/{{ $order->tx_hash }}" target="_blank" rel="noopener"
                        class="inline-flex items-center gap-1 text-green-600 hover:underline font-mono text-xs">
                         {{ Str::limit($order->tx_hash, 14) }}
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
@@ -184,7 +184,7 @@ async function doConfirmItem(orderId, index, btn) {
         const hash = await confirmItem(orderId, index);
         await markItemStatus(orderId, index, 'completed');
         txProgress.done(1);
-        setTimeout(() => { txProgress.close(); uiAlert({ title:'Item Dikonfirmasi', message:`Dana item dilepas ke penjual.<br><a href="https://sepolia.etherscan.io/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type:'success' }).then(()=>location.reload()); }, 400);
+        setTimeout(() => { txProgress.close(); uiAlert({ title:'Item Dikonfirmasi', message:`Dana item dilepas ke penjual.<br><a href="${EXPLORER_URL}/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type:'success' }).then(()=>location.reload()); }, 400);
     } catch (e) {
         txProgress.close();
         uiAlert({ title:'Gagal', message: niceError(e), type:'error' });
@@ -207,7 +207,7 @@ async function doRefundItem(orderId, index, btn) {
         const hash = await refundItem(orderId, index);
         await markItemStatus(orderId, index, 'refunded');
         txProgress.done(1);
-        setTimeout(() => { txProgress.close(); uiAlert({ title:'Refund Berhasil', message:`Dana item dikembalikan ke wallet kamu.<br><a href="https://sepolia.etherscan.io/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type:'success' }).then(()=>location.reload()); }, 400);
+        setTimeout(() => { txProgress.close(); uiAlert({ title:'Refund Berhasil', message:`Dana item dikembalikan ke wallet kamu.<br><a href="${EXPLORER_URL}/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type:'success' }).then(()=>location.reload()); }, 400);
     } catch (e) {
         txProgress.close();
         uiAlert({ title:'Gagal', message: niceError(e), type:'error' });
@@ -231,7 +231,7 @@ async function doDisputeItem(orderId, index, btn) {
         const hash = await disputeItem(orderId, index);
         await markItemStatus(orderId, index, 'disputed');
         txProgress.done(1);
-        setTimeout(() => { txProgress.close(); uiAlert({ title:'Sengketa Diajukan', message:`Pengawas akan meninjau. Dana tetap aman di escrow.<br><a href="https://sepolia.etherscan.io/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type:'success' }).then(()=>location.reload()); }, 400);
+        setTimeout(() => { txProgress.close(); uiAlert({ title:'Sengketa Diajukan', message:`Pengawas akan meninjau. Dana tetap aman di escrow.<br><a href="${EXPLORER_URL}/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type:'success' }).then(()=>location.reload()); }, 400);
     } catch (e) {
         txProgress.close();
         uiAlert({ title:'Gagal', message: niceError(e), type:'error' });

@@ -203,7 +203,7 @@
             <div class="flex items-center gap-4">
                 <div class="flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-green-500"></span>
-                    <span>Ethereum Sepolia (Testnet)</span>
+                    <span>{{ config('chain.name', 'BNB Smart Chain Testnet') }}</span>
                 </div>
                 @include('partials.lang-switcher')
             </div>
@@ -220,7 +220,7 @@
     </div>
 
     <!-- =========================================================
-         WEB3 CONFIG + FUNGSI (Ethereum Sepolia, chainId 11155111)
+         WEB3 CONFIG + FUNGSI (BNB Smart Chain Testnet, chainId 97) — dari config/chain.php
     ========================================================== -->
     <script>
     // CSRF token untuk request POST via fetch.
@@ -300,20 +300,24 @@
         });
     }
 
-    // ---- KONFIGURASI KONTRAK (PaymentGateway v3, Sepolia) ----
-    const TLKM_ADDRESS            = "0xFbaa7F02bE3f151920D036cA4Eed2Fb1Ca3e0aEB";
-    const PAYMENT_GATEWAY_ADDRESS = "0x0D6F824F6734B6369EdeBbfD6db37f965fa55f26";
+    // ---- KONFIGURASI KONTRAK (PaymentGateway v3) — dari config/chain.php (.env) ----
+    const TLKM_ADDRESS            = @json(config('chain.tlkm'));
+    const PAYMENT_GATEWAY_ADDRESS = @json(config('chain.gateway'));
     const DONATION_POOL_ADDRESS   = @json(config('chain.donation_pool'));
     const TOKEN_DECIMALS = 18;
-    const PLATFORM_FEE_BPS = 100; // 1% — dipotong dari penjual saat dana dilepas
+    const PLATFORM_FEE_BPS = {{ (int) config('chain.platform_fee_bps', 100) }}; // 1% — dipotong dari penjual saat dana dilepas
 
+    // Basis URL explorer (BscScan Testnet) untuk semua tautan tx/address.
+    const EXPLORER_URL = @json(config('chain.explorer_url'));
+
+    // ---- JARINGAN TARGET: BNB Smart Chain Testnet (chainId 97 / 0x61) — dari config ----
     const TARGET_NETWORK = {
-        chainIdHex: "0xaa36a7",
-        chainIdNum: 11155111n,
-        chainName: "Sepolia",
-        rpcUrls: ["https://ethereum-sepolia-rpc.publicnode.com"],
-        nativeCurrency: { name: "Ethereum", symbol: "ETH", decimals: 18 },
-        blockExplorerUrls: ["https://sepolia.etherscan.io"]
+        chainIdHex: "0x{{ dechex((int) config('chain.chain_id', 97)) }}",
+        chainIdNum: {{ (int) config('chain.chain_id', 97) }}n,
+        chainName: @json(config('chain.name', 'BNB Smart Chain Testnet')),
+        rpcUrls: [@json(config('chain.rpc_url'))],
+        nativeCurrency: { name: "tBNB", symbol: "tBNB", decimals: 18 },
+        blockExplorerUrls: [@json(config('chain.explorer_url'))]
     };
 
     const ERC20_ABI = [
@@ -641,7 +645,7 @@
         if (!e) return 'Transaksi dibatalkan.';
         if (e.message === 'WALLET_MISMATCH') return 'Wallet MetaMask aktif tidak cocok dengan wallet akunmu. Ganti dulu ke wallet yang terdaftar di akun ini.';
         if (e.code === 'ACTION_REJECTED' || e.code === 4001) return 'Kamu membatalkan transaksi di MetaMask.';
-        if (e.code === 'INSUFFICIENT_FUNDS') return 'Saldo ETH Sepolia tidak cukup untuk biaya gas. Isi ETH testnet dulu, lalu coba lagi.';
+        if (e.code === 'INSUFFICIENT_FUNDS') return 'Saldo tBNB tidak cukup untuk biaya gas. Isi tBNB testnet (faucet) dulu, lalu coba lagi.';
         return e.reason || e.shortMessage || 'Transaksi gagal. Coba lagi sebentar lagi.';
     }
 

@@ -19,12 +19,12 @@
                 <h1 class="text-2xl font-bold text-slate-900">{{ $wallet->name }}</h1>
                 <span class="text-[11px] px-2 py-0.5 rounded-full {{ $wallet->isMultisig() ? 'bg-violet-50 text-violet-700 border border-violet-200' : 'bg-blue-50 text-blue-700 border border-blue-200' }}">{{ $wallet->modeLabel() }}</span>
             </div>
-            <a href="https://sepolia.etherscan.io/address/{{ $wallet->address }}" target="_blank" class="text-xs text-blue-600 hover:underline font-mono">{{ $wallet->address }} ↗</a>
+            <a href="{{ config('chain.explorer_url') }}/address/{{ $wallet->address }}" target="_blank" class="text-xs text-blue-600 hover:underline font-mono">{{ $wallet->address }} ↗</a>
         </div>
         <div class="text-right">
             <p class="text-xs text-slate-500">Saldo dompet</p>
             <p class="text-2xl font-extrabold text-slate-900">{{ $balance !== null ? $fmt($balance) : '—' }} <span class="text-sm text-blue-600">TLKM</span></p>
-            <p class="text-[11px] {{ $lowGas ? 'text-amber-600' : 'text-slate-400' }} mt-0.5">Gas: {{ $gasEth !== null ? rtrim(rtrim(number_format($gasEth, 5), '0'), '.').' ETH' : '—' }}</p>
+            <p class="text-[11px] {{ $lowGas ? 'text-amber-600' : 'text-slate-400' }} mt-0.5">Gas: {{ $gasEth !== null ? rtrim(rtrim(number_format($gasEth, 5), '0'), '.').' tBNB' : '—' }}</p>
         </div>
     </div>
     @if($wallet->description)<p class="text-sm text-slate-500 mt-3">{{ $wallet->description }}</p>@endif
@@ -36,9 +36,9 @@
     <div class="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4 mb-6 text-sm flex items-start gap-3">
         <svg class="w-5 h-5 shrink-0 text-amber-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
         <div>
-            <b>Dompet belum punya gas (ETH testnet).</b> Ini <b>bukan biaya uang nyata</b> — ETH Sepolia gratis dari faucet, hanya untuk testnet.
-            Isi sedikit ke <a href="https://sepolia.etherscan.io/address/{{ $wallet->address }}" target="_blank" class="font-mono underline break-all">{{ $wallet->address }}</a>
-            (dari <a href="https://sepoliafaucet.com" target="_blank" class="underline">faucet Sepolia</a>) lalu muat ulang, atau admin jalankan <code class="bg-white/60 px-1 rounded">php artisan community:fund-gas</code>.
+            <b>Dompet belum punya gas (tBNB testnet).</b> Ini <b>bukan biaya uang nyata</b> — tBNB testnet gratis dari faucet, hanya untuk testnet.
+            Isi sedikit ke <a href="{{ config('chain.explorer_url') }}/address/{{ $wallet->address }}" target="_blank" class="font-mono underline break-all">{{ $wallet->address }}</a>
+            (dari <a href="https://testnet.bnbchain.org/faucet-smart" target="_blank" class="underline">faucet BNB Testnet</a>) lalu muat ulang, atau admin jalankan <code class="bg-white/60 px-1 rounded">php artisan community:fund-gas</code>.
         </div>
     </div>
 @endif
@@ -131,7 +131,7 @@
                     <div class="shrink-0">
                         @if($p['status'] === 'executed')
                             @if($p['tx'])
-                                <a href="https://sepolia.etherscan.io/tx/{{ $p['tx'] }}" target="_blank" class="text-xs text-green-600 hover:underline">Terkirim ↗</a>
+                                <a href="{{ config('chain.explorer_url') }}/tx/{{ $p['tx'] }}" target="_blank" class="text-xs text-green-600 hover:underline">Terkirim ↗</a>
                             @else
                                 <span class="text-xs text-green-600">Selesai ✓</span>
                             @endif
@@ -168,7 +168,7 @@
                 </div>
                 <div class="shrink-0 text-right">
                     <p class="text-sm font-semibold text-green-600">+{{ $fmt($d['amount']) }} TLKM</p>
-                    @if($d['tx'])<a href="https://sepolia.etherscan.io/tx/{{ $d['tx'] }}" target="_blank" class="text-[11px] text-blue-600 hover:underline">Lihat tx ↗</a>@endif
+                    @if($d['tx'])<a href="{{ config('chain.explorer_url') }}/tx/{{ $d['tx'] }}" target="_blank" class="text-[11px] text-blue-600 hover:underline">Lihat tx ↗</a>@endif
                 </div>
             </div>
         @endforeach
@@ -191,7 +191,7 @@ async function post(url, body) {
     if (!res.ok || !data.success) throw new Error(data.message || 'Aksi gagal.');
     return data;
 }
-function ok(hash) { txProgress.close(); uiAlert({ title: 'Berhasil', message: hash ? `<a href="https://sepolia.etherscan.io/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>` : 'Tersimpan.', type: 'success' }).then(() => location.reload()); }
+function ok(hash) { txProgress.close(); uiAlert({ title: 'Berhasil', message: hash ? `<a href="${EXPLORER_URL}/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>` : 'Tersimpan.', type: 'success' }).then(() => location.reload()); }
 function fail(e) { txProgress.close(); uiAlert({ title: 'Gagal', message: niceError(e), type: 'error' }); }
 
 // Setor: transfer TLKM milik SENDIRI ke alamat komunitas (PIN embedded / MetaMask).

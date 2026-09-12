@@ -114,7 +114,7 @@
                         <td class="px-4 py-3 text-slate-700">{{ $r['product'] }}</td>
                         <td class="px-4 py-3 font-semibold text-slate-900 whitespace-nowrap">{{ $fmt($r['amount']) }} TLKM</td>
                         <td class="px-4 py-3"><span class="text-xs font-medium {{ $sb[1] }}">{{ $sb[0] }}</span></td>
-                        <td class="px-4 py-3"><a href="https://sepolia.etherscan.io/tx/{{ $r['tx'] }}" target="_blank" rel="noopener" class="text-green-600 hover:underline font-mono text-xs">{{ substr($r['tx'],0,8) }}… ↗</a></td>
+                        <td class="px-4 py-3"><a href="{{ config('chain.explorer_url') }}/tx/{{ $r['tx'] }}" target="_blank" rel="noopener" class="text-green-600 hover:underline font-mono text-xs">{{ substr($r['tx'],0,8) }}… ↗</a></td>
                     </tr>
                 @empty
                     <tr><td colspan="6" class="px-4 py-10 text-center text-slate-400">Belum ada transaksi.</td></tr>

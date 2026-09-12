@@ -32,7 +32,7 @@
             @endif
             <p class="text-sm text-slate-400 font-mono mt-1 break-all">{{ $addr }}</p>
             <div class="flex flex-wrap items-center gap-3 mt-1">
-                <a href="https://sepolia.etherscan.io/address/{{ $addr }}" target="_blank" rel="noopener" class="text-xs text-blue-600 hover:underline">Lihat di Etherscan ↗</a>
+                <a href="{{ config('chain.explorer_url') }}/address/{{ $addr }}" target="_blank" rel="noopener" class="text-xs text-blue-600 hover:underline">Lihat di BscScan ↗</a>
                 @if($joined)
                     <span class="inline-flex items-center gap-1 text-xs text-slate-500">
                         <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z"/></svg>
@@ -86,7 +86,7 @@
                                 <td class="px-4 py-3 font-semibold text-blue-600 whitespace-nowrap">{{ $fmt($it->amount) }} TLKM</td>
                                 <td class="px-4 py-3"><span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium border {{ $sb[1] }}">{{ $sb[0] }}</span></td>
                                 <td class="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{{ $o->created_at->format('d M Y') }}</td>
-                                <td class="px-4 py-3"><a href="https://sepolia.etherscan.io/tx/{{ $o->tx_hash }}" target="_blank" class="text-green-600 hover:underline font-mono text-xs">{{ substr($o->tx_hash,0,8) }}… ↗</a></td>
+                                <td class="px-4 py-3"><a href="{{ config('chain.explorer_url') }}/tx/{{ $o->tx_hash }}" target="_blank" class="text-green-600 hover:underline font-mono text-xs">{{ substr($o->tx_hash,0,8) }}… ↗</a></td>
                             </tr>
                         @endforeach
                     @endforeach
@@ -117,7 +117,7 @@
                             <td class="px-4 py-3 font-semibold text-green-600 whitespace-nowrap">{{ $fmt($it->amount) }} TLKM</td>
                             <td class="px-4 py-3"><span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium border {{ $sb[1] }}">{{ $sb[0] }}</span></td>
                             <td class="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{{ $it->created_at->format('d M Y') }}</td>
-                            <td class="px-4 py-3"><a href="https://sepolia.etherscan.io/tx/{{ $it->order->tx_hash ?? '' }}" target="_blank" class="text-green-600 hover:underline font-mono text-xs">{{ substr($it->order->tx_hash ?? '', 0, 8) }}… ↗</a></td>
+                            <td class="px-4 py-3"><a href="{{ config('chain.explorer_url') }}/tx/{{ $it->order->tx_hash ?? '' }}" target="_blank" class="text-green-600 hover:underline font-mono text-xs">{{ substr($it->order->tx_hash ?? '', 0, 8) }}… ↗</a></td>
                         </tr>
                     @endforeach
                 </tbody>

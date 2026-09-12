@@ -1,36 +1,34 @@
-# Panduan Deploy — TLKM Token & PaymentGateway (Arbitrum Sepolia)
+# Panduan Deploy — TLKM Token & PaymentGateway (BNB Smart Chain Testnet)
 
 Panduan langkah demi langkah untuk pemula. Semua dilakukan di **Remix** dan **MetaMask**.
-Jaringan yang dipakai: **Arbitrum Sepolia** (testnet, chainId `421614`).
+Jaringan yang dipakai: **BNB Smart Chain Testnet** (testnet, chainId `97`).
 
 ---
 
-## 0. Siapkan MetaMask untuk Arbitrum Sepolia
+## 0. Siapkan MetaMask untuk BSC Testnet
 
 Kalau jaringannya belum ada di MetaMask, tambahkan manual (Settings → Networks → Add network):
 
-- **Network name:** Arbitrum Sepolia
-- **RPC URL:** `https://sepolia-rollup.arbitrum.io/rpc`
-- **Chain ID:** `421614`
-- **Currency symbol:** ETH
-- **Block explorer:** `https://sepolia.arbiscan.io`
+- **Network name:** BNB Smart Chain Testnet
+- **RPC URL:** `https://data-seed-prebsc-1-s1.bnbchain.org:8545/`
+  (cadangan: `https://bsc-testnet.publicnode.com`)
+- **Chain ID:** `97` (hex `0x61`)
+- **Currency symbol:** tBNB
+- **Block explorer:** `https://testnet.bscscan.com`
 
-> Frontend kamu sekarang juga sudah bisa menambahkan jaringan ini otomatis saat pertama connect.
+> Frontend E-Trace juga sudah bisa menambahkan jaringan ini otomatis saat pertama connect
+> (fungsi `checkNetwork()` di `layouts/app.blade.php`, dibaca dari `config/chain.php`).
 
 ---
 
-## 1. Dapatkan gas ETH testnet (gratis)
+## 1. Dapatkan gas tBNB testnet (gratis)
 
-Deploy kontrak butuh sedikit ETH testnet untuk bayar gas. Ambil dari salah satu faucet ini
+Deploy kontrak butuh sedikit **tBNB** testnet untuk bayar gas. Ambil gratis dari faucet resmi
 (pakai wallet address MetaMask kamu):
 
-- Alchemy — https://www.alchemy.com/faucets/arbitrum-sepolia
-- QuickNode — https://faucet.quicknode.com/arbitrum/sepolia
-- LearnWeb3 (0.01 ETH/hari) — https://learnweb3.io/faucets/arbitrum_sepolia/
-- Chainlink — https://faucets.chain.link/arbitrum-sepolia
+- **Faucet BNB Testnet** — https://testnet.bnbchain.org/faucet-smart
 
-> Beberapa faucet minta wallet punya sedikit saldo di Ethereum mainnet dulu (anti-bot).
-> Kalau satu faucet menolak, coba yang lain. Cukup 0.01–0.05 ETH sudah lebih dari cukup.
+> tBNB testnet **gratis**, bukan uang nyata. Cukup 0.1–0.5 tBNB sudah lebih dari cukup untuk deploy.
 
 ---
 
@@ -40,7 +38,7 @@ Deploy kontrak butuh sedikit ETH testnet untuk bayar gas. Ambil dari salah satu 
 2. Buat file baru `TLKMToken.sol`, tempel isi dari file **`contracts/TLKMToken.sol`**.
 3. Tab **Solidity Compiler**: pilih compiler **0.8.20** (atau lebih baru), klik **Compile**.
 4. Tab **Deploy & Run Transactions**:
-   - **Environment** → **Injected Provider - MetaMask** (pastikan MetaMask di Arbitrum Sepolia).
+   - **Environment** → **Injected Provider - MetaMask** (pastikan MetaMask di **BSC Testnet / chainId 97**).
    - Pilih kontrak **TLKMToken**.
    - Di sebelah tombol **Deploy** ada input `initialSupplyWholeTokens`. Isi misal `1000000`
      (artinya mint 1.000.000 TLKM ke wallet kamu).
@@ -53,32 +51,47 @@ Pakai fungsi `mint(address, amount)` (khusus owner) atau `transfer` biasa dari R
 
 ---
 
-## 3. Deploy PaymentGateway
+## 3. Deploy PaymentGateway (escrow)
 
-1. Buat file baru `PaymentGateway.sol`, tempel isi dari **`contracts/PaymentGateway.sol`**.
+1. Buat file baru `PaymentGatewayV3.sol`, tempel isi dari **`contracts/PaymentGatewayV3.sol`**.
 2. **Compile** (0.8.20+).
-3. Deploy kontrak **PaymentGateway** (tidak perlu argumen konstruktor).
+3. Deploy kontrak **PaymentGatewayV3** (ikuti argumen konstruktor bila ada di file kontrak).
 4. Salin **alamat kontraknya**.
    👉 Ini **`PAYMENT_GATEWAY_ADDRESS`**. Catat.
 
+*(Opsional)* Deploy juga **`DonationPool.sol`** untuk fitur donasi → **`DONATION_POOL_ADDRESS`**.
+
 ---
 
-## 4. Masukkan alamat ke frontend
+## 4. Masukkan alamat ke `.env` (BUKAN ke blade)
 
-Buka `resources/views/layouts/app.blade.php`, cari bagian KONFIGURASI, isi dua baris ini:
+Alamat kontrak kini dibaca dari **`config/chain.php`** yang mengambil nilai dari `.env`
+(satu sumber kebenaran). Buka `.env`, isi:
 
-```js
-const TLKM_ADDRESS            = "0x....";  // dari langkah 2
-const PAYMENT_GATEWAY_ADDRESS = "0x....";  // dari langkah 3
+```env
+CHAIN_ID=97
+CHAIN_RPC_URL=https://data-seed-prebsc-1-s1.bnbchain.org:8545/
+CHAIN_EXPLORER_URL=https://testnet.bscscan.com
+CHAIN_NAME="BNB Smart Chain Testnet"
+
+TLKM_ADDRESS=0x....              # dari langkah 2
+PAYMENT_GATEWAY_ADDRESS=0x....   # dari langkah 3
+DONATION_POOL_ADDRESS=0x....     # dari langkah 3 (opsional)
 ```
 
-Jangan ubah `TOKEN_DECIMALS = 18` (harus sama dengan token).
+Lalu bersihkan cache config agar nilai baru terbaca:
+
+```bash
+php artisan config:clear
+```
+
+`TOKEN_DECIMALS` tetap **18** (harus sama dengan token) — sudah di-hardcode di frontend.
 
 ---
 
 ## 5. Jadikan dirimu penjual (agar bisa listing produk)
 
-Jalankan migrasi lalu set peran user jadi `seller` (peran = kolom `role`: `buyer`/`seller`/`supervisor`):
+Jalankan migrasi lalu set peran user jadi `seller` (kolom `role`: `buyer`/`seller`/`supervisor`):
 
 ```bash
 php artisan migrate
@@ -88,21 +101,21 @@ php artisan tinker
 >>> \App\Models\User::where('email','emailkamu@contoh.com')->update(['role'=>'seller']);
 ```
 
-Setelah itu tombol **+ Add Product** akan muncul di halaman Produk.
+Setelah itu tombol **+ Tambah Produk** akan muncul di halaman Produk.
 
 ---
 
 ## 6. Alur uji coba end-to-end
 
-1. Login (email/password atau MetaMask).
-2. Sebagai admin, buat produk (harga dalam **TLKM**).
-3. Sebagai pembeli (wallet yang sudah punya TLKM), buka produk → **Buy Now**:
+1. Login (email/password + PIN, atau MetaMask di **BSC Testnet**).
+2. Sebagai penjual, buat produk (harga dalam **TLKM**).
+3. Sebagai pembeli (wallet yang sudah punya TLKM), buka produk → **Beli Langsung**:
    - MetaMask minta **approve** dulu → konfirmasi.
    - Lalu **pembayaran** ke escrow → konfirmasi.
    - Order tersimpan, kamu diarahkan ke **Riwayat Order**.
-4. Di **Riwayat Order**, klik tx hash → terbuka di **Arbiscan Sepolia** (bukti transparansi).
+4. Di **Riwayat Order**, klik tx hash → terbuka di **BscScan Testnet** (bukti transparansi).
 5. Kalau barang sudah diterima → **Konfirmasi Terima** → dana lepas ke penjual.
-   Kalau penjual tak kirim, setelah 3 hari → **Refund**.
+   Kalau penjual tak kirim → **Refund**.
 
 ---
 
@@ -110,7 +123,10 @@ Setelah itu tombol **+ Add Product** akan muncul di halaman Produk.
 
 | Nama | Dari mana | Dipakai di |
 |---|---|---|
-| `TLKM_ADDRESS` | Deploy TLKMToken (langkah 2) | `layouts/app.blade.php` |
-| `PAYMENT_GATEWAY_ADDRESS` | Deploy PaymentGateway (langkah 3) | `layouts/app.blade.php` |
+| `TLKM_ADDRESS` | Deploy TLKMToken (langkah 2) | `.env` → `config/chain.php` |
+| `PAYMENT_GATEWAY_ADDRESS` | Deploy PaymentGatewayV3 (langkah 3) | `.env` → `config/chain.php` |
+| `DONATION_POOL_ADDRESS` | Deploy DonationPool (opsional) | `.env` → `config/chain.php` |
+| `CHAIN_ID` | `97` (BSC Testnet) | `.env` → `config/chain.php` |
+| `CHAIN_EXPLORER_URL` | `https://testnet.bscscan.com` | semua tautan explorer |
 | `TOKEN_DECIMALS` | Selalu `18` | `layouts/app.blade.php` |
-| Jaringan | Arbitrum Sepolia (`421614`) | frontend + MetaMask |
+| Jaringan | BNB Smart Chain Testnet (`97`) | frontend + MetaMask |

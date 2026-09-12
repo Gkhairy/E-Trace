@@ -7,8 +7,10 @@ use Web3p\EthereumTx\Transaction;
 use Illuminate\Support\Facades\Http;
 
 /**
- * Membangun, menandatangani (offline), dan menyiarkan transaksi legacy ke Sepolia.
- * Dipakai untuk: gas-drip (kirim ETH) & panggilan kontrak (approve/donate/payCart/transfer)
+ * Membangun, menandatangani (offline), dan menyiarkan transaksi legacy ke jaringan
+ * yang dikonfigurasi (config/chain.php) — kini BNB Smart Chain Testnet (chainId 97).
+ * chainId dari config dipakai untuk EIP-155 signing; jika salah, transaksi ditolak jaringan.
+ * Dipakai untuk: gas-drip (kirim native coin) & panggilan kontrak (approve/donate/payCart/transfer)
  * atas nama embedded wallet — private key HANYA ada sesaat di memori setelah dekripsi PIN.
  */
 class ChainSigner
@@ -19,7 +21,7 @@ class ChainSigner
     public function __construct()
     {
         $this->rpc     = config('chain.rpc_url');
-        $this->chainId = (int) config('chain.chain_id', 11155111);
+        $this->chainId = (int) config('chain.chain_id', 97);
     }
 
     private function rpc(string $method, array $params = [])

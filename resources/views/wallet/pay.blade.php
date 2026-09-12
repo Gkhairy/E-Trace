@@ -65,7 +65,7 @@
             txProgress.active(2, 'Verifikasi on-chain…');
             await fetch('/wallet/send', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN }, body: JSON.stringify({ tx_hash: hash, request_id: REQUEST_ID }) });
             txProgress.done(2);
-            setTimeout(() => { txProgress.close(); uiAlert({ title: 'Pembayaran Berhasil', message: `${amt} TLKM terkirim ke penerima.<br><a href="https://sepolia.etherscan.io/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type: 'success' }).then(() => window.location.href = '/wallet'); }, 400);
+            setTimeout(() => { txProgress.close(); uiAlert({ title: 'Pembayaran Berhasil', message: `${amt} TLKM terkirim ke penerima.<br><a href="${EXPLORER_URL}/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type: 'success' }).then(() => window.location.href = '/wallet'); }, 400);
         } catch (e) {
             txProgress.close();
             uiAlert({ title: 'Pembayaran gagal', message: niceError(e), type: 'error' });

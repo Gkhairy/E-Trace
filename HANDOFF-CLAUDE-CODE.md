@@ -1,5 +1,12 @@
 # Handoff untuk Claude Code — Crypto E-Commerce (Laravel)
 
+> ⚠️ **PEMBARUAN JARINGAN (migrasi):** Project kini menargetkan **BNB Smart Chain
+> Testnet** (chainId **97**, explorer **https://testnet.bscscan.com**, gas **tBNB**).
+> Konfigurasi jaringan ada di `config/chain.php` yang membaca `.env`
+> (`CHAIN_ID`, `CHAIN_RPC_URL`, `CHAIN_EXPLORER_URL`, `CHAIN_NAME`, `*_ADDRESS`).
+> Referensi **Ethereum/Arbitrum Sepolia** di narasi historis di bawah **sudah usang** —
+> kontrak di-redeploy ke BSC Testnet. Panduan terbaru: `contracts/PANDUAN-DEPLOY.md`.
+
 Dokumen ini merangkum project, apa yang sudah dikerjakan, dan apa yang belum.
 Pakai bagian "PROMPT SIAP PAKAI" di bawah untuk memulai di Claude Code.
 
