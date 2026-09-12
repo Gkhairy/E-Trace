@@ -98,7 +98,7 @@ class OrderController extends Controller
             ];
         }
 
-        $verifier = new \App\Services\SepoliaVerifier();
+        $verifier = new \App\Services\ChainVerifier();
 
         // ===== H2: pastikan JUMLAH item cocok dengan yang dibayar on-chain =====
         // Kalau browser mengirim lebih sedikit item dari yang tercatat di kontrak,
@@ -273,7 +273,7 @@ class OrderController extends Controller
 
         // ===== VERIFIKASI ON-CHAIN: status DB harus mengikuti status kontrak =====
         // completed->Completed(2), refunded->Refunded(3), disputed->Disputed(4).
-        $onchain = (new \App\Services\SepoliaVerifier())->getItem($order->order_id, (int) $data['item_index']);
+        $onchain = (new \App\Services\ChainVerifier())->getItem($order->order_id, (int) $data['item_index']);
         if (!$onchain) {
             return response()->json(['success' => false, 'message' => 'Item tidak terbaca di kontrak.'], 422);
         }

@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Order;
-use App\Services\SepoliaVerifier;
+use App\Services\ChainVerifier;
 use Illuminate\Console\Command;
 
 /**
@@ -23,7 +23,7 @@ class ChainIndex extends Command
 
     public function handle(): int
     {
-        $v = new SepoliaVerifier();
+        $v = new ChainVerifier();
         $latest = $v->latestBlock();
         if (!$latest) {
             $this->warn('RPC tidak bisa dihubungi.');

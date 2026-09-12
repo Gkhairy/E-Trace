@@ -6,7 +6,7 @@ use App\Models\Transfer;
 use App\Models\PaymentRequest;
 use App\Models\User;
 use App\Support\Identity;
-use App\Services\SepoliaVerifier;
+use App\Services\ChainVerifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -69,7 +69,7 @@ class WalletController extends Controller
     }
 
     /** Catat transfer TLKM setelah verifikasi on-chain. */
-    public function send(Request $req, SepoliaVerifier $verifier)
+    public function send(Request $req, ChainVerifier $verifier)
     {
         $data = $req->validate([
             'tx_hash'    => 'required|string|size:66',

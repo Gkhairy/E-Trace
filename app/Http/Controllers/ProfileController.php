@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\SepoliaVerifier;
+use App\Services\ChainVerifier;
 use Illuminate\Http\Request;
 
 class ProfileController extends Controller
 {
-    public function edit(SepoliaVerifier $verifier)
+    public function edit(ChainVerifier $verifier)
     {
         $user = auth()->user();
         $balance = $user->wallet_address ? $verifier->tlkmBalance($user->wallet_address) : null;

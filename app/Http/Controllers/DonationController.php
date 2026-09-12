@@ -6,7 +6,7 @@ use App\Models\Campaign;
 use App\Models\Donation;
 use App\Models\Disbursement;
 use App\Support\Identity;
-use App\Services\SepoliaVerifier;
+use App\Services\ChainVerifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -153,7 +153,7 @@ class DonationController extends Controller
     }
 
     /** Detail campaign (publik) + form donasi + kartu penyalur (pengawas). */
-    public function show(string $slug, SepoliaVerifier $verifier)
+    public function show(string $slug, ChainVerifier $verifier)
     {
         $campaign = Campaign::where('slug', $slug)->firstOrFail();
 
@@ -183,7 +183,7 @@ class DonationController extends Controller
     }
 
     /** Catat donasi setelah verifikasi on-chain. Publik. */
-    public function donate(Request $req, SepoliaVerifier $verifier)
+    public function donate(Request $req, ChainVerifier $verifier)
     {
         $data = $req->validate([
             'slug'    => 'required|string',
@@ -223,7 +223,7 @@ class DonationController extends Controller
     }
 
     /** Catat penyaluran setelah verifikasi on-chain. Pengawas. */
-    public function disburse(Request $req, SepoliaVerifier $verifier)
+    public function disburse(Request $req, ChainVerifier $verifier)
     {
         $this->ensureSupervisor();
 

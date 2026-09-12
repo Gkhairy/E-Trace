@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\WalletLabel;
-use App\Services\SepoliaVerifier;
+use App\Services\ChainVerifier;
 use Illuminate\Http\Request;
 
 class SupervisorController extends Controller
@@ -45,7 +45,7 @@ class SupervisorController extends Controller
             return response()->json(['success' => false, 'message' => 'Item tidak ditemukan.'], 404);
         }
 
-        $onchain = (new SepoliaVerifier())->getItem($item->order->order_id, (int) $item->item_index);
+        $onchain = (new ChainVerifier())->getItem($item->order->order_id, (int) $item->item_index);
         if (!$onchain) {
             return response()->json(['success' => false, 'message' => 'Item tidak terbaca di kontrak.'], 422);
         }

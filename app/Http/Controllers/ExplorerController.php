@@ -9,7 +9,7 @@ use App\Models\Store;
 use App\Models\User;
 use App\Models\WalletLabel;
 use App\Support\Identity;
-use App\Services\SepoliaVerifier;
+use App\Services\ChainVerifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -95,7 +95,7 @@ class ExplorerController extends Controller
 
         $identity = Identity::resolve($addr);
         // Saldo TLKM via RPC — cache 2 menit per alamat agar tak panggil RPC tiap request.
-        $balance  = Cache::remember("explorer:bal:{$addr}", 120, fn () => (new SepoliaVerifier())->tlkmBalance($addr));
+        $balance  = Cache::remember("explorer:bal:{$addr}", 120, fn () => (new ChainVerifier())->tlkmBalance($addr));
 
         // Sebagai pembeli.
         $user = User::where('wallet_address', $addr)->first();

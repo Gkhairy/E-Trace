@@ -142,7 +142,7 @@ Pendapatan platform = **fee 1% dari nilai transaksi**, ditanggung penjual (dipot
 ## Struktur Ringkas
 
 ```
-app/          Controller, Model, Service (SepoliaVerifier), Job
+app/          Controller, Model, Service (ChainVerifier), Job
 contracts/    Smart contract Solidity (TLKMToken, PaymentGateway) + panduan deploy
 database/     Migrasi & seeder
 resources/    Tampilan Blade + aset frontend

@@ -12,7 +12,7 @@ use App\Models\Friendship;
 use App\Models\User;
 use App\Services\EmbeddedWallet;
 use App\Services\ChainSigner;
-use App\Services\SepoliaVerifier;
+use App\Services\ChainVerifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
@@ -120,7 +120,7 @@ class CommunityWalletController extends Controller
         return redirect('/community/' . $wallet->id)->with('success', 'Dompet komunitas dibuat.');
     }
 
-    public function show(int $id, SepoliaVerifier $verifier, ChainSigner $signer)
+    public function show(int $id, ChainVerifier $verifier, ChainSigner $signer)
     {
         $wallet = CommunityWallet::with(['members.user', 'proposals'])->findOrFail($id);
         $this->authorizeMember($wallet);
