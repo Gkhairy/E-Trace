@@ -243,6 +243,18 @@
     </div>
 </div>
 
+{{-- ===== MODAL PEMILIH WALLET (EIP-6963: deteksi semua wallet browser) ===== --}}
+<div id="walletModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between mb-1">
+            <h3 class="text-lg font-bold text-slate-900">Pilih Wallet</h3>
+            <button type="button" id="walletCancel" class="text-slate-400 hover:text-slate-700"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        </div>
+        <p class="text-xs text-slate-500 mb-4">Wallet browser yang terdeteksi di perangkatmu.</p>
+        <div id="walletList" class="space-y-2"></div>
+    </div>
+</div>
+
 <script>
     const authCard = document.getElementById('authCard');
     function toRegister() { authCard.classList.add('show-signup'); }
@@ -326,15 +338,58 @@
     document.getElementById('pinModal').addEventListener('click', closePinModal);
     document.getElementById('mPin2').addEventListener('keydown', (e) => { if (e.key === 'Enter') confirmPinAndRegister(); });
 
+    // ===== EIP-6963: deteksi SEMUA wallet browser (MetaMask, Coinbase, Rabby, Trust, Brave, OKX, dll) =====
+    const _wallets = new Map(); // key rdns/uuid -> { info, provider }
+    window.addEventListener('eip6963:announceProvider', (e) => {
+        const d = e.detail;
+        if (d && d.info && d.provider) _wallets.set(d.info.rdns || d.info.uuid, d);
+    });
+    window.dispatchEvent(new Event('eip6963:requestProvider'));
+
+    // Daftar wallet terdeteksi (fallback ke window.ethereum lama bila belum ada yang mengumumkan).
+    function detectedWallets() {
+        let list = Array.from(_wallets.values());
+        if (list.length === 0 && window.ethereum) {
+            const eths = window.ethereum.providers || [window.ethereum];
+            list = eths.map((p) => ({ info: { name: p.isMetaMask ? 'MetaMask' : (p.isCoinbaseWallet ? 'Coinbase Wallet' : 'Browser Wallet'), icon: null, rdns: 'injected' }, provider: p }));
+        }
+        return list;
+    }
+
+    // Tampilkan modal pilih wallet; resolve provider terpilih (null bila batal / tak ada).
+    function pickWallet() {
+        const wallets = detectedWallets();
+        if (wallets.length === 0) return Promise.resolve(null);
+        if (wallets.length === 1) return Promise.resolve(wallets[0].provider);
+        return new Promise((resolve) => {
+            const modal = document.getElementById('walletModal');
+            const finish = (prov) => { modal.classList.add('hidden'); modal.onclick = null; resolve(prov); };
+            const box = document.getElementById('walletList');
+            box.innerHTML = wallets.map((w, i) => `
+                <button type="button" data-wi="${i}" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50 transition text-left">
+                    ${w.info.icon ? `<img src="${w.info.icon}" alt="" class="w-7 h-7 rounded-lg shrink-0">` : '<div class="w-7 h-7 rounded-lg bg-slate-100 shrink-0"></div>'}
+                    <span class="text-sm font-semibold text-slate-800">${(w.info.name || 'Wallet').replace(/</g, '&lt;')}</span>
+                </button>`).join('');
+            box.querySelectorAll('[data-wi]').forEach((btn) => { btn.onclick = () => finish(wallets[+btn.dataset.wi].provider); });
+            document.getElementById('walletCancel').onclick = () => finish(null);
+            modal.onclick = (e) => { if (e.target === modal) finish(null); };
+            modal.classList.remove('hidden');
+        });
+    }
+
+    const noWalletMsg = 'Belum ada wallet Web3 terpasang. Pasang MetaMask / Coinbase / Rabby / Trust / OKX dll dulu, lalu coba lagi.';
+
     // ===== REGISTER: connect wallet + tanda tangan kepemilikan =====
     async function connectWallet() {
-        if (!window.ethereum) { notify('MetaMask belum terpasang. Pasang ekstensinya dulu untuk melanjutkan.', 'warn'); return; }
+        if (detectedWallets().length === 0) { notify(noWalletMsg, 'warn'); return; }
         try {
-            const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+            const prov = await pickWallet();
+            if (!prov) return; // batal pilih
+            const accounts = await prov.request({ method: "eth_requestAccounts" });
             const wallet = accounts[0];
             const ts = Math.floor(Date.now() / 1000);
             const message = "E-Trace register\nWallet: " + wallet.toLowerCase() + "\nWaktu: " + ts;
-            const provider = new ethers.BrowserProvider(window.ethereum);
+            const provider = new ethers.BrowserProvider(prov);
             const signer = await provider.getSigner();
             const signature = await signer.signMessage(message);
             document.getElementById("wallet_address").value = wallet;
@@ -343,25 +398,27 @@
             document.getElementById("cwLabel").textContent = "Wallet terhubung ✓";
         } catch (e) {
             notify(e.code === 4001 || e.code === 'ACTION_REJECTED'
-                ? "Kamu membatalkan tanda tangan di MetaMask."
+                ? "Kamu membatalkan tanda tangan di wallet."
                 : ("Gagal menghubungkan wallet: " + (e.message || e)), 'error');
         }
     }
 
-    // ===== LOGIN dengan MetaMask (nonce + tanda tangan) =====
+    // ===== LOGIN dengan Wallet (nonce + tanda tangan) =====
     async function loginWithWallet() {
         const btn = document.getElementById('mmBtn');
         const orig = btn.innerHTML;
         try {
-            if (!window.ethereum) { notify('MetaMask belum terpasang. Pasang ekstensinya dulu untuk melanjutkan.', 'warn'); return; }
+            if (detectedWallets().length === 0) { notify(noWalletMsg, 'warn'); return; }
+            const prov = await pickWallet();
+            if (!prov) return; // batal pilih
             btn.disabled = true; btn.textContent = "Menghubungkan…";
-            const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+            const accounts = await prov.request({ method: "eth_requestAccounts" });
             const wallet = accounts[0];
             const nonceRes = await fetch("/api/get-nonce?wallet=" + wallet);
             const nonceJson = await nonceRes.json();
             if (!nonceJson.nonce) { notify("Wallet ini belum terdaftar. Silakan Daftar dulu.", 'warn'); return; }
             btn.textContent = "Menunggu tanda tangan…";
-            const provider = new ethers.BrowserProvider(window.ethereum);
+            const provider = new ethers.BrowserProvider(prov);
             const signer = await provider.getSigner();
             const signature = await signer.signMessage("Login with wallet\nNonce: " + nonceJson.nonce);
             btn.textContent = "Memverifikasi…";
@@ -377,7 +434,7 @@
             else { notify(loginRes.error || "Login gagal.", 'error'); }
         } catch (e) {
             console.error(e);
-            notify((e.code === 4001 || e.code === 'ACTION_REJECTED') ? "Kamu membatalkan tanda tangan di MetaMask." : (e.message || "Login gagal."), 'error');
+            notify((e.code === 4001 || e.code === 'ACTION_REJECTED') ? "Kamu membatalkan tanda tangan di wallet." : (e.message || "Login gagal."), 'error');
         } finally {
             btn.disabled = false; btn.innerHTML = orig;
         }

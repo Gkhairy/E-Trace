@@ -10,7 +10,7 @@ return [
     'email'          => 'Email',
     'password'       => 'Password',
     'sign_in'        => 'Masuk',
-    'sign_in_mm'     => 'Masuk dengan MetaMask',
+    'sign_in_mm'     => 'Masuk dengan Wallet',
     'no_account'     => 'Belum punya akun?',
     'have_account'   => 'Sudah punya akun?',
     'pin_after_pw'   => 'Setelah password, kamu akan diminta memasukkan PIN.',
@@ -26,7 +26,7 @@ return [
     'create_account' => 'Buat Akun',
     'pin_after'      => 'Setelah ini kamu akan diminta membuat PIN 6 angka.',
     'wallet_auto'    => 'Wallet otomatis',
-    'wallet_mm'      => 'Pakai MetaMask',
+    'wallet_mm'      => 'Wallet (MetaMask, dll)',
 
     // PIN modal
     'pin_make_title' => 'Buat PIN 6 Angka',

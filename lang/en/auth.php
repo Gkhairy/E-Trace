@@ -10,7 +10,7 @@ return [
     'email'          => 'Email',
     'password'       => 'Password',
     'sign_in'        => 'Sign In',
-    'sign_in_mm'     => 'Sign in with MetaMask',
+    'sign_in_mm'     => 'Sign in with Wallet',
     'no_account'     => "Don't have an account?",
     'have_account'   => 'Already have an account?',
     'pin_after_pw'   => 'After your password, you will be asked for your PIN.',
@@ -26,7 +26,7 @@ return [
     'create_account' => 'Create Account',
     'pin_after'      => 'Next you will be asked to create a 6-digit PIN.',
     'wallet_auto'    => 'Auto wallet',
-    'wallet_mm'      => 'Use MetaMask',
+    'wallet_mm'      => 'Wallet (MetaMask, etc.)',
 
     // PIN modal
     'pin_make_title' => 'Create a 6-digit PIN',
