@@ -304,6 +304,8 @@
     const TLKM_ADDRESS            = @json(config('chain.tlkm'));
     const PAYMENT_GATEWAY_ADDRESS = @json(config('chain.gateway'));
     const DONATION_POOL_ADDRESS   = @json(config('chain.donation_pool'));
+    const PAYLATER_ADDRESS        = @json(config('chain.paylater_address'));
+    const PAYLATER_RATE_TLKM_PER_BNB = {{ (int) config('chain.paylater_rate_tlkm_per_bnb', 1000000) }};
     const TOKEN_DECIMALS = 18;
     const PLATFORM_FEE_BPS = {{ (int) config('chain.platform_fee_bps', 100) }}; // 1% — dipotong dari penjual saat dana dilepas
 
@@ -340,6 +342,16 @@
         "function donate(bytes32 campaignId, uint256 amount)",
         "function disburse(bytes32 campaignId, address to)",
         "function balance(bytes32) view returns (uint256)"
+    ];
+    // ABI Paylater (kredit berjaminan on-chain, DEMO).
+    const PAYLATER_ABI = [
+        "function depositCollateral() payable",
+        "function borrow(uint256 amount)",
+        "function repay(uint256 amount)",
+        "function withdrawCollateral(uint256 amount)",
+        "function creditLimit(address u) view returns (uint256)",
+        "function positionOf(address u) view returns (uint256 collateral, uint256 debt, uint256 dueDate, uint256 limit)",
+        "function ownerFundInfo() view returns (uint256)"
     ];
 
     // =========================================================
@@ -550,6 +562,55 @@
         const tx = await token.approve(PAYMENT_GATEWAY_ADDRESS, amount);
         await tx.wait();
         return tx.hash;
+    }
+
+    // ===== PAYLATER (kredit berjaminan on-chain, DEMO) — MetaMask & embedded (PIN) =====
+    // Tiap fungsi mengembalikan tx hash, atau null bila user membatalkan PIN.
+    function _paylaterGuard() { if (!PAYLATER_ADDRESS) throw new Error('Paylater belum dikonfigurasi (PAYLATER_ADDRESS kosong).'); }
+
+    async function depositCollateralPaylater(amountBnb) {
+        _paylaterGuard();
+        if (IS_EMBEDDED) { const pin = await askPin('Deposit Agunan'); if (!pin) return null; return await pinTx('/pin/paylater-deposit', { pin, amount: amountBnb }); }
+        const { signer } = await connectWallet();
+        const c = new ethers.Contract(PAYLATER_ADDRESS, PAYLATER_ABI, signer);
+        const tx = await c.depositCollateral({ value: ethers.parseEther(amountBnb.toString()) });
+        return (await tx.wait()).hash;
+    }
+
+    async function borrowPaylater(amountTlkm) {
+        _paylaterGuard();
+        if (IS_EMBEDDED) { const pin = await askPin('Pinjam TLKM'); if (!pin) return null; return await pinTx('/pin/paylater-borrow', { pin, amount: amountTlkm }); }
+        const { signer } = await connectWallet();
+        const c = new ethers.Contract(PAYLATER_ADDRESS, PAYLATER_ABI, signer);
+        const tx = await c.borrow(ethers.parseUnits(amountTlkm.toString(), TOKEN_DECIMALS));
+        return (await tx.wait()).hash;
+    }
+
+    async function repayPaylater(amountTlkm) {
+        _paylaterGuard();
+        if (IS_EMBEDDED) { const pin = await askPin('Lunasi Paylater'); if (!pin) return null; return await pinTx('/pin/paylater-repay', { pin, amount: amountTlkm }); }
+        const { signer } = await connectWallet();
+        const amount = ethers.parseUnits(amountTlkm.toString(), TOKEN_DECIMALS);
+        const token = new ethers.Contract(TLKM_ADDRESS, ERC20_ABI, signer);
+        const allow = await token.allowance(await signer.getAddress(), PAYLATER_ADDRESS);
+        if (allow < amount) { const atx = await token.approve(PAYLATER_ADDRESS, amount); await atx.wait(); }
+        const c = new ethers.Contract(PAYLATER_ADDRESS, PAYLATER_ABI, signer);
+        const tx = await c.repay(amount);
+        return (await tx.wait()).hash;
+    }
+
+    async function withdrawCollateralPaylater(amountBnb) {
+        _paylaterGuard();
+        if (IS_EMBEDDED) { const pin = await askPin('Tarik Agunan'); if (!pin) return null; return await pinTx('/pin/paylater-withdraw', { pin, amount: amountBnb }); }
+        const { signer } = await connectWallet();
+        const c = new ethers.Contract(PAYLATER_ADDRESS, PAYLATER_ABI, signer);
+        const tx = await c.withdrawCollateral(ethers.parseEther(amountBnb.toString()));
+        return (await tx.wait()).hash;
+    }
+
+    // Catat aksi paylater ke server setelah tx sukses (best-effort).
+    async function recordPaylater(action, amount, txHash) {
+        try { await fetch('/paylater/record', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN }, body: JSON.stringify({ action, amount, tx_hash: txHash }) }); } catch (_) {}
     }
 
     // ===== CHECKOUT MULTI-PENJUAL v3 (escrow terpisah per item) =====

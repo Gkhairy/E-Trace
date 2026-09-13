@@ -16,6 +16,7 @@ return [
     'sc_orders'    => 'Orders',
     'sc_address'   => 'Addresses',
     'sc_community' => 'Community',
+    'sc_paylater' => 'Paylater',
     'sc_store'     => 'My Store',
     'sc_supervisor'=> 'Supervisor',
     'sc_profile'   => 'Profile',

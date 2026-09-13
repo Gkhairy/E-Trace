@@ -170,6 +170,15 @@
                 class="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-3 rounded-xl text-sm font-bold transition shadow-sm">
                 Bayar {{ rtrim(rtrim(number_format($total, 2), '0'), '.') }} TLKM
             </button>
+
+            @if(config('chain.paylater_address'))
+                <button id="payLaterBtn" onclick="checkoutPayWithPaylater()"
+                    class="mt-2 w-full bg-white hover:bg-teal-50 border border-teal-200 text-teal-700 py-3 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    {{ __('paylater.pay_with') }}
+                </button>
+                <p class="text-[11px] text-slate-400 text-center mt-1">Pinjam TLKM dari agunanmu bila saldo kurang, lalu bayar seperti biasa. <span class="text-amber-600">Demo testnet.</span></p>
+            @endif
         </div>
     </div>
 </div>
@@ -243,6 +252,52 @@ document.addEventListener('DOMContentLoaded', () => {
     const checked = document.querySelector('input[name=addr]:checked');
     if (checked && checked.value !== 'new' && checked.dataset.city) updateOngkir(checked.dataset.city);
 });
+
+// Bayar pakai Paylater: pinjam TLKM secukupnya bila saldo kurang, LALU jalankan
+// alur checkout escrow yang SUDAH ADA (tanpa diubah).
+async function checkoutPayWithPaylater() {
+    if (!LINES.length) return;
+    try {
+        const need = parseFloat(TOTAL) || 0;
+        const bal  = parseFloat(await fetchTlkmBalance(ACCOUNT_WALLET)) || 0;
+        const shortfall = Math.max(0, need - bal);
+
+        if (shortfall > 0) {
+            const ok = await uiConfirm({
+                title: @json(__('paylater.pay_with')),
+                message: `Saldo TLKM kurang <b>${shortfall.toLocaleString('id-ID')} TLKM</b>. Pinjam dari Paylater (pakai agunanmu) lalu bayar?`,
+                confirmText: 'Pinjam & bayar'
+            });
+            if (!ok) return;
+
+            txProgress.open('Pinjam via Paylater', ['Meminjam TLKM', 'Menunggu masuk on-chain']);
+            txProgress.active(0);
+            const h = await borrowPaylater(shortfall.toString());
+            if (!h) return txProgress.close(); // batal PIN
+            await recordPaylater('borrow', shortfall.toString(), h);
+            txProgress.done(0);
+
+            // Tunggu TLKM benar-benar masuk sebelum membayar (penting untuk embedded).
+            txProgress.active(1, 'Menunggu saldo TLKM ter-update…');
+            let enough = false;
+            for (let i = 0; i < 20; i++) {
+                const b = parseFloat(await fetchTlkmBalance(ACCOUNT_WALLET)) || 0;
+                if (b + 1e-9 >= need) { enough = true; break; }
+                await new Promise(r => setTimeout(r, 2000));
+            }
+            txProgress.done(1); txProgress.close();
+            if (!enough) {
+                uiAlert({ title: 'Sedang diproses', message: 'Pinjaman TLKM masih diproses jaringan. Tunggu sebentar lalu klik “Bayar” lagi.', type: 'warn' });
+                return;
+            }
+        }
+        // Lanjut alur escrow yang sudah ada.
+        await checkoutPay();
+    } catch (e) {
+        txProgress.close();
+        uiAlert({ title: 'Gagal', message: niceError(e), type: 'error' });
+    }
+}
 
 async function checkoutPay() {
     const sel = selectedAddr();

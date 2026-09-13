@@ -144,6 +144,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/pin/donate',   [\App\Http\Controllers\PinTxController::class, 'donate'])->middleware('throttle:15,1');
     Route::post('/pin/checkout', [\App\Http\Controllers\PinTxController::class, 'checkout'])->middleware('throttle:15,1');
     Route::post('/pin/community',[\App\Http\Controllers\PinTxController::class, 'community'])->middleware('throttle:15,1');
+    Route::post('/pin/paylater-deposit',  [\App\Http\Controllers\PinTxController::class, 'paylaterDeposit'])->middleware('throttle:15,1');
+    Route::post('/pin/paylater-borrow',   [\App\Http\Controllers\PinTxController::class, 'paylaterBorrow'])->middleware('throttle:15,1');
+    Route::post('/pin/paylater-repay',    [\App\Http\Controllers\PinTxController::class, 'paylaterRepay'])->middleware('throttle:15,1');
+    Route::post('/pin/paylater-withdraw', [\App\Http\Controllers\PinTxController::class, 'paylaterWithdraw'])->middleware('throttle:15,1');
+
+    // PAYLATER (kredit berjaminan on-chain, DEMO)
+    Route::get('/paylater', [\App\Http\Controllers\PaylaterController::class, 'index']);
+    Route::post('/paylater/record', [\App\Http\Controllers\PaylaterController::class, 'record'])->middleware('throttle:15,1');
 
     // BAYAR QRIS pakai stablecoin — PROTOTIPE (receipt simulasi, tanpa settlement nyata)
     Route::post('/qris/pay', [\App\Http\Controllers\QrisController::class, 'pay'])->middleware('throttle:15,1');

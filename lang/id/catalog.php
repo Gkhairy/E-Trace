@@ -16,6 +16,7 @@ return [
     'sc_orders'    => 'Order',
     'sc_address'   => 'Alamat',
     'sc_community' => 'Komunitas',
+    'sc_paylater' => 'Paylater',
     'sc_store'     => 'Toko Saya',
     'sc_supervisor'=> 'Pengawas',
     'sc_profile'   => 'Profil',

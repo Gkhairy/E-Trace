@@ -27,6 +27,12 @@ class PinTxController extends Controller
     private const GATEWAY_ABI = [
         ['inputs' => [['name' => 'sellers', 'type' => 'address[]'], ['name' => 'amounts', 'type' => 'uint256[]'], ['name' => 'productIds', 'type' => 'string[]'], ['name' => 'orderId', 'type' => 'string']], 'name' => 'payCart', 'outputs' => [], 'type' => 'function'],
     ];
+    private const PAYLATER_ABI = [
+        ['inputs' => [], 'name' => 'depositCollateral', 'outputs' => [], 'stateMutability' => 'payable', 'type' => 'function'],
+        ['inputs' => [['name' => 'amount', 'type' => 'uint256']], 'name' => 'borrow', 'outputs' => [], 'type' => 'function'],
+        ['inputs' => [['name' => 'amount', 'type' => 'uint256']], 'name' => 'repay', 'outputs' => [], 'type' => 'function'],
+        ['inputs' => [['name' => 'amount', 'type' => 'uint256']], 'name' => 'withdrawCollateral', 'outputs' => [], 'type' => 'function'],
+    ];
 
     /** Verifikasi PIN + dekripsi private key. Return hex atau lempar (JSON 422). */
     private function unlock(string $pin): string
@@ -114,6 +120,52 @@ class PinTxController extends Controller
         $hash = $signer->sendContractCall($priv, $gateway, self::GATEWAY_ABI, 'payCart',
             [$data['sellers'], $amountsWei, $data['productIds'], $data['order_id']]);
 
+        return response()->json(['success' => true, 'tx_hash' => $hash]);
+    }
+
+    /** Paylater: deposit agunan tBNB (native value). Return tx hash. */
+    public function paylaterDeposit(Request $req, ChainSigner $signer)
+    {
+        $data = $req->validate(['pin' => 'required|digits:6', 'amount' => 'required|numeric|min:0.000001']);
+        $paylater = config('chain.paylater_address');
+        abort_unless($paylater, 422, 'Paylater belum dikonfigurasi.');
+        $priv = $this->unlock($data['pin']);
+        $hash = $signer->sendContractCall($priv, $paylater, self::PAYLATER_ABI, 'depositCollateral', [], $signer->toWeiHex($data['amount']));
+        return response()->json(['success' => true, 'tx_hash' => $hash]);
+    }
+
+    /** Paylater: pinjam TLKM dalam batas limit. Return tx hash. */
+    public function paylaterBorrow(Request $req, ChainSigner $signer)
+    {
+        $data = $req->validate(['pin' => 'required|digits:6', 'amount' => 'required|numeric|min:0.000001']);
+        $paylater = config('chain.paylater_address');
+        abort_unless($paylater, 422, 'Paylater belum dikonfigurasi.');
+        $priv = $this->unlock($data['pin']);
+        $hash = $signer->sendContractCall($priv, $paylater, self::PAYLATER_ABI, 'borrow', [$signer->toWei($data['amount'])]);
+        return response()->json(['success' => true, 'tx_hash' => $hash]);
+    }
+
+    /** Paylater: lunasi utang TLKM (approve kontrak + repay). Return tx hash. */
+    public function paylaterRepay(Request $req, ChainSigner $signer)
+    {
+        $data = $req->validate(['pin' => 'required|digits:6', 'amount' => 'required|numeric|min:0.000001']);
+        $paylater = config('chain.paylater_address');
+        abort_unless($paylater, 422, 'Paylater belum dikonfigurasi.');
+        $priv = $this->unlock($data['pin']);
+        $wei  = $signer->toWei($data['amount']);
+        $this->ensureAllowance($signer, $priv, $paylater, $wei); // repay = pull TLKM
+        $hash = $signer->sendContractCall($priv, $paylater, self::PAYLATER_ABI, 'repay', [$wei]);
+        return response()->json(['success' => true, 'tx_hash' => $hash]);
+    }
+
+    /** Paylater: tarik agunan tBNB (hanya jika utang 0). Return tx hash. */
+    public function paylaterWithdraw(Request $req, ChainSigner $signer)
+    {
+        $data = $req->validate(['pin' => 'required|digits:6', 'amount' => 'required|numeric|min:0.000001']);
+        $paylater = config('chain.paylater_address');
+        abort_unless($paylater, 422, 'Paylater belum dikonfigurasi.');
+        $priv = $this->unlock($data['pin']);
+        $hash = $signer->sendContractCall($priv, $paylater, self::PAYLATER_ABI, 'withdrawCollateral', [$signer->toWei($data['amount'])]);
         return response()->json(['success' => true, 'tx_hash' => $hash]);
     }
 

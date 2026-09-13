@@ -22,6 +22,11 @@ return [
     // Dompet komunitas on-chain (opsional; alur custodial saat ini tak memakainya).
     'community_wallet' => env('COMMUNITY_WALLET_ADDRESS', '0x0000000000000000000000000000000000000000'),
 
+    // Paylater (kredit berjaminan on-chain, DEMO testnet). Isi setelah deploy TlkmPaylater.sol.
+    'paylater_address' => env('PAYLATER_ADDRESS'),
+    // Rate DEMO untuk estimasi limit di UI: TLKM per 1 tBNB (samakan dgn `rate` kontrak / 1e18).
+    'paylater_rate_tlkm_per_bnb' => (int) env('PAYLATER_RATE_TLKM_PER_BNB', 1000000),
+
     // Konfirmasi: 1 = terdeteksi, >= paid_confirmations dianggap 'paid',
     // >= finalized_confirmations dianggap final (catatan audit).
     // H5: di TESTNET cukup 1-2 konfirmasi agar UX tidak lama (bisa dinaikkan untuk mainnet).
