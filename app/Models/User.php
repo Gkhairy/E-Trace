@@ -120,6 +120,16 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'wallet_enc',
+        'wallet_salt',
+        'wallet_iv',
+        'wallet_tag',
+        'pin_hash',
+        'otp_hash',
+        'nonce',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+        'phone_hash',
     ];
 
     /**

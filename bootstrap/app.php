@@ -26,8 +26,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Paksa HTTPS (aktif di production; mati saat testing http lokal).
         $middleware->prepend(\App\Http\Middleware\ForceHttps::class);
 
-        // Set bahasa (id/en) dari pilihan user pada tiap request web.
+        // Header keamanan pada setiap response web + set bahasa (id/en) per request.
         $middleware->web(append: [
+            \App\Http\Middleware\SecurityHeaders::class,
             \App\Http\Middleware\SetLocale::class,
         ]);
     })
