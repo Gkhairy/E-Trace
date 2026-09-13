@@ -130,6 +130,8 @@ class User extends Authenticatable
         'two_factor_secret',
         'two_factor_recovery_codes',
         'phone_hash',
+        'phone',   // PII terenkripsi — jangan ter-serialize (dekripsi saat toArray)
+        'email',   // PII — hanya field publik (name/public_name/wallet_address) yang boleh tampil
     ];
 
     /**
