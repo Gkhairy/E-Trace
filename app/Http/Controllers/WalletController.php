@@ -90,6 +90,7 @@ class WalletController extends Controller
                 'has_debt'   => $pos ? bccomp($pos['due_amount'], '0') > 0 : false,
                 'rate'       => (int) config('chain.paylater_rate_tlkm_per_bnb', 1000000),
                 'interest_bps' => (int) config('chain.paylater_interest_bps', 300),
+                'contract'   => $pv->address(), // alamat kontrak (isi TLKM ke sini utk likuiditas)
             ];
         }
         $paylaterHistory = PaylaterLoan::where('user_id', auth()->id())->latest()->limit(20)->get();

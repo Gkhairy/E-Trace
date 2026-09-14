@@ -112,14 +112,24 @@
                 </div>
             </div>
 
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-4 text-xs text-slate-500">
-                <span>{{ __('paylater.liquidity') }}: <b class="text-slate-700">{{ $paylater['liquidity'] !== null ? $paylater['liquidity'].' TLKM' : '—' }}</b></span>
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2 text-xs text-slate-500">
+                <span>{{ __('paylater.liquidity') }}: <b class="{{ ($paylater['liquidity'] ?? '0') === '0' ? 'text-amber-600' : 'text-slate-700' }}">{{ $paylater['liquidity'] !== null ? $paylater['liquidity'].' TLKM' : '—' }}</b></span>
                 @if($paylater['due_date'])
                     <span>{{ __('paylater.due') }}: <b class="{{ $paylater['has_debt'] && $paylater['due_date']->isPast() ? 'text-red-600' : 'text-slate-700' }}">{{ $paylater['due_date']->format('d M Y H:i') }}</b>
                         @if($paylater['has_debt'])<span class="text-slate-400">({{ $paylater['due_date']->diffForHumans() }})</span>@endif
                     </span>
                 @endif
             </div>
+
+            {{-- Alamat kontrak: KIRIM TLKM ke sini untuk mengisi likuiditas (yang dipinjamkan) --}}
+            @if($paylater['contract'])
+                <div class="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-4 text-[11px] text-amber-800 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span>💧 <b>Likuiditas</b> = saldo TLKM <b>milik kontrak</b> (bukan wallet-mu). Kirim TLKM ke alamat kontrak untuk mengisinya:</span>
+                    <code class="font-mono bg-white/70 px-1.5 py-0.5 rounded">{{ $paylater['contract'] }}</code>
+                    <button type="button" onclick="plCopyContract()" class="underline hover:text-amber-900">salin</button>
+                    <a href="{{ config('chain.explorer_url') }}/address/{{ $paylater['contract'] }}" target="_blank" rel="noopener" class="underline hover:text-amber-900">explorer ↗</a>
+                </div>
+            @endif
 
             {{-- Deposit agunan + estimasi --}}
             <div class="flex flex-col sm:flex-row gap-2 mb-1">
@@ -197,6 +207,11 @@
 const PL_INTEREST_BPS = (typeof PAYLATER_INTEREST_BPS !== 'undefined') ? PAYLATER_INTEREST_BPS : 300;
 const PL_DUE_RAW = @json($paylater['due_amount_raw'] ?? '0'); // kewajiban eksak (TLKM)
 const PL_HAS_DEBT = @json($paylater['has_debt'] ?? false);
+const PL_CONTRACT = @json($paylater['contract'] ?? null);
+function plCopyContract() {
+    if (!PL_CONTRACT) return;
+    navigator.clipboard?.writeText(PL_CONTRACT).then(() => showToast('Alamat kontrak Paylater disalin.', 'success')).catch(() => showToast('Gagal menyalin.', 'warn'));
+}
 
 function plEstLimit() {
     const el = document.getElementById('plDepAmt'); if (!el) return;
