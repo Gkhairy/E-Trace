@@ -50,6 +50,47 @@
         .anim-fade  { animation: fadeIn .18s ease-out; }
         .anim-slide { animation: slideUp .22s cubic-bezier(.16,1,.3,1); }
         .anim-toast { animation: toastIn .25s cubic-bezier(.16,1,.3,1); }
+
+        /* ============ LENDING DESK (halaman Dompet) — tema terang ============ */
+        .ld-num{ font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
+        .ld-nisbah{ font-variant-numeric:tabular-nums; font-weight:800; color:#16a34a; }
+
+        /* --- custom animated term dropdown (light) --- */
+        .ld-select{ position:relative; }
+        .ld-trigger{
+            display:flex; align-items:center; gap:.6rem; width:100%;
+            background:#fff; border:1px solid #cbd5e1; color:#0f172a;
+            border-radius:12px; padding:.6rem .85rem; cursor:pointer; transition:border-color .15s, box-shadow .15s;
+        }
+        .ld-trigger:hover{ border-color:#86efac; }
+        .ld-select[data-open="true"] .ld-trigger{ border-color:#22c55e; box-shadow:0 0 0 3px rgba(34,197,94,.15); }
+        .ld-chev{ margin-left:auto; transition:transform .28s cubic-bezier(.16,1,.3,1); color:#94a3b8; }
+        .ld-select[data-open="true"] .ld-chev{ transform:rotate(180deg); }
+        .ld-menu{
+            position:absolute; z-index:30; left:0; right:0; bottom:calc(100% + 8px);
+            background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:.35rem;
+            box-shadow:0 20px 40px -16px rgba(15,23,42,.28);
+            opacity:0; transform:translateY(8px) scale(.97); transform-origin:bottom center; pointer-events:none;
+            transition:opacity .16s ease, transform .24s cubic-bezier(.16,1,.3,1);
+        }
+        .ld-select[data-open="true"] .ld-menu{ opacity:1; transform:translateY(0) scale(1); pointer-events:auto; }
+        .ld-opt{
+            display:flex; align-items:center; gap:.7rem; padding:.55rem .65rem; border-radius:10px; cursor:pointer;
+            opacity:0; transform:translateY(6px); transition:background .15s;
+        }
+        .ld-select[data-open="true"] .ld-opt{ animation:ldOptIn .32s cubic-bezier(.16,1,.3,1) forwards; }
+        .ld-select[data-open="true"] .ld-opt:nth-child(1){ animation-delay:.03s; }
+        .ld-select[data-open="true"] .ld-opt:nth-child(2){ animation-delay:.07s; }
+        .ld-select[data-open="true"] .ld-opt:nth-child(3){ animation-delay:.11s; }
+        @keyframes ldOptIn{ to{ opacity:1; transform:translateY(0); } }
+        .ld-opt:hover{ background:#f1f5f9; }
+        .ld-opt[aria-selected="true"]{ background:#f0fdf4; }
+        .ld-opt-check{ margin-left:auto; color:#16a34a; opacity:0; transition:opacity .15s; }
+        .ld-opt[aria-selected="true"] .ld-opt-check{ opacity:1; }
+        @media (prefers-reduced-motion: reduce){
+            .ld-chev,.ld-menu,.ld-opt{ transition:none; }
+            .ld-select[data-open="true"] .ld-opt{ animation:none; opacity:1; transform:none; }
+        }
     </style>
 </head>
 

@@ -76,173 +76,209 @@
     </div>
 </div>
 
-{{-- ===== PAYLATER (kredit berjaminan on-chain, DEMO) ===== --}}
-<div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mt-6">
-    <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
-        <span class="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-        </span>
-        <h2 class="font-bold text-slate-900">{{ __('paylater.title') }}</h2>
-        <span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-semibold">DEMO · belum diaudit</span>
+{{-- ===== LENDING DESK (kredit berjaminan on-chain, DEMO) ===== --}}
+@php
+    $poolLiq = (float) str_replace(',', '', $paylater['supply']['liquidity'] ?? '0');
+    $sup = $paylater['supply'] ?? []; $terms = $sup['terms'] ?? [];
+    $intPct = rtrim(rtrim(number_format($paylater['interest_bps']/100, 2), '0'), '.');
+@endphp
+<section class="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden mt-6">
+    {{-- Header --}}
+    <div class="px-5 sm:px-7 py-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-slate-100">
+        <div class="flex items-center gap-3 min-w-0">
+            <span class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br from-amber-50 to-green-50 border border-slate-200">
+                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            </span>
+            <div class="min-w-0">
+                <h2 class="text-lg font-extrabold text-slate-900 leading-tight">Lending Desk</h2>
+                <p class="text-xs text-slate-500">Pinjam TLKM dengan kolateral tBNB, atau supply likuiditas &amp; panen bagi hasil.</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 ml-auto">
+            <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>BNB Chain Testnet
+            </span>
+            <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 border border-slate-200">DEMO · unaudited</span>
+        </div>
     </div>
 
     @if(!($paylater['configured'] ?? false))
-        <p class="px-5 py-8 text-center text-sm text-slate-400">{{ __('paylater.not_configured') }}</p>
+        <p class="px-6 py-10 text-center text-sm text-slate-400">{{ __('paylater.not_configured') }}</p>
     @else
-        <div class="p-5">
-            <p class="text-xs text-slate-500 mb-4">{{ __('paylater.subtitle') }} <span class="text-amber-600">{{ __('paylater.interest_note', ['pct' => rtrim(rtrim(number_format($paylater['interest_bps']/100, 2), '0'), '.')]) }}</span></p>
-
-            {{-- Ringkasan posisi (dibaca dari chain) --}}
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
-                    <p class="text-[11px] text-slate-500">{{ __('paylater.collateral') }}</p>
-                    <p class="text-base font-bold text-slate-900">{{ $paylater['collateral'] }} <span class="text-[11px] text-slate-400">tBNB</span></p>
-                </div>
-                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
-                    <p class="text-[11px] text-slate-500">{{ __('paylater.limit') }}</p>
-                    <p class="text-base font-bold text-blue-600">{{ $paylater['limit'] }} <span class="text-[11px] text-slate-400">TLKM</span></p>
-                </div>
-                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
-                    <p class="text-[11px] text-slate-500">{{ __('paylater.due_amount') }}</p>
-                    <p class="text-base font-bold {{ $paylater['has_debt'] ? 'text-red-600' : 'text-slate-900' }}">{{ $paylater['due_amount'] }} <span class="text-[11px] text-slate-400">TLKM</span></p>
-                </div>
-                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
-                    <p class="text-[11px] text-slate-500">{{ __('paylater.available') }}</p>
-                    <p class="text-base font-bold text-green-600">{{ $paylater['available'] }} <span class="text-[11px] text-slate-400">TLKM</span></p>
-                </div>
-            </div>
-
-            @php $poolLiq = (float) str_replace(',', '', $paylater['supply']['liquidity'] ?? '0'); @endphp
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-2 text-xs text-slate-500">
-                <span>Status kredit:
+        <div class="grid lg:grid-cols-2">
+            {{-- ============ BORROW ============ --}}
+            <div class="p-5 sm:p-7">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="flex items-center gap-2 text-sm font-bold text-slate-900"><span class="w-2 h-2 rounded-full bg-amber-500"></span>Pinjam <span class="font-medium text-slate-400 text-xs">· Borrow</span></span>
                     @if($poolLiq > 0)
-                        <b class="text-green-600">● Aktif</b> <span class="text-slate-400">— pool didanai penyuplai</span>
+                        <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-green-600"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Pool aktif</span>
                     @else
-                        <b class="text-amber-600">○ Menunggu dana</b> <span class="text-slate-400">— belum ada penyuplai</span>
+                        <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-600"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>Pool kosong</span>
                     @endif
-                </span>
+                </div>
+
+                {{-- Fokus: sisa limit --}}
+                <p class="text-xs text-slate-500 mb-1">{{ __('paylater.available') }} — siap dipinjam</p>
+                <p class="ld-num text-4xl font-extrabold text-slate-900 mb-4">{{ $paylater['available'] }} <span class="text-base font-bold text-slate-400">TLKM</span></p>
+
+                {{-- Ringkasan posisi --}}
+                <div class="grid grid-cols-3 gap-2.5 mb-5">
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                        <p class="text-[11px] text-slate-500">{{ __('paylater.collateral') }}</p>
+                        <p class="ld-num text-sm font-bold text-slate-900 mt-0.5">{{ $paylater['collateral'] }} <span class="text-[10px] text-slate-400">tBNB</span></p>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                        <p class="text-[11px] text-slate-500">{{ __('paylater.limit') }}</p>
+                        <p class="ld-num text-sm font-bold text-slate-900 mt-0.5">{{ $paylater['limit'] }} <span class="text-[10px] text-slate-400">TLKM</span></p>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                        <p class="text-[11px] text-slate-500">{{ __('paylater.due_amount') }}</p>
+                        <p class="ld-num text-sm font-bold mt-0.5 {{ $paylater['has_debt'] ? 'text-amber-600' : 'text-slate-900' }}">{{ $paylater['due_amount'] }} <span class="text-[10px] text-slate-400">TLKM</span></p>
+                    </div>
+                </div>
+
                 @if($paylater['due_date'])
-                    <span>{{ __('paylater.due') }}: <b class="{{ $paylater['has_debt'] && $paylater['due_date']->isPast() ? 'text-red-600' : 'text-slate-700' }}">{{ $paylater['due_date']->format('d M Y H:i') }}</b>
+                    <p class="text-[11px] text-slate-500 mb-4">{{ __('paylater.due') }}:
+                        <span class="font-semibold {{ $paylater['has_debt'] && $paylater['due_date']->isPast() ? 'text-amber-600' : 'text-slate-700' }}">{{ $paylater['due_date']->format('d M Y H:i') }}</span>
                         @if($paylater['has_debt'])<span class="text-slate-400">({{ $paylater['due_date']->diffForHumans() }})</span>@endif
-                    </span>
+                    </p>
                 @endif
+
+                {{-- Setor kolateral --}}
+                <label class="text-[11px] font-semibold text-slate-500">Setor kolateral</label>
+                <div class="flex gap-2 mt-1.5 mb-1">
+                    <div class="relative flex-1">
+                        <input id="plDepAmt" type="number" min="0" step="any" oninput="plEstLimit()" placeholder="0.00" class="w-full px-4 py-2.5 pr-14 rounded-xl border border-slate-300 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 outline-none text-sm">
+                        <span class="absolute right-4 top-2.5 text-sm font-medium text-slate-400">tBNB</span>
+                    </div>
+                    <button onclick="doPaylaterDeposit()" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-semibold transition shrink-0">Setor</button>
+                </div>
+                <p id="plEst" class="text-[11px] text-slate-400 mb-5">{{ __('paylater.est_hint') }}</p>
+
+                {{-- Aksi --}}
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="doPaylaterBorrow()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition">{{ __('paylater.borrow_btn') }}</button>
+                    <button onclick="doPaylaterRepayFull()" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed" {{ $paylater['has_debt'] ? '' : 'disabled' }}>{{ __('paylater.repay_btn') }}@if($paylater['has_debt']) <span class="text-slate-400">({{ $paylater['due_amount'] }})</span>@endif</button>
+                    <button onclick="doPaylaterWithdraw()" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-semibold transition">{{ __('paylater.withdraw_btn') }}</button>
+                </div>
             </div>
 
-            {{-- Info model dua-sisi + alamat kontrak --}}
-            @if($paylater['contract'])
-                <div class="bg-teal-50 border border-teal-200 rounded-xl px-3 py-2 mb-4 text-[11px] text-teal-800 flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span>ℹ <b>Lending dua-sisi</b>: pinjam dari dana <b>penyuplai</b> (agunan tBNB), bunga peminjam dibagi ke penyuplai sesuai nisbah. Kontrak:</span>
-                    <code class="font-mono bg-white/70 px-1.5 py-0.5 rounded">{{ $paylater['contract'] }}</code>
-                    <button type="button" onclick="plCopyContract()" class="underline hover:text-teal-900">salin</button>
-                    <a href="{{ config('chain.explorer_url') }}/address/{{ $paylater['contract'] }}" target="_blank" rel="noopener" class="underline hover:text-teal-900">explorer ↗</a>
+            {{-- ============ SUPPLY / EARN ============ --}}
+            <div class="p-5 sm:p-7 border-t lg:border-t-0 lg:border-l border-slate-100">
+                <div class="flex items-center justify-between gap-2 mb-4">
+                    <span class="flex items-center gap-2 text-sm font-bold text-slate-900"><span class="w-2 h-2 rounded-full bg-green-500"></span>Supply <span class="font-medium text-slate-400 text-xs">· Earn</span></span>
+                    <span class="text-[11px] text-slate-400 text-right">Bunga peminjam {{ $intPct }}% → bagi hasil</span>
                 </div>
-            @endif
 
-            {{-- Deposit agunan + estimasi --}}
-            <div class="flex flex-col sm:flex-row gap-2 mb-1">
-                <div class="relative flex-1">
-                    <input id="plDepAmt" type="number" min="0" step="any" oninput="plEstLimit()" placeholder="0.00"
-                        class="w-full px-4 py-2.5 pr-16 rounded-xl border border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none text-sm">
-                    <span class="absolute right-4 top-2.5 text-sm text-slate-400 font-medium">tBNB</span>
+                {{-- Fokus: TVL + utilisasi --}}
+                <p class="text-xs text-slate-500 mb-1">Likuiditas pool (TVL)</p>
+                <div class="flex items-end gap-3 mb-4">
+                    <p class="ld-num text-4xl font-extrabold text-slate-900">{{ $sup['liquidity'] ?? '0' }} <span class="text-base font-bold text-slate-400">TLKM</span></p>
+                    <span class="text-[11px] font-medium mb-1.5 px-2 py-0.5 rounded-full bg-green-50 text-green-700">Utilisasi {{ $sup['util'] !== null ? $sup['util'].'%' : '—' }}</span>
                 </div>
-                <button onclick="doPaylaterDeposit()" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition">{{ __('paylater.deposit_btn') }}</button>
-            </div>
-            <p id="plEst" class="text-xs text-slate-400 mb-4">{{ __('paylater.est_hint') }}</p>
-
-            <div class="flex flex-wrap gap-2">
-                <button onclick="doPaylaterBorrow()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition">{{ __('paylater.borrow_btn') }}</button>
-                <button onclick="doPaylaterRepayFull()" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed" {{ $paylater['has_debt'] ? '' : 'disabled' }}>{{ __('paylater.repay_btn') }}@if($paylater['has_debt']) <span class="text-slate-400">({{ $paylater['due_amount'] }})</span>@endif</button>
-                <button onclick="doPaylaterWithdraw()" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-semibold transition">{{ __('paylater.withdraw_btn') }}</button>
-            </div>
-
-            {{-- ===== SISI PENYUPLAI (Danai / Earn) — deposit berjangka + bagi hasil ===== --}}
-            @php $sup = $paylater['supply'] ?? []; $terms = $sup['terms'] ?? []; @endphp
-            <div class="mt-6 pt-5 border-t border-slate-100">
-                <div class="flex items-center gap-2 mb-1">
-                    <span class="w-7 h-7 rounded-lg bg-green-50 text-green-600 flex items-center justify-center shrink-0">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    </span>
-                    <h3 class="font-bold text-slate-900 text-sm">Danai Pool <span class="font-normal text-slate-400">— bagi hasil dari bunga peminjam</span></h3>
-                </div>
-                <p class="text-xs text-slate-500 mb-3">Setor TLKM &amp; pilih jangka. Makin lama dikunci, makin besar <b>nisbah bagi hasil</b>-mu dari bunga peminjam ({{ rtrim(rtrim(number_format($paylater['interest_bps']/100, 2), '0'), '.') }}% per pinjaman).</p>
-
-                {{-- Statistik pool --}}
-                <div class="grid grid-cols-3 gap-3 mb-4">
+                <div class="grid grid-cols-2 gap-2.5 mb-5">
                     <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
-                        <p class="text-[11px] text-slate-500">Likuiditas pool</p>
-                        <p class="text-sm font-bold text-slate-900">{{ $sup['liquidity'] ?? '0' }} <span class="text-[10px] text-slate-400">TLKM</span></p>
+                        <p class="text-[11px] text-slate-500">Dipinjam (borrows)</p>
+                        <p class="ld-num text-sm font-bold text-slate-900 mt-0.5">{{ $sup['borrows'] ?? '0' }} <span class="text-[10px] text-slate-400">TLKM</span></p>
                     </div>
                     <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
-                        <p class="text-[11px] text-slate-500">Utilisasi</p>
-                        <p class="text-sm font-bold text-slate-900">{{ $sup['util'] !== null ? $sup['util'].'%' : '—' }}</p>
-                        <p class="text-[10px] text-slate-400">dipinjam {{ $sup['borrows'] ?? '0' }}</p>
-                    </div>
-                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
-                        <p class="text-[11px] text-slate-500">Pendapatan platform</p>
-                        <p class="text-sm font-bold text-slate-900">{{ $sup['reserve'] ?? '0' }} <span class="text-[10px] text-slate-400">TLKM</span></p>
+                        <p class="text-[11px] text-slate-500">Reserve protokol</p>
+                        <p class="ld-num text-sm font-bold text-slate-900 mt-0.5">{{ $sup['reserve'] ?? '0' }} <span class="text-[10px] text-slate-400">TLKM</span></p>
                     </div>
                 </div>
 
-                {{-- Kartu per jangka: nisbah + posisiku + tarik --}}
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                {{-- Baris jangka --}}
+                <div class="space-y-2.5 mb-5">
                     @foreach($terms as $t => $tm)
-                        <div class="border border-slate-200 rounded-xl p-3 flex flex-col">
-                            <div class="flex items-center justify-between mb-1">
-                                <p class="text-sm font-bold text-slate-900">{{ $tm['label'] }}</p>
-                                <span class="text-[11px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200 font-semibold">bagi hasil {{ $tm['nisbah'] ?? '—' }}%</span>
-                            </div>
-                            <p class="text-[11px] text-slate-400 mb-2">{{ $t == 0 ? 'Tarik kapan saja' : 'Dikunci '.$tm['lock_days'].' hari' }}</p>
-                            @if($tm['has_pos'])
-                                <div class="text-xs text-slate-600 space-y-0.5 mb-2">
-                                    <div class="flex justify-between"><span>Danaku</span><b class="text-green-700">{{ $tm['value'] }} TLKM</b></div>
-                                    <div class="flex justify-between"><span>Untung</span><b class="text-emerald-600">+{{ $tm['earned'] }}</b></div>
-                                    @if($tm['maturity'])
-                                        <div class="flex justify-between"><span>Jatuh tempo</span><b class="{{ $tm['matured'] ? 'text-green-600' : 'text-slate-700' }}">{{ $tm['matured'] ? 'Sudah' : $tm['maturity']->diffForHumans() }}</b></div>
-                                    @endif
+                        <div class="border border-slate-200 rounded-xl p-3.5 transition hover:border-green-300">
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-bold text-slate-900">{{ $tm['label'] }}</p>
+                                    <p class="text-[11px] text-slate-500">{{ $t == 0 ? 'Tarik kapan saja' : 'Terkunci '.$tm['lock_days'].' hari' }}</p>
                                 </div>
-                                <button onclick="doPaylaterWithdrawSupply({{ $t }})" class="mt-auto text-xs bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3 py-2 rounded-lg font-semibold transition">
-                                    {{ $t == 0 || $tm['matured'] ? 'Tarik dana' : 'Tarik (pokok saja)' }}
-                                </button>
-                            @else
-                                <p class="mt-auto text-[11px] text-slate-400">Belum ada dana di jangka ini.</p>
+                                <div class="text-right shrink-0">
+                                    <p class="ld-nisbah text-lg leading-none">{{ $tm['nisbah'] ?? '—' }}%</p>
+                                    <p class="text-[10px] text-slate-400">bagi hasil</p>
+                                </div>
+                            </div>
+                            @if($tm['has_pos'])
+                                <div class="mt-3 pt-3 flex items-center justify-between gap-3 border-t border-slate-100">
+                                    <div class="text-[11px] text-slate-500 leading-tight">
+                                        <span class="ld-num font-bold text-slate-900">{{ $tm['value'] }} TLKM</span>
+                                        <span class="text-green-600"> · +{{ $tm['earned'] }} yield</span>
+                                        @if($tm['maturity'])<br><span>{{ $tm['matured'] ? 'Jatuh tempo: sudah' : 'Jatuh tempo '.$tm['maturity']->diffForHumans() }}</span>@endif
+                                    </div>
+                                    <button onclick="doPaylaterWithdrawSupply({{ $t }})" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-semibold px-3 py-1.5 rounded-lg transition shrink-0">
+                                        {{ $t == 0 || $tm['matured'] ? 'Tarik' : 'Tarik pokok' }}
+                                    </button>
+                                </div>
                             @endif
                         </div>
                     @endforeach
                 </div>
 
-                {{-- Form danai: jumlah + pilih jangka --}}
-                <div class="flex flex-col sm:flex-row gap-2">
-                    <div class="relative flex-1">
-                        <input id="plSupAmt" type="number" min="0" step="any" placeholder="0.00"
-                            class="w-full px-4 py-2.5 pr-16 rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none text-sm">
-                        <span class="absolute right-4 top-2.5 text-sm text-slate-400 font-medium">TLKM</span>
+                {{-- Form supply: jumlah + dropdown animasi + tombol --}}
+                <label class="text-[11px] font-semibold text-slate-500">Supply likuiditas</label>
+                <div class="mt-1.5 space-y-2">
+                    <div class="relative">
+                        <input id="plSupAmt" type="number" min="0" step="any" placeholder="0.00" class="w-full px-4 py-2.5 pr-14 rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none text-sm">
+                        <span class="absolute right-4 top-2.5 text-sm font-medium text-slate-400">TLKM</span>
                     </div>
-                    <select id="plSupTerm" class="px-3 py-2.5 rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none text-sm bg-white">
-                        @foreach($terms as $t => $tm)
-                            <option value="{{ $t }}">{{ $tm['label'] }} · {{ $tm['nisbah'] ?? '—' }}%</option>
-                        @endforeach
-                    </select>
-                    <button onclick="doPaylaterSupply()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition">Danai</button>
+                    <div class="flex gap-2">
+                        {{-- custom animated term dropdown --}}
+                        <div class="ld-select flex-1" id="plTermSelect" data-open="false">
+                            <input type="hidden" id="plSupTerm" value="0">
+                            <button type="button" class="ld-trigger text-sm" id="plTermBtn" aria-haspopup="listbox" aria-expanded="false" onclick="plTermToggle(event)">
+                                <span class="text-left leading-tight min-w-0">
+                                    <span id="plTermLabel" class="font-semibold text-slate-900 block truncate">{{ $terms[0]['label'] ?? 'Fleksibel' }}</span>
+                                    <span id="plTermSub" class="text-[11px] text-slate-500">bagi hasil {{ $terms[0]['nisbah'] ?? '—' }}%</span>
+                                </span>
+                                <svg class="ld-chev w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <ul class="ld-menu" id="plTermMenu" role="listbox" aria-label="Pilih jangka supply">
+                                @foreach($terms as $t => $tm)
+                                    <li class="ld-opt" role="option" data-val="{{ $t }}" data-label="{{ $tm['label'] }}" data-sub="bagi hasil {{ $tm['nisbah'] ?? '—' }}%" aria-selected="{{ $t == 0 ? 'true' : 'false' }}" onclick="plTermPick(this)">
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-semibold text-slate-900 leading-tight">{{ $tm['label'] }}</p>
+                                            <p class="text-[11px] text-slate-500">{{ $t == 0 ? 'Tarik kapan saja' : 'Kunci '.$tm['lock_days'].' hari' }}</p>
+                                        </div>
+                                        <span class="ld-nisbah text-sm ml-auto">{{ $tm['nisbah'] ?? '—' }}%</span>
+                                        <svg class="ld-opt-check w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" d="M5 13l4 4L19 7"/></svg>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                        <button onclick="doPaylaterSupply()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition shrink-0">Supply</button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        {{-- Riwayat paylater --}}
+        {{-- Kontrak + riwayat --}}
+        @if($paylater['contract'])
+            <div class="px-5 sm:px-7 py-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 border-t border-slate-100 bg-slate-50/60">
+                <span>Kontrak lending dua-sisi:</span>
+                <code class="font-mono px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-700">{{ $paylater['contract'] }}</code>
+                <button type="button" onclick="plCopyContract()" class="text-slate-500 hover:text-slate-800 underline">salin</button>
+                <a href="{{ config('chain.explorer_url') }}/address/{{ $paylater['contract'] }}" target="_blank" rel="noopener" class="text-slate-500 hover:text-slate-800 underline">explorer ↗</a>
+            </div>
+        @endif
+
         @if($paylaterHistory->isNotEmpty())
             @php $plLabels = ['deposit'=>__('paylater.act_deposit'),'borrow'=>__('paylater.act_borrow'),'repay'=>__('paylater.act_repay'),'withdraw'=>__('paylater.act_withdraw'),'seize'=>__('paylater.act_seize'),'supply'=>__('paylater.act_supply'),'withdraw_supply'=>__('paylater.act_withdraw_supply')];
                   $plUnits  = ['deposit'=>'tBNB','borrow'=>'TLKM','repay'=>'TLKM','withdraw'=>'tBNB','seize'=>'tBNB','supply'=>'TLKM','withdraw_supply'=>'TLKM']; @endphp
             <div class="border-t border-slate-100">
                 @foreach($paylaterHistory as $h)
-                    <div class="px-5 py-2.5 border-t border-slate-50 flex items-center justify-between gap-3 first:border-t-0">
+                    <div class="px-5 sm:px-7 py-2.5 flex items-center justify-between gap-3 border-t border-slate-50 first:border-t-0">
                         @php $plAmt = in_array($h->action, ['deposit','withdraw','seize']) ? rtrim(rtrim(number_format((float) $h->amount, 6), '0'), '.') : $fmt($h->amount); @endphp
-                        <p class="text-sm text-slate-700">{{ $plLabels[$h->action] ?? $h->action }} <b>{{ $plAmt }} {{ $plUnits[$h->action] ?? '' }}</b> <span class="text-[11px] text-slate-400">· {{ $h->created_at->diffForHumans() }}</span></p>
+                        <p class="text-sm text-slate-700">{{ $plLabels[$h->action] ?? $h->action }} <b class="ld-num">{{ $plAmt }} {{ $plUnits[$h->action] ?? '' }}</b> <span class="text-[11px] text-slate-400">· {{ $h->created_at->diffForHumans() }}</span></p>
                         <a href="{{ config('chain.explorer_url') }}/tx/{{ $h->tx_hash }}" target="_blank" rel="noopener" class="text-[11px] text-blue-600 hover:underline shrink-0">tx ↗</a>
                     </div>
                 @endforeach
             </div>
         @endif
     @endif
-</div>
+</section>
 
 {{-- RIWAYAT --}}
 <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mt-6">
@@ -295,8 +331,30 @@ const PL_CONTRACT = @json($paylater['contract'] ?? null);
 const PL_SUPPLY_TERMS = @json($plSupplyTerms);
 function plCopyContract() {
     if (!PL_CONTRACT) return;
-    navigator.clipboard?.writeText(PL_CONTRACT).then(() => showToast('Alamat kontrak Paylater disalin.', 'success')).catch(() => showToast('Gagal menyalin.', 'warn'));
+    navigator.clipboard?.writeText(PL_CONTRACT).then(() => showToast('Alamat kontrak disalin.', 'success')).catch(() => showToast('Gagal menyalin.', 'warn'));
 }
+
+// ===== Dropdown jangka supply (custom, beranimasi) =====
+function _plSel() { return document.getElementById('plTermSelect'); }
+function plTermSetOpen(open) {
+    const s = _plSel(); if (!s) return;
+    s.dataset.open = open ? 'true' : 'false';
+    document.getElementById('plTermBtn')?.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+function plTermToggle(e) {
+    if (e) e.stopPropagation();
+    const s = _plSel(); if (!s) return;
+    plTermSetOpen(s.dataset.open !== 'true');
+}
+function plTermPick(el) {
+    document.getElementById('plSupTerm').value = el.dataset.val;
+    document.getElementById('plTermLabel').textContent = el.dataset.label;
+    document.getElementById('plTermSub').textContent = el.dataset.sub;
+    document.querySelectorAll('#plTermMenu .ld-opt').forEach(o => o.setAttribute('aria-selected', o === el ? 'true' : 'false'));
+    plTermSetOpen(false);
+}
+document.addEventListener('click', (e) => { const s = _plSel(); if (s && !s.contains(e.target)) plTermSetOpen(false); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') plTermSetOpen(false); });
 
 function plEstLimit() {
     const el = document.getElementById('plDepAmt'); if (!el) return;

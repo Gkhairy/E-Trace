@@ -28,6 +28,8 @@ Thumbs.db
 
 # Impeccable design tool — installed via `npx impeccable install`, not vendored
 /.claude/skills/
+# Per-machine Claude Code settings (local permissions, not shared)
+/.claude/settings.local.json
 
 # Remix-generated Solidity build outputs (not source)
 /contracts/.deps/
