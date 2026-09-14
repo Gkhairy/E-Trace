@@ -19,11 +19,26 @@ class Order extends Model
         'block_number',
         'confirmations',
         'finalized_at',
+        // AI Auto-Settlement + Garansi Tepat Waktu (DEMO)
+        'settlement_status',
+        'ai_decision',
+        'ai_reason',
+        'shipping_tlkm',
+        'is_insured',
+        'premium_tlkm',
+        'promised_date',
+        'insurance_status',
+        'payout_tx',
+        'payout_tlkm',
+        'premium_tx',
     ];
 
     protected $casts = [
         'buyer_notified_at' => 'datetime',
-        'finalized_at' => 'datetime',
+        'finalized_at'      => 'datetime',
+        'promised_date'     => 'datetime',
+        'is_insured'        => 'boolean',
+        'ai_decision'       => 'array',
     ];
 
     public function user()
@@ -44,5 +59,10 @@ class Order extends Model
     public function shippingAddress()
     {
         return $this->belongsTo(ShippingAddress::class);
+    }
+
+    public function trackingEvents()
+    {
+        return $this->hasMany(TrackingEvent::class)->orderBy('created_at');
     }
 }

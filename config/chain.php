@@ -62,4 +62,31 @@ return [
             'couriers' => env('RAJAONGKIR_COURIERS', 'jne:sicepat:jnt:ide:pos:tiki'),
         ],
     ],
+
+    // ============ AI AUTO-SETTLEMENT + GARANSI TEPAT WAKTU (DEMO testnet) ============
+    // Fitur asuransi pengiriman parametrik + penyelesaian escrow otomatis oleh AI.
+    // Aman-nonaktif: bila insurance.enabled=false ATAU pool_wallet kosong, seluruh
+    // alur asuransi mati; bila arbiter_key kosong, auto-settlement mati (order 'held').
+    'insurance' => [
+        'enabled'               => (bool) env('INSURANCE_ENABLED', false),
+        'premium_tlkm'          => (float) env('INSURANCE_PREMIUM_TLKM', 2),
+        // Wallet custodial platform pembayar klaim (menampung premi & membayar payout).
+        'pool_wallet'           => env('INSURANCE_POOL_ADDRESS'),
+        // Private key wallet pool (server menandatangani payout via ChainSigner).
+        'pool_key'              => env('INSURANCE_POOL_PRIVATE_KEY'),
+        'eta_buffer_days'       => (int) env('INSURANCE_ETA_BUFFER_DAYS', 3),   // promised = ETA + buffer
+        'grace_days'            => (int) env('INSURANCE_GRACE_DAYS', 2),        // telat hanya jika now > promised + grace
+        'payout'                => env('INSURANCE_PAYOUT', 'shipping_refund'),   // kompensasi = refund ongkir
+        'payout_cap_tlkm'       => (float) env('INSURANCE_PAYOUT_CAP_TLKM', 30), // batas per klaim
+        'daily_payout_cap_tlkm' => (float) env('INSURANCE_DAILY_PAYOUT_CAP_TLKM', 500), // circuit breaker harian
+    ],
+    'ai' => [
+        'min_confidence'       => (float) env('AI_MIN_CONFIDENCE', 0.8),        // ambang auto-eksekusi
+        'max_auto_amount_tlkm' => (float) env('AI_MAX_AUTO_AMOUNT_TLKM', 1000), // di atas ini → eskalasi pengawas
+    ],
+
+    // Kunci ARBITER (pengawas otomatis) untuk AI auto-settlement lewat ChainSigner.
+    // Wallet ini WAJIB sudah dipasang via PaymentGatewayV3.setArbiter(). Kosong =
+    // auto-settlement mati (keputusan AI tetap dicatat, order ditandai 'held').
+    'arbiter_key' => env('KEEPER_ARBITER_PRIVATE_KEY'),
 ];

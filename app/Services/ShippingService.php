@@ -115,4 +115,21 @@ class ShippingService
             'method' => 'estimasi jarak', 'note' => 'Estimasi jarak garis lurus (haversine).',
         ];
     }
+
+    /**
+     * Estimasi ETA kurir (jumlah hari) dari kota toko ke kota pembeli. Heuristik
+     * jarak sederhana — dipakai untuk promised_date Garansi Tepat Waktu
+     * (promised = now + etaDays + insurance.eta_buffer_days).
+     */
+    public function etaDays(?string $fromCity, ?string $toCity): int
+    {
+        $a = $this->coordsFor($fromCity);
+        $b = $this->coordsFor($toCity);
+        if (!$a || !$b) {
+            return 4; // kota tak dikenal — asumsi konservatif 4 hari.
+        }
+        $km = $this->haversineKm($a, $b);
+        // ~1 hari per 400 km + 1 hari proses; dibatasi 1..7 hari.
+        return max(1, min(7, (int) ceil($km / 400) + 1));
+    }
 }

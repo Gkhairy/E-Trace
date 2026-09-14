@@ -9,7 +9,8 @@
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
     </div>
     <h1 class="text-2xl font-bold text-slate-900">Panel Pengawas — Sengketa</h1>
-    <a href="/supervisor/labels" class="ml-auto text-sm text-blue-600 hover:underline">Label Entitas →</a>
+    <a href="/supervisor/held" class="ml-auto text-sm text-indigo-600 hover:underline">Ditahan AI →</a>
+    <a href="/supervisor/labels" class="text-sm text-blue-600 hover:underline">Label Entitas →</a>
 </div>
 <p class="text-sm text-slate-500 mb-6 max-w-3xl">
     Item yang disengketakan pembeli. Sebagai arbiter (wallet pengawas) kamu bisa <b>melepas dana ke penjual</b> atau <b>refund ke pembeli</b> —

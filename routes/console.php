@@ -11,3 +11,7 @@ Artisan::command('inspire', function () {
 // Indexer on-chain: sinkron status order/escrow dari blockchain tiap menit.
 // Aktif jika `php artisan schedule:work` berjalan (atau cron memanggil schedule:run).
 Schedule::command('chain:index')->everyMinute()->withoutOverlapping();
+
+// AI Auto-Settlement + klaim Garansi Tepat Waktu — nilai order escrow aktif tiap 5 menit.
+// Memanggil LLM (biaya token) → tidak tiap menit. Aman-nonaktif bila belum dikonfigurasi.
+Schedule::command('settlement:keep')->everyFiveMinutes()->withoutOverlapping();

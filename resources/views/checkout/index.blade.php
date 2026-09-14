@@ -156,6 +156,23 @@
             </div>
             <p class="text-[11px] text-slate-400 mt-1.5 leading-snug">*Ongkir dihitung via <b>RajaOngkir</b> (tarif kurir termurah) atau estimasi jarak bila kota tak dikenali, dikonversi ke TLKM (Rp1.000 = 1 TLKM), diselesaikan terpisah dari escrow produk. {{ $buyerCity ? 'Kota tujuan: '.$buyerCity.'.' : 'Pilih/isi alamat untuk estimasi akurat.' }}</p>
 
+            @if($insurance['enabled'])
+            {{-- Garansi Tepat Waktu (asuransi pengiriman parametrik) — opsional --}}
+            <label id="insBox" class="flex items-start gap-2.5 mt-4 p-3 rounded-xl border border-amber-200 bg-amber-50/60 cursor-pointer transition hover:bg-amber-50">
+                <input type="checkbox" id="insToggle" onchange="onInsToggle()" class="mt-0.5 accent-amber-500 shrink-0">
+                <span class="text-xs text-slate-700 leading-snug">
+                    <b>{{ __('insurance.checkout_title') }}</b>
+                    <span class="text-amber-700 font-semibold">(+{{ rtrim(rtrim(number_format($insurance['premium_tlkm'], 2), '0'), '.') }} TLKM)</span>
+                    — {{ __('insurance.checkout_desc') }}
+                    <span class="block text-[11px] text-slate-500 mt-1">
+                        {{ __('insurance.eta_label') }} <b>{{ $insurance['promised_date']->translatedFormat('d M Y') }}</b>.
+                        {{ __('insurance.terms_short', ['grace' => $insurance['grace_days'], 'cap' => rtrim(rtrim(number_format($insurance['payout_cap_tlkm'], 2), '0'), '.')]) }}
+                        <span class="text-amber-600">{{ __('insurance.demo_note') }}</span>
+                    </span>
+                </span>
+            </label>
+            @endif
+
             <div class="flex items-center gap-2 text-xs text-green-700 mt-4 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 Bayar 1× — escrow terpisah per penjual
@@ -193,6 +210,25 @@ const LINES = @json($lines);
 const TOTAL = @json($totalStr);
 // Versi tampilan: buang nol/desimal berlebih (mis. "100.000000" -> "100").
 const TOTAL_FMT = (parseFloat(TOTAL) || 0).toLocaleString('en-US', { maximumFractionDigits: 6 });
+
+// ===== Garansi Tepat Waktu (asuransi) =====
+const INSURANCE_ENABLED = @json($insurance['enabled']);
+const INSURANCE_POOL    = @json($insurance['pool_wallet'] ?? null);
+const INSURANCE_PREMIUM = @json($insurance['premium_tlkm']);
+function onInsToggle() {
+    const box = document.getElementById('insBox');
+    if (box) box.classList.toggle('ring-2', document.getElementById('insToggle')?.checked);
+    if (box) box.classList.toggle('ring-amber-300', document.getElementById('insToggle')?.checked);
+}
+// Bayar premi ke pool asuransi (transaksi terpisah dari escrow). Return tx hash.
+async function payInsurancePremium(pin) {
+    const amt = INSURANCE_PREMIUM.toString();
+    if (IS_EMBEDDED) return await pinTx('/pin/transfer', { pin, to: INSURANCE_POOL, amount: amt });
+    const { signer } = await connectWallet();
+    const token = new ethers.Contract(TLKM_ADDRESS, ERC20_ABI, signer);
+    const tx = await token.transfer(INSURANCE_POOL, ethers.parseUnits(amt, TOKEN_DECIMALS));
+    return (await tx.wait()).hash;
+}
 
 function val(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 
@@ -362,11 +398,20 @@ async function checkoutPay() {
     const btn = document.getElementById('payBtn');
     btn.disabled = true;
 
+    const INSURED = INSURANCE_ENABLED && (document.getElementById('insToggle')?.checked || false);
+
     // Payload disiapkan; tx_hash diisi setelah bayar. items minimal (backend ambil dari chain).
     const payload = {
         order_id: orderId, tx_hash: null,
         shipping_address_id: shippingAddressId, shipping, address_label: addressLabel,
         items: LINES.map(l => ({ product_id: l.db_product_id, item_index: l.index })),
+        is_insured: INSURED ? 1 : 0,
+    };
+    // Bayar premi garansi (transaksi terpisah). Best-effort: gagal → order tetap jalan tanpa garansi.
+    const payPremium = async () => {
+        if (!INSURED) return;
+        try { payload.premium_tx = await payInsurancePremium(pin); }
+        catch (e) { payload.is_insured = 0; showToast('Premi garansi gagal dibayar — order diproses tanpa garansi.', 'warn'); }
     };
 
     txProgress.open('Memproses Pembayaran', IS_EMBEDDED
@@ -380,8 +425,9 @@ async function checkoutPay() {
             txProgress.active(0, 'Approve + bayar via PIN…');
             txHash = await pinTx('/pin/checkout', { pin, order_id: orderId, sellers, amounts, productIds });
             payload.tx_hash = txHash;
-            localStorage.setItem('pendingOrder:' + orderId, JSON.stringify(payload));
             txProgress.done(0);
+            if (INSURED) { txProgress.active(1, 'Membayar premi garansi…'); await payPremium(); }
+            localStorage.setItem('pendingOrder:' + orderId, JSON.stringify(payload));
             txProgress.active(1, 'Verifikasi on-chain & menyimpan…');
             await submitOrder(payload);
             txProgress.done(1);
@@ -394,8 +440,9 @@ async function checkoutPay() {
             const r = await payCart({ sellers, amounts, productIds, orderId });
             txHash = r.txHash;
             payload.tx_hash = txHash;
-            localStorage.setItem('pendingOrder:' + orderId, JSON.stringify(payload));
             txProgress.done(2);
+            if (INSURED) { txProgress.active(3, 'Membayar premi garansi…'); await payPremium(); }
+            localStorage.setItem('pendingOrder:' + orderId, JSON.stringify(payload));
             txProgress.active(3, 'Verifikasi on-chain & menyimpan…');
             await submitOrder(payload);
             txProgress.done(3);

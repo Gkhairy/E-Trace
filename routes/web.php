@@ -218,6 +218,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/supervisor/labels', [SupervisorController::class, 'labels']);
     Route::post('/supervisor/labels', [SupervisorController::class, 'labelStore']);
     Route::post('/supervisor/labels/delete', [SupervisorController::class, 'labelDelete']);
+
+    // AI Auto-Settlement — order 'held' untuk ditinjau manual (release/refund/klaim).
+    Route::get('/supervisor/held', [SupervisorController::class, 'held']);
+    Route::post('/supervisor/settle', [SupervisorController::class, 'settle']);
 });
 
 // ORDER
@@ -225,3 +229,6 @@ Route::get('/orders', [OrderController::class, 'index'])->middleware('auth');
 Route::get('/orders/updates', [OrderController::class, 'updates'])->middleware('auth'); // H3 polling ringan
 Route::post('/order/store', [OrderController::class, 'store'])->middleware('auth');
 Route::post('/order/item-status', [OrderController::class, 'updateItemStatus'])->middleware('auth');
+// DEMO (dev/pengawas): simulasi tracking + jalankan keeper sekali.
+Route::post('/orders/simulate-tracking', [OrderController::class, 'simulateTracking'])->middleware(['auth', 'throttle:30,1']);
+Route::post('/orders/run-keeper', [OrderController::class, 'runKeeper'])->middleware(['auth', 'throttle:20,1']);

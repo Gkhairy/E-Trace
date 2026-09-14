@@ -54,7 +54,7 @@ class OrderController extends Controller
      * Membuat: alamat pengiriman + order (header) + order_items (per penjual),
      * lalu mengosongkan cart. Dijalankan dalam transaksi.
      */
-    public function store(Request $req)
+    public function store(Request $req, \App\Services\ShippingService $shipping)
     {
         // Catatan: total, amount, seller TIDAK dipercaya dari browser — diambil dari CHAIN.
         $data = $req->validate([
@@ -71,6 +71,9 @@ class OrderController extends Controller
             'items'                  => 'required|array|min:1',
             'items.*.product_id'     => 'required|exists:products,id',
             'items.*.item_index'     => 'required|integer|min:0',
+            // Garansi Tepat Waktu (opsional). tx_hash premi hanya jejak; kebenaran = pool on-chain.
+            'is_insured'             => 'nullable|boolean',
+            'premium_tx'             => ['nullable', 'regex:/^0x[0-9a-fA-F]{64}$/'],
         ]);
 
         // Cegah duplikat: satu tx_hash / order_id hanya tercatat sekali.
@@ -147,7 +150,7 @@ class OrderController extends Controller
         $headerStatus = $vr['confirmations'] >= config('chain.paid_confirmations') ? 'paid' : 'pending_confirmation';
 
         try {
-        $order = DB::transaction(function () use ($data, $expected, $vr, $totalTlkm, $headerStatus) {
+        $order = DB::transaction(function () use ($data, $expected, $vr, $totalTlkm, $headerStatus, $shipping) {
             // 1) Alamat pengiriman (data pribadi, di DB saja).
             // Pakai alamat tersimpan bila dipilih & milik user; kalau tidak, pakai input baru.
             $addr = null;
@@ -206,6 +209,28 @@ class OrderController extends Controller
                     $prod->save();
                 }
             }
+
+            // 3b) Ongkir + ETA (dasar Garansi Tepat Waktu & keeper). Ongkir = jumlah estimasi
+            //     per penjual; promised_date = ETA maksimum + buffer. Aman-nonaktif bila asuransi mati.
+            $buyerCity = $addr->city ?? null;
+            $shipTlkm = 0.0; $etaMax = 1;
+            foreach (collect($expected)->pluck('seller_wallet')->unique() as $sw) {
+                $store = \App\Models\Store::where('payout_wallet', $sw)->first();
+                $est = $shipping->estimate($store?->origin_address, $buyerCity);
+                $shipTlkm += (float) $est['fee_tlkm'];
+                $etaMax = max($etaMax, $shipping->etaDays($store?->origin_address, $buyerCity));
+            }
+            $ins   = config('chain.insurance');
+            $insOn = (bool) ($ins['enabled'] ?? false) && !empty($ins['pool_wallet']);
+            $order->shipping_tlkm = round($shipTlkm, 6);
+            $order->promised_date = now()->addDays($etaMax + (int) ($ins['eta_buffer_days'] ?? 3));
+            if (!empty($data['is_insured']) && $insOn) {
+                $order->is_insured       = true;
+                $order->premium_tlkm     = (float) ($ins['premium_tlkm'] ?? 2);
+                $order->premium_tx       = $data['premium_tx'] ?? null;
+                $order->insurance_status = 'active';
+            }
+            $order->save();
 
             // 4) Kosongkan cart.
             CartItem::where('user_id', auth()->id())->delete();
@@ -315,5 +340,60 @@ class OrderController extends Controller
         }
 
         return response()->json(['success' => true, 'status' => $item->status]);
+    }
+
+    /**
+     * DEMO (dev/pengawas): tambah tracking_events simulasi + geser promised_date agar
+     * skenario bisa dinilai keeper sekarang. BUKAN alur produksi — hanya untuk demo.
+     */
+    public function simulateTracking(Request $req)
+    {
+        abort_unless(auth()->user()->isSupervisor() || config('app.debug'), 403, 'Khusus dev/pengawas.');
+        $data = $req->validate([
+            'order_id' => 'required|string',
+            'preset'   => 'required|in:on_time,late_courier,failed_address',
+        ]);
+
+        $order = Order::where('order_id', $data['order_id'])
+            ->when(!auth()->user()->isSupervisor(), fn ($q) => $q->where('user_id', auth()->id()))
+            ->firstOrFail();
+
+        $grace = (int) config('chain.insurance.grace_days', 2);
+        [$text, $promised] = match ($data['preset']) {
+            'on_time'        => ['Paket DITERIMA penerima di alamat tujuan. Status: DELIVERED. Pengiriman tepat waktu.', now()->addDay()],
+            'late_courier'   => ['Paket tertahan di gudang transit kurir karena keterlambatan operasional kurir; estimasi mundur, belum terkirim ke penerima.', now()->subDays($grace + 2)],
+            'failed_address' => ['Pengiriman GAGAL: alamat tidak ditemukan / penerima tidak dikenal. Paket dikembalikan ke pengirim.', now()->subDays($grace + 2)],
+        };
+
+        \App\Models\TrackingEvent::create([
+            'order_id' => $order->id,
+            'raw_text' => $text,
+            'source'   => 'simulated',
+        ]);
+        // Demo: sesuaikan promised_date agar telat/tepat-waktu bisa langsung dinilai.
+        $order->promised_date = $promised;
+        $order->save();
+
+        return response()->json(['success' => true, 'message' => 'Event tracking simulasi ditambahkan. Klik "Jalankan keeper" untuk menilai.']);
+    }
+
+    /** DEMO (dev/pengawas): jalankan keeper sekali untuk satu order & tampilkan hasilnya. */
+    public function runKeeper(Request $req)
+    {
+        abort_unless(auth()->user()->isSupervisor() || config('app.debug'), 403, 'Khusus dev/pengawas.');
+        $data = $req->validate(['order_id' => 'required|string']);
+
+        $order = Order::where('order_id', $data['order_id'])
+            ->when(!auth()->user()->isSupervisor(), fn ($q) => $q->where('user_id', auth()->id()))
+            ->firstOrFail();
+
+        \Illuminate\Support\Facades\Artisan::call('settlement:keep', ['--order' => $order->order_id, '--limit' => 1]);
+
+        $order->refresh();
+        $msg = 'AI: ' . __('insurance.settlement.' . $order->settlement_status);
+        if ($order->is_insured) {
+            $msg .= ' · ' . __('insurance.status.' . $order->insurance_status);
+        }
+        return response()->json(['success' => true, 'message' => $msg, 'reason' => $order->ai_reason]);
     }
 }

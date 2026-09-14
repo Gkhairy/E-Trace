@@ -33,16 +33,31 @@ class CheckoutController extends Controller
         $buyerCity = $lastAddress->city ?? null;
         $shipEstimates = [];   // seller_wallet => ['fee_tlkm'=>, 'km'=>, 'method'=>, 'store'=>]
         $shipTotalTlkm = 0;
+        $etaMax = 1;
         foreach ($groups as $seller => $g) {
             $store = Store::where('payout_wallet', $seller)->first();
             $est = $shipping->estimate($store?->origin_address, $buyerCity);
             $shipEstimates[$seller] = $est + ['store' => $store?->name, 'origin' => $store?->origin_address];
             $shipTotalTlkm += $est['fee_tlkm'];
+            $etaMax = max($etaMax, $shipping->etaDays($store?->origin_address, $buyerCity));
         }
+
+        // Garansi Tepat Waktu (asuransi parametrik) — aman-nonaktif bila belum dikonfigurasi.
+        $ins = config('chain.insurance');
+        $bufferDays = (int) ($ins['eta_buffer_days'] ?? 3);
+        $insurance = [
+            'enabled'         => (bool) ($ins['enabled'] ?? false) && !empty($ins['pool_wallet']),
+            'premium_tlkm'    => (float) ($ins['premium_tlkm'] ?? 2),
+            'pool_wallet'     => $ins['pool_wallet'] ?? null,
+            'grace_days'      => (int) ($ins['grace_days'] ?? 2),
+            'payout_cap_tlkm' => (float) ($ins['payout_cap_tlkm'] ?? 30),
+            'promised_days'   => $etaMax + $bufferDays,
+            'promised_date'   => now()->addDays($etaMax + $bufferDays),
+        ];
 
         return view('checkout.index', compact(
             'items', 'groups', 'total', 'addresses', 'lastAddress',
-            'shipEstimates', 'shipTotalTlkm', 'buyerCity'
+            'shipEstimates', 'shipTotalTlkm', 'buyerCity', 'insurance'
         ));
     }
 }

@@ -74,6 +74,47 @@
                     </div>
                 @endif
 
+                {{-- AI AUTO-SETTLEMENT + GARANSI TEPAT WAKTU --}}
+                @php
+                    $ss = $order->settlement_status;
+                    $settleBadge = match ($ss) {
+                        'released' => ['🤖 '.__('insurance.settlement.released'), 'bg-green-50 text-green-700 border-green-200'],
+                        'refunded' => ['🤖 '.__('insurance.settlement.refunded'), 'bg-amber-50 text-amber-700 border-amber-200'],
+                        'held'     => ['🕵️ '.__('insurance.settlement.held'), 'bg-slate-100 text-slate-600 border-slate-300'],
+                        default    => null,
+                    };
+                    $insBadge = $order->is_insured ? match ($order->insurance_status) {
+                        'paid'     => ['🛡️ '.__('insurance.status.paid'), 'bg-green-50 text-green-700 border-green-200'],
+                        'rejected' => ['🛡️ '.__('insurance.status.rejected'), 'bg-slate-100 text-slate-500 border-slate-300'],
+                        default    => ['🛡️ '.__('insurance.status.active'), 'bg-amber-50 text-amber-700 border-amber-200'],
+                    } : null;
+                    $isDemo = auth()->user()->isSupervisor() || config('app.debug');
+                @endphp
+                @if($settleBadge || $insBadge || $order->ai_reason || $isDemo)
+                <div class="px-5 py-3 border-b border-slate-100 bg-indigo-50/30">
+                    <div class="flex flex-wrap items-center gap-2">
+                        @if($settleBadge)<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium border {{ $settleBadge[1] }}">{{ $settleBadge[0] }}</span>@endif
+                        @if($insBadge)<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium border {{ $insBadge[1] }}">{{ $insBadge[0] }}</span>@endif
+                        @if($order->promised_date)<span class="text-[11px] text-slate-500">{{ __('insurance.promised') }}: <b class="text-slate-600">{{ $order->promised_date->translatedFormat('d M Y') }}</b></span>@endif
+                        @if($order->payout_tx)
+                            <a href="{{ config('chain.explorer_url') }}/tx/{{ $order->payout_tx }}" target="_blank" rel="noopener" class="text-[11px] text-green-600 hover:underline">{{ __('insurance.payout_label') }} {{ rtrim(rtrim(number_format($order->payout_tlkm ?? 0, 2), '0'), '.') }} TLKM ↗</a>
+                        @endif
+                    </div>
+                    @if($order->ai_reason)
+                        <p class="text-[11px] text-slate-500 mt-1.5"><b class="text-indigo-600">{{ __('insurance.ai_badge') }}:</b> {{ $order->ai_reason }}</p>
+                    @endif
+                    @if($isDemo)
+                        <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                            <span class="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mr-1">{{ __('insurance.demo_sim') }}</span>
+                            <button onclick="simTrack('{{ $order->order_id }}','on_time',this)" class="text-[11px] bg-white hover:bg-green-50 border border-slate-200 hover:border-green-300 text-slate-600 px-2 py-1 rounded-md transition">Terkirim tepat waktu</button>
+                            <button onclick="simTrack('{{ $order->order_id }}','late_courier',this)" class="text-[11px] bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-slate-600 px-2 py-1 rounded-md transition">Telat karena kurir</button>
+                            <button onclick="simTrack('{{ $order->order_id }}','failed_address',this)" class="text-[11px] bg-white hover:bg-red-50 border border-slate-200 hover:border-red-300 text-slate-600 px-2 py-1 rounded-md transition">Gagal kirim — alamat salah</button>
+                            <button onclick="runKeeper('{{ $order->order_id }}',this)" class="text-[11px] bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded-md font-semibold transition">▶ Jalankan keeper</button>
+                        </div>
+                    @endif
+                </div>
+                @endif
+
                 {{-- ITEM DIKELOMPOKKAN PER PENJUAL --}}
                 <div class="divide-y divide-slate-100">
                     @foreach($order->items->groupBy('seller_wallet') as $seller => $group)
@@ -136,6 +177,32 @@
 
 @section('scripts')
 <script>
+// ===== DEMO: simulasi status kirim + jalankan keeper (khusus dev/pengawas) =====
+async function simTrack(orderId, preset, btn) {
+    if (btn) btn.disabled = true;
+    try {
+        const res = await fetch('/orders/simulate-tracking', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
+            body: JSON.stringify({ order_id: orderId, preset })
+        });
+        const d = await res.json();
+        showToast(d.message || (res.ok ? 'Event tracking simulasi ditambahkan.' : 'Gagal.'), res.ok ? 'success' : 'warn');
+    } catch (e) { showToast('Gagal menambah event.', 'warn'); }
+    if (btn) btn.disabled = false;
+}
+async function runKeeper(orderId, btn) {
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Menilai…'; }
+    try {
+        const res = await fetch('/orders/run-keeper', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
+            body: JSON.stringify({ order_id: orderId })
+        });
+        const d = await res.json();
+        showToast(d.message || 'Keeper dijalankan.', res.ok ? 'success' : 'warn');
+        setTimeout(() => location.reload(), 900);
+    } catch (e) { showToast('Gagal menjalankan keeper.', 'warn'); if (btn) { btn.disabled = false; btn.textContent = '▶ Jalankan keeper'; } }
+}
+
 // ===== H3: AUTO-REFRESH RINGAN (polling fetch) =====
 // Ambil "signature" state order tiap 30 dtk; kalau berubah & tidak ada transaksi
 // berjalan, muat ulang sekali supaya order/item baru muncul otomatis.
