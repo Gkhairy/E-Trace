@@ -265,13 +265,19 @@ async function checkoutPayWithPaylater() {
         const need = parseFloat(TOTAL) || 0;
         const needWei = ethers.parseUnits(need.toString(), TOKEN_DECIMALS);
 
-        // Cek SISA LIMIT paylater on-chain (read-only, jalan utk MetaMask & embedded).
+        // Cek SISA LIMIT + LIKUIDITAS paylater on-chain (read-only, jalan utk MetaMask & embedded).
         const pl = new ethers.Contract(PAYLATER_ADDRESS, PAYLATER_ABI, readProvider());
         const pos = await pl.positionOf(ACCOUNT_WALLET);   // [collateral, principal, dueAmount, dueDate, limit]
         const availableWei = pos[4] - pos[1];              // limit - principal
         if (needWei > availableWei) {
             const availTlkm = (+ethers.formatUnits(availableWei < 0n ? 0n : availableWei, TOKEN_DECIMALS)).toLocaleString('en-US', { maximumFractionDigits: 2 });
             uiAlert({ title: 'Limit Paylater kurang', message: `Sisa limit kreditmu <b>${availTlkm} TLKM</b>, sedangkan total <b>${need.toLocaleString('en-US')} TLKM</b>. Tambah agunan (tBNB) di Dompet dulu, atau bayar biasa.`, type: 'warn' });
+            return;
+        }
+        const liqWei = await pl.availableLiquidity();      // TLKM yang tersedia dipinjamkan kontrak
+        if (needWei > liqWei) {
+            const liqTlkm = (+ethers.formatUnits(liqWei, TOKEN_DECIMALS)).toLocaleString('en-US', { maximumFractionDigits: 2 });
+            uiAlert({ title: 'Likuiditas Paylater kurang', message: `Kontrak Paylater baru punya <b>${liqTlkm} TLKM</b> untuk dipinjamkan (butuh ${need.toLocaleString('en-US')} TLKM). Admin perlu mengisi likuiditas TLKM ke alamat kontrak dulu. Untuk sekarang, silakan bayar biasa.`, type: 'warn' });
             return;
         }
 
