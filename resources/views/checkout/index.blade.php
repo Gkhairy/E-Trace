@@ -255,45 +255,58 @@ document.addEventListener('DOMContentLoaded', () => {
     if (checked && checked.value !== 'new' && checked.dataset.city) updateOngkir(checked.dataset.city);
 });
 
-// Bayar pakai Paylater: pinjam TLKM secukupnya bila saldo kurang, LALU jalankan
-// alur checkout escrow yang SUDAH ADA (tanpa diubah).
+// Bayar pakai Paylater: DANAI SELURUH order dari kredit Paylater (bukan cuma
+// kekurangan), lalu jalankan alur escrow yang SUDAH ADA. Saldo TLKM pribadi tidak
+// berkurang (net): pinjaman masuk ke wallet lalu langsung dibayarkan ke escrow.
 async function checkoutPayWithPaylater() {
     if (!LINES.length) return;
+    if (!PAYLATER_ADDRESS) { uiAlert({ title: 'Paylater nonaktif', message: 'Fitur Paylater belum dikonfigurasi.', type: 'warn' }); return; }
     try {
         const need = parseFloat(TOTAL) || 0;
-        const bal  = parseFloat(await fetchTlkmBalance(ACCOUNT_WALLET)) || 0;
-        const shortfall = Math.max(0, need - bal);
+        const needWei = ethers.parseUnits(need.toString(), TOKEN_DECIMALS);
 
-        if (shortfall > 0) {
-            const ok = await uiConfirm({
-                title: @json(__('paylater.pay_with')),
-                message: `Saldo TLKM kurang <b>${shortfall.toLocaleString('id-ID')} TLKM</b>. Pinjam dari Paylater (pakai agunanmu) lalu bayar?`,
-                confirmText: 'Pinjam & bayar'
-            });
-            if (!ok) return;
-
-            txProgress.open('Pinjam via Paylater', ['Meminjam TLKM', 'Menunggu masuk on-chain']);
-            txProgress.active(0);
-            const h = await borrowPaylater(shortfall.toString());
-            if (!h) return txProgress.close(); // batal PIN
-            await recordPaylater('borrow', shortfall.toString(), h);
-            txProgress.done(0);
-
-            // Tunggu TLKM benar-benar masuk sebelum membayar (penting untuk embedded).
-            txProgress.active(1, 'Menunggu saldo TLKM ter-update…');
-            let enough = false;
-            for (let i = 0; i < 20; i++) {
-                const b = parseFloat(await fetchTlkmBalance(ACCOUNT_WALLET)) || 0;
-                if (b + 1e-9 >= need) { enough = true; break; }
-                await new Promise(r => setTimeout(r, 2000));
-            }
-            txProgress.done(1); txProgress.close();
-            if (!enough) {
-                uiAlert({ title: 'Sedang diproses', message: 'Pinjaman TLKM masih diproses jaringan. Tunggu sebentar lalu klik “Bayar” lagi.', type: 'warn' });
-                return;
-            }
+        // Cek SISA LIMIT paylater on-chain (read-only, jalan utk MetaMask & embedded).
+        const pl = new ethers.Contract(PAYLATER_ADDRESS, PAYLATER_ABI, readProvider());
+        const pos = await pl.positionOf(ACCOUNT_WALLET);   // [collateral, principal, dueAmount, dueDate, limit]
+        const availableWei = pos[4] - pos[1];              // limit - principal
+        if (needWei > availableWei) {
+            const availTlkm = (+ethers.formatUnits(availableWei < 0n ? 0n : availableWei, TOKEN_DECIMALS)).toLocaleString('en-US', { maximumFractionDigits: 2 });
+            uiAlert({ title: 'Limit Paylater kurang', message: `Sisa limit kreditmu <b>${availTlkm} TLKM</b>, sedangkan total <b>${need.toLocaleString('en-US')} TLKM</b>. Tambah agunan (tBNB) di Dompet dulu, atau bayar biasa.`, type: 'warn' });
+            return;
         }
-        // Lanjut alur escrow yang sudah ada.
+
+        const dueTotal = need * (10000 + PL_INTEREST_BPS) / 10000;
+        const ok = await uiConfirm({
+            title: @json(__('paylater.pay_with')),
+            message: `Danai <b>${need.toLocaleString('en-US')} TLKM</b> dari Paylater. Wajib bayar <b>${dueTotal.toLocaleString('en-US', { maximumFractionDigits: 6 })} TLKM</b> (bunga ${PL_INTEREST_BPS / 100}%) sebelum tenggat.<br><span class="text-xs text-slate-400">Saldo TLKM pribadimu tidak berkurang.</span>`,
+            confirmText: 'Ya, pinjam & bayar'
+        });
+        if (!ok) return;
+
+        const prevBal = parseFloat(await fetchTlkmBalance(ACCOUNT_WALLET)) || 0;
+
+        txProgress.open('Danai via Paylater', ['Meminjam TLKM', 'Menunggu dana masuk']);
+        txProgress.active(0);
+        const h = await borrowPaylater(need.toString());   // pinjam SELURUH nilai order
+        if (!h) return txProgress.close();                 // batal PIN
+        await recordPaylater('borrow', need.toString(), h);
+        txProgress.done(0);
+
+        // Tunggu pinjaman benar-benar masuk (balance naik ~need) sebelum membayar.
+        txProgress.active(1, 'Menunggu TLKM pinjaman masuk…');
+        let landed = false;
+        for (let i = 0; i < 25; i++) {
+            const b = parseFloat(await fetchTlkmBalance(ACCOUNT_WALLET)) || 0;
+            if (b + 1e-6 >= prevBal + need) { landed = true; break; }
+            await new Promise(r => setTimeout(r, 2000));
+        }
+        txProgress.done(1); txProgress.close();
+        if (!landed) {
+            uiAlert({ title: 'Sedang diproses', message: 'Pinjaman TLKM masih diproses jaringan. Tunggu sebentar lalu klik “Bayar” biasa.', type: 'warn' });
+            return;
+        }
+
+        // Lanjut alur escrow yang SUDAH ADA (bayar dari saldo yang kini sudah termasuk pinjaman).
         await checkoutPay();
     } catch (e) {
         txProgress.close();
