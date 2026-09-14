@@ -96,24 +96,24 @@
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
                     <p class="text-[11px] text-slate-500">{{ __('paylater.collateral') }}</p>
-                    <p class="text-base font-bold text-slate-900">{{ $fmt($paylater['collateral']) }} <span class="text-[11px] text-slate-400">tBNB</span></p>
+                    <p class="text-base font-bold text-slate-900">{{ $paylater['collateral'] }} <span class="text-[11px] text-slate-400">tBNB</span></p>
                 </div>
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
                     <p class="text-[11px] text-slate-500">{{ __('paylater.limit') }}</p>
-                    <p class="text-base font-bold text-blue-600">{{ $fmt($paylater['limit']) }} <span class="text-[11px] text-slate-400">TLKM</span></p>
+                    <p class="text-base font-bold text-blue-600">{{ $paylater['limit'] }} <span class="text-[11px] text-slate-400">TLKM</span></p>
                 </div>
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
                     <p class="text-[11px] text-slate-500">{{ __('paylater.due_amount') }}</p>
-                    <p class="text-base font-bold {{ $paylater['has_debt'] ? 'text-red-600' : 'text-slate-900' }}">{{ $fmt($paylater['due_amount']) }} <span class="text-[11px] text-slate-400">TLKM</span></p>
+                    <p class="text-base font-bold {{ $paylater['has_debt'] ? 'text-red-600' : 'text-slate-900' }}">{{ $paylater['due_amount'] }} <span class="text-[11px] text-slate-400">TLKM</span></p>
                 </div>
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
                     <p class="text-[11px] text-slate-500">{{ __('paylater.available') }}</p>
-                    <p class="text-base font-bold text-green-600">{{ $fmt($paylater['available']) }} <span class="text-[11px] text-slate-400">TLKM</span></p>
+                    <p class="text-base font-bold text-green-600">{{ $paylater['available'] }} <span class="text-[11px] text-slate-400">TLKM</span></p>
                 </div>
             </div>
 
             <div class="flex flex-wrap items-center justify-between gap-2 mb-4 text-xs text-slate-500">
-                <span>{{ __('paylater.liquidity') }}: <b class="text-slate-700">{{ $paylater['liquidity'] !== null ? $fmt($paylater['liquidity']).' TLKM' : '—' }}</b></span>
+                <span>{{ __('paylater.liquidity') }}: <b class="text-slate-700">{{ $paylater['liquidity'] !== null ? $paylater['liquidity'].' TLKM' : '—' }}</b></span>
                 @if($paylater['due_date'])
                     <span>{{ __('paylater.due') }}: <b class="{{ $paylater['has_debt'] && $paylater['due_date']->isPast() ? 'text-red-600' : 'text-slate-700' }}">{{ $paylater['due_date']->format('d M Y H:i') }}</b>
                         @if($paylater['has_debt'])<span class="text-slate-400">({{ $paylater['due_date']->diffForHumans() }})</span>@endif
@@ -146,7 +146,8 @@
             <div class="border-t border-slate-100">
                 @foreach($paylaterHistory as $h)
                     <div class="px-5 py-2.5 border-t border-slate-50 flex items-center justify-between gap-3 first:border-t-0">
-                        <p class="text-sm text-slate-700">{{ $plLabels[$h->action] ?? $h->action }} <b>{{ $fmt($h->amount) }} {{ $plUnits[$h->action] ?? '' }}</b> <span class="text-[11px] text-slate-400">· {{ $h->created_at->diffForHumans() }}</span></p>
+                        @php $plAmt = in_array($h->action, ['deposit','withdraw','seize']) ? rtrim(rtrim(number_format((float) $h->amount, 6), '0'), '.') : $fmt($h->amount); @endphp
+                        <p class="text-sm text-slate-700">{{ $plLabels[$h->action] ?? $h->action }} <b>{{ $plAmt }} {{ $plUnits[$h->action] ?? '' }}</b> <span class="text-[11px] text-slate-400">· {{ $h->created_at->diffForHumans() }}</span></p>
                         <a href="{{ config('chain.explorer_url') }}/tx/{{ $h->tx_hash }}" target="_blank" rel="noopener" class="text-[11px] text-blue-600 hover:underline shrink-0">tx ↗</a>
                     </div>
                 @endforeach

@@ -191,6 +191,8 @@
 <script>
 const LINES = @json($lines);
 const TOTAL = @json($totalStr);
+// Versi tampilan: buang nol/desimal berlebih (mis. "100.000000" -> "100").
+const TOTAL_FMT = (parseFloat(TOTAL) || 0).toLocaleString('en-US', { maximumFractionDigits: 6 });
 
 function val(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 
@@ -329,7 +331,7 @@ async function checkoutPay() {
 
     const ok = await uiConfirm({
         title: 'Konfirmasi Pembayaran',
-        message: `Bayar total <b class="text-blue-600">${TOTAL} TLKM</b> untuk ${LINES.length} item?<br><span class="text-xs text-slate-400">Dana tiap penjual ditahan di escrow terpisah.</span>`,
+        message: `Bayar total <b class="text-blue-600">${TOTAL_FMT} TLKM</b> untuk ${LINES.length} item?<br><span class="text-xs text-slate-400">Dana tiap penjual ditahan di escrow terpisah.</span>`,
         confirmText: 'Ya, bayar'
     });
     if (!ok) return;
