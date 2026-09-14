@@ -134,7 +134,7 @@
 
             <div class="flex flex-wrap gap-2">
                 <button onclick="doPaylaterBorrow()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition">{{ __('paylater.borrow_btn') }}</button>
-                <button onclick="doPaylaterRepay()" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-semibold transition">{{ __('paylater.repay_btn') }}</button>
+                <button onclick="doPaylaterRepayFull()" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed" {{ $paylater['has_debt'] ? '' : 'disabled' }}>{{ __('paylater.repay_btn') }}@if($paylater['has_debt']) <span class="text-slate-400">({{ $paylater['due_amount'] }})</span>@endif</button>
                 <button onclick="doPaylaterWithdraw()" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-semibold transition">{{ __('paylater.withdraw_btn') }}</button>
             </div>
         </div>
@@ -195,6 +195,8 @@
 <script>
 // ===== PAYLATER (aksi di halaman Wallet) =====
 const PL_INTEREST_BPS = (typeof PAYLATER_INTEREST_BPS !== 'undefined') ? PAYLATER_INTEREST_BPS : 300;
+const PL_DUE_RAW = @json($paylater['due_amount_raw'] ?? '0'); // kewajiban eksak (TLKM)
+const PL_HAS_DEBT = @json($paylater['has_debt'] ?? false);
 
 function plEstLimit() {
     const el = document.getElementById('plDepAmt'); if (!el) return;
@@ -209,7 +211,7 @@ async function doPaylaterDeposit() {
     let amt = document.getElementById('plDepAmt')?.value;
     if (!amt || +amt <= 0) amt = await uiPrompt({ title: @json(__('paylater.deposit_btn')), label: 'Jumlah tBNB agunan:', type: 'number', min: 0, step: 'any', placeholder: '0.00', confirmText: 'Lanjut' });
     if (amt === null || +amt <= 0) return;
-    txProgress.open('Deposit agunan', ['Menandatangani', 'Menyiarkan']);
+    txProgress.open('Deposit agunan', ['Menandatangani', 'Mencatat']);
     try { txProgress.active(0); const h = await depositCollateralPaylater(amt); if (!h) return txProgress.close(); txProgress.done(0); txProgress.active(1); txProgress.done(1); await recordPaylater('deposit', amt, h); plOk(h); } catch (e) { plFail(e); }
 }
 async function doPaylaterBorrow() {
@@ -218,19 +220,25 @@ async function doPaylaterBorrow() {
     const due = (+amt) * (10000 + PL_INTEREST_BPS) / 10000;
     const ok = await uiConfirm({ title: @json(__('paylater.borrow_btn')), message: `Pinjam <b>${(+amt).toLocaleString('id-ID')} TLKM</b>. Wajib bayar <b>${due.toLocaleString('id-ID')} TLKM</b> (bunga ${PL_INTEREST_BPS / 100}%) sebelum tenggat.`, confirmText: 'Ya, pinjam' });
     if (!ok) return;
-    txProgress.open('Pinjam TLKM', ['Menandatangani', 'Menyiarkan']);
+    txProgress.open('Pinjam TLKM', ['Menandatangani', 'Mencatat']);
     try { txProgress.active(0); const h = await borrowPaylater(amt); if (!h) return txProgress.close(); txProgress.done(0); txProgress.active(1); txProgress.done(1); await recordPaylater('borrow', amt, h); plOk(h); } catch (e) { plFail(e); }
 }
-async function doPaylaterRepay() {
-    const amt = await uiPrompt({ title: @json(__('paylater.repay_btn')), label: 'Jumlah TLKM yang dilunasi:', type: 'number', min: 0, step: 'any', placeholder: '0', confirmText: 'Lunasi' });
-    if (amt === null || +amt <= 0) return;
-    txProgress.open('Melunasi', ['Approve TLKM', 'Menyiarkan']);
-    try { txProgress.active(0); const h = await repayPaylater(amt); if (!h) return txProgress.close(); txProgress.done(0); txProgress.active(1); txProgress.done(1); await recordPaylater('repay', amt, h); plOk(h); } catch (e) { plFail(e); }
+// Lunasi PENUH (tanpa input) — bayar seluruh kewajiban (pokok + bunga) sekaligus.
+async function doPaylaterRepayFull() {
+    if (!PL_HAS_DEBT || parseFloat(PL_DUE_RAW) <= 0) {
+        uiAlert({ title: 'Tidak ada kewajiban', message: 'Kamu belum punya utang paylater untuk dilunasi.', type: 'info' });
+        return;
+    }
+    const shown = (parseFloat(PL_DUE_RAW) || 0).toLocaleString('en-US', { maximumFractionDigits: 6 });
+    const ok = await uiConfirm({ title: @json(__('paylater.repay_btn')), message: `Lunasi seluruh kewajiban <b>${shown} TLKM</b> (pokok + bunga) sekaligus?`, confirmText: 'Ya, lunasi' });
+    if (!ok) return;
+    txProgress.open('Melunasi', ['Approve TLKM', 'Mencatat']);
+    try { txProgress.active(0); const h = await repayPaylater(PL_DUE_RAW); if (!h) return txProgress.close(); txProgress.done(0); txProgress.active(1); txProgress.done(1); await recordPaylater('repay', PL_DUE_RAW, h); plOk(h); } catch (e) { plFail(e); }
 }
 async function doPaylaterWithdraw() {
     const amt = await uiPrompt({ title: @json(__('paylater.withdraw_btn')), label: 'Jumlah tBNB agunan yang ditarik (kewajiban harus 0):', type: 'number', min: 0, step: 'any', placeholder: '0.00', confirmText: 'Tarik' });
     if (amt === null || +amt <= 0) return;
-    txProgress.open('Tarik agunan', ['Menandatangani', 'Menyiarkan']);
+    txProgress.open('Tarik agunan', ['Menandatangani', 'Mencatat']);
     try { txProgress.active(0); const h = await withdrawCollateralPaylater(amt); if (!h) return txProgress.close(); txProgress.done(0); txProgress.active(1); txProgress.done(1); await recordPaylater('withdraw', amt, h); plOk(h); } catch (e) { plFail(e); }
 }
 

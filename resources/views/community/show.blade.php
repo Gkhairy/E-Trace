@@ -200,7 +200,7 @@ async function doDeposit() {
     if (amt === null || +amt <= 0) return;
     let pin = null;
     if (IS_EMBEDDED) { pin = await askPin('Setor ke Komunitas'); if (!pin) return; }
-    txProgress.open('Setor TLKM', ['Menandatangani', 'Menyiarkan']);
+    txProgress.open('Setor TLKM', ['Menandatangani', 'Mencatat']);
     try {
         txProgress.active(0);
         const hash = IS_EMBEDDED ? await pinTx('/pin/transfer', { pin, to: CADDR, amount: amt }) : await sendTLKM(CADDR, amt);
@@ -279,7 +279,7 @@ async function doWithdraw() {
     const amt = await uiPrompt({ title: 'Tarik Jatah', label: 'Jumlah TLKM yang ditarik (≤ sisa jatahmu):', type: 'number', min: 0, step: 'any', placeholder: '0', confirmText: 'Tarik' });
     if (amt === null || +amt <= 0) return;
     const pin = await askPin('Tarik Jatah'); if (!pin) return;
-    txProgress.open('Menarik dana', ['Verifikasi PIN', 'Menyiarkan']);
+    txProgress.open('Menarik dana', ['Verifikasi PIN', 'Mencatat']);
     try { txProgress.active(0); const d = await post('/community/withdraw', { id: WID, amount: amt, pin }); txProgress.done(0); txProgress.active(1); txProgress.done(1); ok(d.tx_hash); } catch (e) { fail(e); }
 }
 

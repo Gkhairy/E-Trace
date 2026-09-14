@@ -457,7 +457,7 @@
                 <div class="p-6">
                     <h3 class="text-lg font-bold text-slate-900 mb-1">${title}</h3>
                     ${label ? `<p class="text-sm text-slate-500 mb-3">${label}</p>` : '<div class="mb-3"></div>'}
-                    <input id="mPromptInput" ${attrs} class="w-full px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 outline-none focus:bg-white focus:border-blue-500 text-sm mb-4">
+                    <input id="mPromptInput" ${attrs} autocomplete="off" data-lpignore="true" data-1p-ignore data-form-type="other" name="q-${Date.now()}" class="w-full px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 outline-none focus:bg-white focus:border-blue-500 text-sm mb-4">
                     <div class="flex gap-3">
                         <button id="mPromptOk" class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition">${confirmText}</button>
                         <button id="mPromptCancel" class="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-sm font-medium transition">${cancelText}</button>

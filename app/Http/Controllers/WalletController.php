@@ -81,7 +81,8 @@ class WalletController extends Controller
             $paylater += [
                 'collateral' => $pos ? $fmt($pos['collateral']) : '0',                 // tBNB
                 'limit'      => $pos ? $fmt($pos['limit'], 2) : '0',                    // TLKM
-                'due_amount' => $pos ? $fmt($pos['due_amount'], 2) : '0',              // TLKM (pokok+bunga)
+                'due_amount' => $pos ? $fmt($pos['due_amount'], 2) : '0',              // TLKM (pokok+bunga) tampilan
+                'due_amount_raw' => $pos ? ($fmt($pos['due_amount'], 18) ?: '0') : '0', // eksak utk lunasi penuh
                 'principal'  => $pos ? $fmt($pos['principal'], 2) : '0',               // TLKM
                 'available'  => $pos ? ($fmt(bcsub($pos['limit'], $pos['principal']), 2) ?: '0') : '0',
                 'liquidity'  => $fmt($liquidityWei, 2),
