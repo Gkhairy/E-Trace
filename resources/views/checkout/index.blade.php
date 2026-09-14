@@ -274,17 +274,18 @@ async function checkoutPayWithPaylater() {
             uiAlert({ title: 'Limit Paylater kurang', message: `Sisa limit kreditmu <b>${availTlkm} TLKM</b>, sedangkan total <b>${need.toLocaleString('en-US')} TLKM</b>. Tambah agunan (tBNB) di Dompet dulu, atau bayar biasa.`, type: 'warn' });
             return;
         }
-        const liqWei = await pl.availableLiquidity();      // TLKM yang tersedia dipinjamkan kontrak
+        // Dua-sisi: availableLiquidity() = TLKM menganggur dari penyuplai.
+        const liqWei = await pl.availableLiquidity();
         if (needWei > liqWei) {
             const liqTlkm = (+ethers.formatUnits(liqWei, TOKEN_DECIMALS)).toLocaleString('en-US', { maximumFractionDigits: 2 });
-            uiAlert({ title: 'Likuiditas Paylater kurang', message: `Kontrak Paylater baru punya <b>${liqTlkm} TLKM</b> untuk dipinjamkan (butuh ${need.toLocaleString('en-US')} TLKM). Admin perlu mengisi likuiditas TLKM ke alamat kontrak dulu. Untuk sekarang, silakan bayar biasa.`, type: 'warn' });
+            uiAlert({ title: 'Likuiditas pool kurang', message: `Likuiditas pool Paylater tinggal <b>${liqTlkm} TLKM</b> (butuh ${need.toLocaleString('en-US')} TLKM). Perlu ada penyuplai yang mendanai pool dulu. Untuk sekarang, silakan bayar biasa.`, type: 'warn' });
             return;
         }
 
-        const dueTotal = need * (10000 + PL_INTEREST_BPS) / 10000;
+        const dueTotal = need * (10000 + PAYLATER_INTEREST_BPS) / 10000;
         const ok = await uiConfirm({
             title: @json(__('paylater.pay_with')),
-            message: `Danai <b>${need.toLocaleString('en-US')} TLKM</b> dari Paylater. Wajib bayar <b>${dueTotal.toLocaleString('en-US', { maximumFractionDigits: 6 })} TLKM</b> (bunga ${PL_INTEREST_BPS / 100}%) sebelum tenggat.<br><span class="text-xs text-slate-400">Saldo TLKM pribadimu tidak berkurang.</span>`,
+            message: `Danai <b>${need.toLocaleString('en-US')} TLKM</b> dari Paylater. Wajib bayar <b>${dueTotal.toLocaleString('en-US', { maximumFractionDigits: 6 })} TLKM</b> (bunga ${PAYLATER_INTEREST_BPS / 100}%) sebelum tenggat.<br><span class="text-xs text-slate-400">Saldo TLKM pribadimu tidak berkurang.</span>`,
             confirmText: 'Ya, pinjam & bayar'
         });
         if (!ok) return;

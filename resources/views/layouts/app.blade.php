@@ -350,6 +350,8 @@
         "function borrow(uint256 amount)",
         "function repay(uint256 amount)",
         "function withdrawCollateral(uint256 amount)",
+        "function supply(uint8 term, uint256 amount)",
+        "function withdrawSupply(uint8 term, uint256 shareAmount)",
         "function creditLimit(address u) view returns (uint256)",
         "function positionOf(address u) view returns (uint256 collateral, uint256 principal, uint256 dueAmount, uint256 dueDate, uint256 limit)",
         "function availableLiquidity() view returns (uint256)"
@@ -609,6 +611,30 @@
         return (await tx.wait()).hash;
     }
 
+    // ===== Sisi PENYUPLAI (lender/earn) — dengan jangka (term 0/1/2) =====
+    async function supplyPaylater(term, amountTlkm) {
+        _paylaterGuard();
+        if (IS_EMBEDDED) { const pin = await askPin('Danai Pool'); if (!pin) return null; return await pinTx('/pin/paylater-supply', { pin, term, amount: amountTlkm }); }
+        const { signer } = await connectWallet();
+        const amount = ethers.parseUnits(amountTlkm.toString(), TOKEN_DECIMALS);
+        const token = new ethers.Contract(TLKM_ADDRESS, ERC20_ABI, signer);
+        const allow = await token.allowance(await signer.getAddress(), PAYLATER_ADDRESS);
+        if (allow < amount) { const atx = await token.approve(PAYLATER_ADDRESS, amount); await atx.wait(); }
+        const c = new ethers.Contract(PAYLATER_ADDRESS, PAYLATER_ABI, signer);
+        const tx = await c.supply(term, amount);
+        return (await tx.wait()).hash;
+    }
+
+    // sharesRaw = jumlah share EKSAK (integer wei-scale) dari backend.
+    async function withdrawSupplyPaylater(term, sharesRaw) {
+        _paylaterGuard();
+        if (IS_EMBEDDED) { const pin = await askPin('Tarik Dana'); if (!pin) return null; return await pinTx('/pin/paylater-withdraw-supply', { pin, term, shares: sharesRaw.toString() }); }
+        const { signer } = await connectWallet();
+        const c = new ethers.Contract(PAYLATER_ADDRESS, PAYLATER_ABI, signer);
+        const tx = await c.withdrawSupply(term, sharesRaw.toString());
+        return (await tx.wait()).hash;
+    }
+
     // Catat aksi paylater ke server setelah tx sukses (best-effort).
     async function recordPaylater(action, amount, txHash) {
         try { await fetch('/paylater/record', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN }, body: JSON.stringify({ action, amount, tx_hash: txHash }) }); } catch (_) {}
@@ -708,7 +734,14 @@
         if (e.message === 'WALLET_MISMATCH') return 'Wallet MetaMask aktif tidak cocok dengan wallet akunmu. Ganti dulu ke wallet yang terdaftar di akun ini.';
         if (e.code === 'ACTION_REJECTED' || e.code === 4001) return 'Kamu membatalkan transaksi di MetaMask.';
         if (e.code === 'INSUFFICIENT_FUNDS') return 'Saldo tBNB tidak cukup untuk biaya gas. Isi tBNB testnet (faucet) dulu, lalu coba lagi.';
-        return e.reason || e.shortMessage || 'Transaksi gagal. Coba lagi sebentar lagi.';
+        // Gali pesan revert sebenarnya dari berbagai lokasi yang dipakai ethers v6.
+        var real = e.reason
+            || (e.info && e.info.error && e.info.error.message)
+            || (e.error && e.error.message)
+            || (e.data && e.data.message)
+            || e.shortMessage
+            || e.message;
+        return real || 'Transaksi gagal. Coba lagi sebentar lagi.';
     }
 
     // ===== Jaring pengaman order: simpan draft di localStorage, kirim & retry =====

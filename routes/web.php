@@ -148,6 +148,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/pin/paylater-borrow',   [\App\Http\Controllers\PinTxController::class, 'paylaterBorrow'])->middleware('throttle:15,1');
     Route::post('/pin/paylater-repay',    [\App\Http\Controllers\PinTxController::class, 'paylaterRepay'])->middleware('throttle:15,1');
     Route::post('/pin/paylater-withdraw', [\App\Http\Controllers\PinTxController::class, 'paylaterWithdraw'])->middleware('throttle:15,1');
+    Route::post('/pin/paylater-supply',   [\App\Http\Controllers\PinTxController::class, 'paylaterSupply'])->middleware('throttle:15,1');
+    Route::post('/pin/paylater-withdraw-supply', [\App\Http\Controllers\PinTxController::class, 'paylaterWithdrawSupply'])->middleware('throttle:15,1');
 
     // PAYLATER (kredit berjaminan on-chain DENGAN BUNGA, DEMO) — UI digabung ke halaman Wallet.
     Route::get('/paylater', fn () => redirect('/wallet')); // link lama/bookmark -> Dompet

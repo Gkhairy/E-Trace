@@ -30,6 +30,8 @@ return [
     'act_repay'      => 'Lunasi',
     'act_withdraw'   => 'Tarik agunan',
     'act_seize'      => 'Agunan disita',
+    'act_supply'         => 'Danai pool',
+    'act_withdraw_supply'=> 'Tarik dana',
 
     'pay_with'       => 'Bayar pakai Paylater',
 ];

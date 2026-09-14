@@ -32,6 +32,8 @@ class PinTxController extends Controller
         ['inputs' => [['name' => 'amount', 'type' => 'uint256']], 'name' => 'borrow', 'outputs' => [], 'type' => 'function'],
         ['inputs' => [['name' => 'amount', 'type' => 'uint256']], 'name' => 'repay', 'outputs' => [], 'type' => 'function'],
         ['inputs' => [['name' => 'amount', 'type' => 'uint256']], 'name' => 'withdrawCollateral', 'outputs' => [], 'type' => 'function'],
+        ['inputs' => [['name' => 'term', 'type' => 'uint8'], ['name' => 'amount', 'type' => 'uint256']], 'name' => 'supply', 'outputs' => [], 'type' => 'function'],
+        ['inputs' => [['name' => 'term', 'type' => 'uint8'], ['name' => 'shareAmount', 'type' => 'uint256']], 'name' => 'withdrawSupply', 'outputs' => [], 'type' => 'function'],
     ];
 
     /** Verifikasi PIN + dekripsi private key. Return hex atau lempar (JSON 422). */
@@ -166,6 +168,31 @@ class PinTxController extends Controller
         abort_unless($paylater, 422, 'Paylater belum dikonfigurasi.');
         $priv = $this->unlock($data['pin']);
         $hash = $signer->sendContractCall($priv, $paylater, self::PAYLATER_ABI, 'withdrawCollateral', [$signer->toWei($data['amount'])]);
+        return response()->json(['success' => true, 'tx_hash' => $hash]);
+    }
+
+    /** Paylater (lender): danai pool TLKM pada jangka `term` (approve + supply). Return tx hash. */
+    public function paylaterSupply(Request $req, ChainSigner $signer)
+    {
+        $data = $req->validate(['pin' => 'required|digits:6', 'term' => 'required|integer|between:0,2', 'amount' => 'required|numeric|min:0.000001']);
+        $paylater = config('chain.paylater_address');
+        abort_unless($paylater, 422, 'Paylater belum dikonfigurasi.');
+        $priv = $this->unlock($data['pin']);
+        $wei  = $signer->toWei($data['amount']);
+        $this->ensureAllowance($signer, $priv, $paylater, $wei); // supply = pull TLKM
+        $hash = $signer->sendContractCall($priv, $paylater, self::PAYLATER_ABI, 'supply', [(int) $data['term'], $wei]);
+        return response()->json(['success' => true, 'tx_hash' => $hash]);
+    }
+
+    /** Paylater (lender): tarik dana penyuplai jangka `term`. `shares` = share EKSAK (integer wei-scale). */
+    public function paylaterWithdrawSupply(Request $req, ChainSigner $signer)
+    {
+        $data = $req->validate(['pin' => 'required|digits:6', 'term' => 'required|integer|between:0,2', 'shares' => ['required', 'regex:/^[0-9]{1,78}$/']]);
+        $paylater = config('chain.paylater_address');
+        abort_unless($paylater, 422, 'Paylater belum dikonfigurasi.');
+        $priv = $this->unlock($data['pin']);
+        // shares sudah dalam satuan mentah (bukan human) -> jangan konversi toWei.
+        $hash = $signer->sendContractCall($priv, $paylater, self::PAYLATER_ABI, 'withdrawSupply', [(int) $data['term'], $data['shares']]);
         return response()->json(['success' => true, 'tx_hash' => $hash]);
     }
 

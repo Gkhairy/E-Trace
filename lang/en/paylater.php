@@ -30,6 +30,8 @@ return [
     'act_repay'      => 'Repay',
     'act_withdraw'   => 'Withdraw collateral',
     'act_seize'      => 'Collateral seized',
+    'act_supply'         => 'Supply to pool',
+    'act_withdraw_supply'=> 'Withdraw funds',
 
     'pay_with'       => 'Pay with Paylater',
 ];

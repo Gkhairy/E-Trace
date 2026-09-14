@@ -28,3 +28,7 @@ Thumbs.db
 
 # Impeccable design tool — installed via `npx impeccable install`, not vendored
 /.claude/skills/
+
+# Remix-generated Solidity build outputs (not source)
+/contracts/.deps/
+/contracts/artifacts/

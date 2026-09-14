@@ -72,8 +72,8 @@ class WalletController extends Controller
         $pv = new PaylaterVerifier();
         $paylater = ['configured' => $pv->configured()];
         if ($pv->configured()) {
-            $pos          = $wallet ? $pv->positionOf($wallet) : null;
-            $liquidityWei = $pv->availableLiquidity();
+            $pos     = $wallet ? $pv->positionOf($wallet) : null;
+            $canMint = $pv->canMint(); // model CDP: kontrak mencetak TLKM sesuai kebutuhan
             $fmt = fn ($wei, $dp = 6) => $wei !== null
                 ? rtrim(rtrim(bcdiv((string) $wei, bcpow('10', '18'), $dp), '0'), '.')
                 : null;
@@ -85,12 +85,43 @@ class WalletController extends Controller
                 'due_amount_raw' => $pos ? ($fmt($pos['due_amount'], 18) ?: '0') : '0', // eksak utk lunasi penuh
                 'principal'  => $pos ? $fmt($pos['principal'], 2) : '0',               // TLKM
                 'available'  => $pos ? ($fmt(bcsub($pos['limit'], $pos['principal']), 2) ?: '0') : '0',
-                'liquidity'  => $fmt($liquidityWei, 2),
+                'can_mint'   => $canMint,                                               // true = mint aktif (siap dipinjam)
                 'due_date'   => ($pos && $pos['due_date'] > 0) ? \Carbon\Carbon::createFromTimestamp($pos['due_date']) : null,
                 'has_debt'   => $pos ? bccomp($pos['due_amount'], '0') > 0 : false,
                 'rate'       => (int) config('chain.paylater_rate_tlkm_per_bnb', 1000000),
                 'interest_bps' => (int) config('chain.paylater_interest_bps', 300),
-                'contract'   => $pv->address(), // alamat kontrak (isi TLKM ke sini utk likuiditas)
+                'contract'   => $pv->address(), // alamat kontrak Paylater
+            ];
+
+            // ===== Sisi PENYUPLAI (lender/earn) — 3 jangka + statistik pool =====
+            $stats = $pv->poolStats();
+            $termLabels = [0 => 'Fleksibel', 1 => 'Tetap 30 hari', 2 => 'Tetap 90 hari'];
+            $terms = [];
+            foreach ([0, 1, 2] as $t) {
+                $bi  = $pv->bucketInfo($t);
+                $spi = $wallet ? $pv->supplierInfo($wallet, $t) : null;
+                $earnedWei = ($spi && bccomp($spi['value'], $spi['principal']) > 0) ? bcsub($spi['value'], $spi['principal']) : '0';
+                $maturity  = ($spi && $spi['maturity'] > 0) ? \Carbon\Carbon::createFromTimestamp($spi['maturity']) : null;
+                $terms[$t] = [
+                    'label'      => $termLabels[$t],
+                    'nisbah'     => $bi ? (int) round($bi['nisbah_bps'] / 100) : null,     // % penyuplai
+                    'lock_days'  => $bi ? (int) round($bi['lock'] / 86400) : 0,             // hari kunci
+                    'value'      => $spi ? ($fmt($spi['value'], 2) ?: '0') : '0',           // klaim (pokok+yield)
+                    'principal'  => $spi ? ($fmt($spi['principal'], 2) ?: '0') : '0',       // setoran
+                    'earned'     => $fmt($earnedWei, 4) ?: '0',                             // untung
+                    'shares_raw' => $spi ? ($spi['shares'] ?: '0') : '0',                   // eksak utk tarik semua
+                    'has_pos'    => $spi && bccomp($spi['shares'], '0') > 0,
+                    'maturity'   => $maturity,
+                    'matured'    => $t === 0 || ($maturity && $maturity->isPast()),
+                ];
+            }
+            $paylater['supply'] = [
+                'terms'     => $terms,
+                'liquidity' => $stats ? ($fmt($stats['liquidity'], 2) ?: '0') : '0',
+                'borrows'   => $stats ? ($fmt($stats['borrows'], 2) ?: '0') : '0',
+                'assets'    => $stats ? ($fmt($stats['assets'], 2) ?: '0') : '0',
+                'reserve'   => $stats ? ($fmt($stats['reserve'], 2) ?: '0') : '0',
+                'util'      => $stats ? round(((int) $stats['util_bps']) / 100, 1) : null,
             ];
         }
         $paylaterHistory = PaylaterLoan::where('user_id', auth()->id())->latest()->limit(20)->get();

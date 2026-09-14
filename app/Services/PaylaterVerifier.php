@@ -68,6 +68,99 @@ class PaylaterVerifier
         ];
     }
 
+    /** Baca fungsi view yang mengembalikan satu uint256 (wei string). Null bila gagal. */
+    private function callUint(string $signature, string $argHex = ''): ?string
+    {
+        if (!$this->contract) {
+            return null;
+        }
+        $sel = substr(Keccak::hash($signature, 256), 0, 8);
+        $res = $this->rpc('eth_call', [['to' => $this->contract, 'data' => '0x' . $sel . $argHex], 'latest']);
+        if ($res === null || $res === '0x') {
+            return null;
+        }
+        return gmp_strval(gmp_init($res, 16));
+    }
+
+    private function addrArg(string $address): string
+    {
+        return str_pad(substr(strtolower($address), 2), 64, '0', STR_PAD_LEFT);
+    }
+
+    private function uintArg(int $n): string
+    {
+        return str_pad(dechex($n), 64, '0', STR_PAD_LEFT);
+    }
+
+    /** Baca fungsi view yang mengembalikan beberapa uint256. Return array string, atau null. */
+    private function callTuple(string $signature, string $argHex, int $count): ?array
+    {
+        if (!$this->contract) {
+            return null;
+        }
+        $sel = substr(Keccak::hash($signature, 256), 0, 8);
+        $res = $this->rpc('eth_call', [['to' => $this->contract, 'data' => '0x' . $sel . $argHex], 'latest']);
+        if (!$res || strlen($res) < 2 + 64 * $count) {
+            return null;
+        }
+        $h = substr($res, 2);
+        $out = [];
+        for ($i = 0; $i < $count; $i++) {
+            $out[] = gmp_strval(gmp_init('0x' . substr($h, $i * 64, 64)));
+        }
+        return $out;
+    }
+
+    /**
+     * Posisi PENYUPLAI untuk satu jangka (term 0=fleksibel,1=30h,2=90h).
+     *  shares, principal (setoran), value (klaim=pokok+yield), maturity (unix, 0=fleksibel).
+     */
+    public function supplierInfo(string $address, int $term): ?array
+    {
+        if (!preg_match('/^0x[a-fA-F0-9]{40}$/', $address)) {
+            return null;
+        }
+        $t = $this->callTuple('supplierInfo(address,uint8)', $this->addrArg($address) . $this->uintArg($term), 4);
+        if (!$t) {
+            return null;
+        }
+        return ['shares' => $t[0], 'principal' => $t[1], 'value' => $t[2], 'maturity' => (int) $t[3]];
+    }
+
+    /** Statistik satu bucket jangka: principal, assets, shares, nisbah (bps), lock (detik). */
+    public function bucketInfo(int $term): ?array
+    {
+        $t = $this->callTuple('bucketInfo(uint8)', $this->uintArg($term), 5);
+        if (!$t) {
+            return null;
+        }
+        return ['principal' => $t[0], 'assets' => $t[1], 'shares' => $t[2], 'nisbah_bps' => (int) $t[3], 'lock' => (int) $t[4]];
+    }
+
+    /** Statistik pool global: liquidity, borrows, reserve, total_assets, util_bps. */
+    public function poolStats(): ?array
+    {
+        $t = $this->callTuple('poolStats()', '', 5);
+        if (!$t) {
+            return null;
+        }
+        return ['liquidity' => $t[0], 'borrows' => $t[1], 'reserve' => $t[2], 'assets' => $t[3], 'util_bps' => (int) $t[4]];
+    }
+
+    /** Apakah kontrak sudah jadi owner TLKM (boleh mint / cadangan likuiditas)? Null bila RPC gagal. */
+    public function canMint(): ?bool
+    {
+        if (!$this->contract) {
+            return null;
+        }
+        $sel = substr(Keccak::hash('canMint()', 256), 0, 8);
+        $res = $this->rpc('eth_call', [['to' => $this->contract, 'data' => '0x' . $sel], 'latest']);
+        if ($res === null || $res === '0x') {
+            return null;
+        }
+        return gmp_strval(gmp_init($res, 16)) === '1';
+    }
+
     /** Likuiditas TLKM tersedia di kontrak (wei string). Null bila gagal. */
     public function availableLiquidity(): ?string
     {

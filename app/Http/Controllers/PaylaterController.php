@@ -18,7 +18,7 @@ class PaylaterController extends Controller
     public function record(Request $req, PaylaterVerifier $verifier)
     {
         $data = $req->validate([
-            'action'  => 'required|in:deposit,borrow,repay,withdraw,seize',
+            'action'  => 'required|in:deposit,borrow,repay,withdraw,seize,supply,withdraw_supply',
             'amount'  => 'required|numeric|min:0',
             'tx_hash' => ['required', 'regex:/^0x[0-9a-fA-F]{64}$/'],
         ]);

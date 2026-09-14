@@ -112,8 +112,15 @@
                 </div>
             </div>
 
+            @php $poolLiq = (float) str_replace(',', '', $paylater['supply']['liquidity'] ?? '0'); @endphp
             <div class="flex flex-wrap items-center justify-between gap-2 mb-2 text-xs text-slate-500">
-                <span>{{ __('paylater.liquidity') }}: <b class="{{ ($paylater['liquidity'] ?? '0') === '0' ? 'text-amber-600' : 'text-slate-700' }}">{{ $paylater['liquidity'] !== null ? $paylater['liquidity'].' TLKM' : '—' }}</b></span>
+                <span>Status kredit:
+                    @if($poolLiq > 0)
+                        <b class="text-green-600">● Aktif</b> <span class="text-slate-400">— pool didanai penyuplai</span>
+                    @else
+                        <b class="text-amber-600">○ Menunggu dana</b> <span class="text-slate-400">— belum ada penyuplai</span>
+                    @endif
+                </span>
                 @if($paylater['due_date'])
                     <span>{{ __('paylater.due') }}: <b class="{{ $paylater['has_debt'] && $paylater['due_date']->isPast() ? 'text-red-600' : 'text-slate-700' }}">{{ $paylater['due_date']->format('d M Y H:i') }}</b>
                         @if($paylater['has_debt'])<span class="text-slate-400">({{ $paylater['due_date']->diffForHumans() }})</span>@endif
@@ -121,13 +128,13 @@
                 @endif
             </div>
 
-            {{-- Alamat kontrak: KIRIM TLKM ke sini untuk mengisi likuiditas (yang dipinjamkan) --}}
+            {{-- Info model dua-sisi + alamat kontrak --}}
             @if($paylater['contract'])
-                <div class="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-4 text-[11px] text-amber-800 flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span>💧 <b>Likuiditas</b> = saldo TLKM <b>milik kontrak</b> (bukan wallet-mu). Kirim TLKM ke alamat kontrak untuk mengisinya:</span>
+                <div class="bg-teal-50 border border-teal-200 rounded-xl px-3 py-2 mb-4 text-[11px] text-teal-800 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span>ℹ <b>Lending dua-sisi</b>: pinjam dari dana <b>penyuplai</b> (agunan tBNB), bunga peminjam dibagi ke penyuplai sesuai nisbah. Kontrak:</span>
                     <code class="font-mono bg-white/70 px-1.5 py-0.5 rounded">{{ $paylater['contract'] }}</code>
-                    <button type="button" onclick="plCopyContract()" class="underline hover:text-amber-900">salin</button>
-                    <a href="{{ config('chain.explorer_url') }}/address/{{ $paylater['contract'] }}" target="_blank" rel="noopener" class="underline hover:text-amber-900">explorer ↗</a>
+                    <button type="button" onclick="plCopyContract()" class="underline hover:text-teal-900">salin</button>
+                    <a href="{{ config('chain.explorer_url') }}/address/{{ $paylater['contract'] }}" target="_blank" rel="noopener" class="underline hover:text-teal-900">explorer ↗</a>
                 </div>
             @endif
 
@@ -147,12 +154,83 @@
                 <button onclick="doPaylaterRepayFull()" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed" {{ $paylater['has_debt'] ? '' : 'disabled' }}>{{ __('paylater.repay_btn') }}@if($paylater['has_debt']) <span class="text-slate-400">({{ $paylater['due_amount'] }})</span>@endif</button>
                 <button onclick="doPaylaterWithdraw()" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-semibold transition">{{ __('paylater.withdraw_btn') }}</button>
             </div>
+
+            {{-- ===== SISI PENYUPLAI (Danai / Earn) — deposit berjangka + bagi hasil ===== --}}
+            @php $sup = $paylater['supply'] ?? []; $terms = $sup['terms'] ?? []; @endphp
+            <div class="mt-6 pt-5 border-t border-slate-100">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="w-7 h-7 rounded-lg bg-green-50 text-green-600 flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </span>
+                    <h3 class="font-bold text-slate-900 text-sm">Danai Pool <span class="font-normal text-slate-400">— bagi hasil dari bunga peminjam</span></h3>
+                </div>
+                <p class="text-xs text-slate-500 mb-3">Setor TLKM &amp; pilih jangka. Makin lama dikunci, makin besar <b>nisbah bagi hasil</b>-mu dari bunga peminjam ({{ rtrim(rtrim(number_format($paylater['interest_bps']/100, 2), '0'), '.') }}% per pinjaman).</p>
+
+                {{-- Statistik pool --}}
+                <div class="grid grid-cols-3 gap-3 mb-4">
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                        <p class="text-[11px] text-slate-500">Likuiditas pool</p>
+                        <p class="text-sm font-bold text-slate-900">{{ $sup['liquidity'] ?? '0' }} <span class="text-[10px] text-slate-400">TLKM</span></p>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                        <p class="text-[11px] text-slate-500">Utilisasi</p>
+                        <p class="text-sm font-bold text-slate-900">{{ $sup['util'] !== null ? $sup['util'].'%' : '—' }}</p>
+                        <p class="text-[10px] text-slate-400">dipinjam {{ $sup['borrows'] ?? '0' }}</p>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                        <p class="text-[11px] text-slate-500">Pendapatan platform</p>
+                        <p class="text-sm font-bold text-slate-900">{{ $sup['reserve'] ?? '0' }} <span class="text-[10px] text-slate-400">TLKM</span></p>
+                    </div>
+                </div>
+
+                {{-- Kartu per jangka: nisbah + posisiku + tarik --}}
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                    @foreach($terms as $t => $tm)
+                        <div class="border border-slate-200 rounded-xl p-3 flex flex-col">
+                            <div class="flex items-center justify-between mb-1">
+                                <p class="text-sm font-bold text-slate-900">{{ $tm['label'] }}</p>
+                                <span class="text-[11px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200 font-semibold">bagi hasil {{ $tm['nisbah'] ?? '—' }}%</span>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mb-2">{{ $t == 0 ? 'Tarik kapan saja' : 'Dikunci '.$tm['lock_days'].' hari' }}</p>
+                            @if($tm['has_pos'])
+                                <div class="text-xs text-slate-600 space-y-0.5 mb-2">
+                                    <div class="flex justify-between"><span>Danaku</span><b class="text-green-700">{{ $tm['value'] }} TLKM</b></div>
+                                    <div class="flex justify-between"><span>Untung</span><b class="text-emerald-600">+{{ $tm['earned'] }}</b></div>
+                                    @if($tm['maturity'])
+                                        <div class="flex justify-between"><span>Jatuh tempo</span><b class="{{ $tm['matured'] ? 'text-green-600' : 'text-slate-700' }}">{{ $tm['matured'] ? 'Sudah' : $tm['maturity']->diffForHumans() }}</b></div>
+                                    @endif
+                                </div>
+                                <button onclick="doPaylaterWithdrawSupply({{ $t }})" class="mt-auto text-xs bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3 py-2 rounded-lg font-semibold transition">
+                                    {{ $t == 0 || $tm['matured'] ? 'Tarik dana' : 'Tarik (pokok saja)' }}
+                                </button>
+                            @else
+                                <p class="mt-auto text-[11px] text-slate-400">Belum ada dana di jangka ini.</p>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+
+                {{-- Form danai: jumlah + pilih jangka --}}
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <div class="relative flex-1">
+                        <input id="plSupAmt" type="number" min="0" step="any" placeholder="0.00"
+                            class="w-full px-4 py-2.5 pr-16 rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none text-sm">
+                        <span class="absolute right-4 top-2.5 text-sm text-slate-400 font-medium">TLKM</span>
+                    </div>
+                    <select id="plSupTerm" class="px-3 py-2.5 rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none text-sm bg-white">
+                        @foreach($terms as $t => $tm)
+                            <option value="{{ $t }}">{{ $tm['label'] }} · {{ $tm['nisbah'] ?? '—' }}%</option>
+                        @endforeach
+                    </select>
+                    <button onclick="doPaylaterSupply()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition">Danai</button>
+                </div>
+            </div>
         </div>
 
         {{-- Riwayat paylater --}}
         @if($paylaterHistory->isNotEmpty())
-            @php $plLabels = ['deposit'=>__('paylater.act_deposit'),'borrow'=>__('paylater.act_borrow'),'repay'=>__('paylater.act_repay'),'withdraw'=>__('paylater.act_withdraw'),'seize'=>__('paylater.act_seize')];
-                  $plUnits  = ['deposit'=>'tBNB','borrow'=>'TLKM','repay'=>'TLKM','withdraw'=>'tBNB','seize'=>'tBNB']; @endphp
+            @php $plLabels = ['deposit'=>__('paylater.act_deposit'),'borrow'=>__('paylater.act_borrow'),'repay'=>__('paylater.act_repay'),'withdraw'=>__('paylater.act_withdraw'),'seize'=>__('paylater.act_seize'),'supply'=>__('paylater.act_supply'),'withdraw_supply'=>__('paylater.act_withdraw_supply')];
+                  $plUnits  = ['deposit'=>'tBNB','borrow'=>'TLKM','repay'=>'TLKM','withdraw'=>'tBNB','seize'=>'tBNB','supply'=>'TLKM','withdraw_supply'=>'TLKM']; @endphp
             <div class="border-t border-slate-100">
                 @foreach($paylaterHistory as $h)
                     <div class="px-5 py-2.5 border-t border-slate-50 flex items-center justify-between gap-3 first:border-t-0">
@@ -208,6 +286,13 @@ const PL_INTEREST_BPS = (typeof PAYLATER_INTEREST_BPS !== 'undefined') ? PAYLATE
 const PL_DUE_RAW = @json($paylater['due_amount_raw'] ?? '0'); // kewajiban eksak (TLKM)
 const PL_HAS_DEBT = @json($paylater['has_debt'] ?? false);
 const PL_CONTRACT = @json($paylater['contract'] ?? null);
+@php
+    $plSupplyTerms = collect($paylater['supply']['terms'] ?? [])
+        ->map(fn ($tm) => ['shares_raw' => $tm['shares_raw'], 'value' => $tm['value'], 'matured' => $tm['matured'], 'label' => $tm['label']])
+        ->values();
+@endphp
+// Posisi penyuplai per jangka (index = term 0/1/2): {shares_raw, value, matured, label}
+const PL_SUPPLY_TERMS = @json($plSupplyTerms);
 function plCopyContract() {
     if (!PL_CONTRACT) return;
     navigator.clipboard?.writeText(PL_CONTRACT).then(() => showToast('Alamat kontrak Paylater disalin.', 'success')).catch(() => showToast('Gagal menyalin.', 'warn'));
@@ -255,6 +340,36 @@ async function doPaylaterWithdraw() {
     if (amt === null || +amt <= 0) return;
     txProgress.open('Tarik agunan', ['Menandatangani', 'Mencatat']);
     try { txProgress.active(0); const h = await withdrawCollateralPaylater(amt); if (!h) return txProgress.close(); txProgress.done(0); txProgress.active(1); txProgress.done(1); await recordPaylater('withdraw', amt, h); plOk(h); } catch (e) { plFail(e); }
+}
+
+// ===== Sisi PENYUPLAI (Danai / Earn) — dengan jangka =====
+async function doPaylaterSupply() {
+    let amt = document.getElementById('plSupAmt')?.value;
+    const term = parseInt(document.getElementById('plSupTerm')?.value ?? '0', 10) || 0;
+    if (!amt || +amt <= 0) amt = await uiPrompt({ title: 'Danai Pool', label: 'Jumlah TLKM yang didanai:', type: 'number', min: 0, step: 'any', placeholder: '0.00', confirmText: 'Lanjut' });
+    if (amt === null || +amt <= 0) return;
+    const info = PL_SUPPLY_TERMS[term] || {};
+    const lockNote = term == 0 ? 'Bisa ditarik kapan saja.' : `Dana dikunci hingga jatuh tempo. Tarik lebih awal = <b>pokok saja</b> (bagi hasil hangus).`;
+    const ok = await uiConfirm({ title: 'Danai — ' + (info.label || 'Pool'), message: `Setor <b>${(+amt).toLocaleString('id-ID')} TLKM</b> ke jangka <b>${info.label || ''}</b>. ${lockNote}`, confirmText: 'Ya, danai' });
+    if (!ok) return;
+    txProgress.open('Danai pool', ['Approve TLKM', 'Mencatat']);
+    try { txProgress.active(0); const h = await supplyPaylater(term, amt); if (!h) return txProgress.close(); txProgress.done(0); txProgress.active(1); txProgress.done(1); await recordPaylater('supply', amt, h); plOk(h); } catch (e) { plFail(e); }
+}
+// Tarik SELURUH dana penyuplai pada satu jangka (semua share) — pokok + yield (atau pokok saja bila belum jatuh tempo).
+async function doPaylaterWithdrawSupply(term) {
+    const info = PL_SUPPLY_TERMS[term] || {};
+    if (!info.shares_raw || info.shares_raw === '0') {
+        uiAlert({ title: 'Belum mendanai', message: 'Kamu belum punya dana di jangka ini.', type: 'info' });
+        return;
+    }
+    const early = !info.matured;
+    const msg = early
+        ? `Jangka <b>${info.label}</b> belum jatuh tempo. Tarik sekarang hanya mengembalikan <b>pokok</b> (bagi hasil hangus). Lanjut?`
+        : `Tarik seluruh dana <b>${info.label}</b> (± <b>${(parseFloat(info.value)||0).toLocaleString('en-US', { maximumFractionDigits: 4 })} TLKM</b>, termasuk bagi hasil)?<br><span class="text-xs text-slate-400">Gagal bila likuiditas pool sedang dipinjam habis.</span>`;
+    const ok = await uiConfirm({ title: 'Tarik dana', message: msg, confirmText: early ? 'Ya, tarik pokok' : 'Ya, tarik' });
+    if (!ok) return;
+    txProgress.open('Tarik dana', ['Menandatangani', 'Mencatat']);
+    try { txProgress.active(0); const h = await withdrawSupplyPaylater(term, info.shares_raw); if (!h) return txProgress.close(); txProgress.done(0); txProgress.active(1); txProgress.done(1); await recordPaylater('withdraw_supply', info.value, h); plOk(h); } catch (e) { plFail(e); }
 }
 
 // Cari penerima via No HP / wallet → tampilkan namanya.
