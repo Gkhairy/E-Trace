@@ -76,6 +76,85 @@
     </div>
 </div>
 
+{{-- ===== PAYLATER (kredit berjaminan on-chain, DEMO) ===== --}}
+<div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mt-6">
+    <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+        <span class="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        </span>
+        <h2 class="font-bold text-slate-900">{{ __('paylater.title') }}</h2>
+        <span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-semibold">DEMO · belum diaudit</span>
+    </div>
+
+    @if(!($paylater['configured'] ?? false))
+        <p class="px-5 py-8 text-center text-sm text-slate-400">{{ __('paylater.not_configured') }}</p>
+    @else
+        <div class="p-5">
+            <p class="text-xs text-slate-500 mb-4">{{ __('paylater.subtitle') }} <span class="text-amber-600">{{ __('paylater.interest_note', ['pct' => rtrim(rtrim(number_format($paylater['interest_bps']/100, 2), '0'), '.')]) }}</span></p>
+
+            {{-- Ringkasan posisi (dibaca dari chain) --}}
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <p class="text-[11px] text-slate-500">{{ __('paylater.collateral') }}</p>
+                    <p class="text-base font-bold text-slate-900">{{ $fmt($paylater['collateral']) }} <span class="text-[11px] text-slate-400">tBNB</span></p>
+                </div>
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <p class="text-[11px] text-slate-500">{{ __('paylater.limit') }}</p>
+                    <p class="text-base font-bold text-blue-600">{{ $fmt($paylater['limit']) }} <span class="text-[11px] text-slate-400">TLKM</span></p>
+                </div>
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <p class="text-[11px] text-slate-500">{{ __('paylater.due_amount') }}</p>
+                    <p class="text-base font-bold {{ $paylater['has_debt'] ? 'text-red-600' : 'text-slate-900' }}">{{ $fmt($paylater['due_amount']) }} <span class="text-[11px] text-slate-400">TLKM</span></p>
+                </div>
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <p class="text-[11px] text-slate-500">{{ __('paylater.available') }}</p>
+                    <p class="text-base font-bold text-green-600">{{ $fmt($paylater['available']) }} <span class="text-[11px] text-slate-400">TLKM</span></p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4 text-xs text-slate-500">
+                <span>{{ __('paylater.liquidity') }}: <b class="text-slate-700">{{ $paylater['liquidity'] !== null ? $fmt($paylater['liquidity']).' TLKM' : '—' }}</b></span>
+                @if($paylater['due_date'])
+                    <span>{{ __('paylater.due') }}: <b class="{{ $paylater['has_debt'] && $paylater['due_date']->isPast() ? 'text-red-600' : 'text-slate-700' }}">{{ $paylater['due_date']->format('d M Y H:i') }}</b>
+                        @if($paylater['has_debt'])<span class="text-slate-400">({{ $paylater['due_date']->diffForHumans() }})</span>@endif
+                    </span>
+                @endif
+            </div>
+
+            {{-- Deposit agunan + estimasi --}}
+            <div class="flex flex-col sm:flex-row gap-2 mb-1">
+                <div class="relative flex-1">
+                    <input id="plDepAmt" type="number" min="0" step="any" oninput="plEstLimit()" placeholder="0.00"
+                        class="w-full px-4 py-2.5 pr-16 rounded-xl border border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none text-sm">
+                    <span class="absolute right-4 top-2.5 text-sm text-slate-400 font-medium">tBNB</span>
+                </div>
+                <button onclick="doPaylaterDeposit()" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition">{{ __('paylater.deposit_btn') }}</button>
+            </div>
+            <p id="plEst" class="text-xs text-slate-400 mb-4">{{ __('paylater.est_hint') }}</p>
+
+            <div class="flex flex-wrap gap-2">
+                <button onclick="doPaylaterBorrow()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition">{{ __('paylater.borrow_btn') }}</button>
+                <button onclick="doPaylaterRepay()" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-semibold transition">{{ __('paylater.repay_btn') }}</button>
+                <button onclick="doPaylaterWithdraw()" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-semibold transition">{{ __('paylater.withdraw_btn') }}</button>
+            </div>
+        </div>
+
+        {{-- Riwayat paylater --}}
+        @if($paylaterHistory->isNotEmpty())
+            @php $plLabels = ['deposit'=>__('paylater.act_deposit'),'borrow'=>__('paylater.act_borrow'),'repay'=>__('paylater.act_repay'),'withdraw'=>__('paylater.act_withdraw'),'seize'=>__('paylater.act_seize')];
+                  $plUnits  = ['deposit'=>'tBNB','borrow'=>'TLKM','repay'=>'TLKM','withdraw'=>'tBNB','seize'=>'tBNB']; @endphp
+            <div class="border-t border-slate-100">
+                @foreach($paylaterHistory as $h)
+                    <div class="px-5 py-2.5 border-t border-slate-50 flex items-center justify-between gap-3 first:border-t-0">
+                        <p class="text-sm text-slate-700">{{ $plLabels[$h->action] ?? $h->action }} <b>{{ $fmt($h->amount) }} {{ $plUnits[$h->action] ?? '' }}</b> <span class="text-[11px] text-slate-400">· {{ $h->created_at->diffForHumans() }}</span></p>
+                        <a href="{{ config('chain.explorer_url') }}/tx/{{ $h->tx_hash }}" target="_blank" rel="noopener" class="text-[11px] text-blue-600 hover:underline shrink-0">tx ↗</a>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    @endif
+</div>
+
 {{-- RIWAYAT --}}
 <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mt-6">
     <div class="px-5 py-4 border-b border-slate-100"><h2 class="font-bold text-slate-900">Riwayat transfer</h2></div>
@@ -113,6 +192,47 @@
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script>
+// ===== PAYLATER (aksi di halaman Wallet) =====
+const PL_INTEREST_BPS = (typeof PAYLATER_INTEREST_BPS !== 'undefined') ? PAYLATER_INTEREST_BPS : 300;
+
+function plEstLimit() {
+    const el = document.getElementById('plDepAmt'); if (!el) return;
+    const v = parseFloat(el.value) || 0;
+    const est = v * PAYLATER_RATE_TLKM_PER_BNB;
+    document.getElementById('plEst').textContent = v > 0 ? `≈ ${est.toLocaleString('id-ID')} TLKM limit` : @json(__('paylater.est_hint'));
+}
+function plOk(hash) { txProgress.close(); uiAlert({ title: 'Berhasil', message: hash ? `<a href="{{ config('chain.explorer_url') }}/tx/${hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>` : 'Tersimpan.', type: 'success' }).then(() => location.reload()); }
+function plFail(e) { txProgress.close(); uiAlert({ title: 'Gagal', message: niceError(e), type: 'error' }); }
+
+async function doPaylaterDeposit() {
+    let amt = document.getElementById('plDepAmt')?.value;
+    if (!amt || +amt <= 0) amt = await uiPrompt({ title: @json(__('paylater.deposit_btn')), label: 'Jumlah tBNB agunan:', type: 'number', min: 0, step: 'any', placeholder: '0.00', confirmText: 'Lanjut' });
+    if (amt === null || +amt <= 0) return;
+    txProgress.open('Deposit agunan', ['Menandatangani', 'Menyiarkan']);
+    try { txProgress.active(0); const h = await depositCollateralPaylater(amt); if (!h) return txProgress.close(); txProgress.done(0); txProgress.active(1); txProgress.done(1); await recordPaylater('deposit', amt, h); plOk(h); } catch (e) { plFail(e); }
+}
+async function doPaylaterBorrow() {
+    const amt = await uiPrompt({ title: @json(__('paylater.borrow_btn')), label: 'Jumlah TLKM yang dipinjam (≤ sisa limit):', type: 'number', min: 0, step: 'any', placeholder: '0', confirmText: 'Lanjut' });
+    if (amt === null || +amt <= 0) return;
+    const due = (+amt) * (10000 + PL_INTEREST_BPS) / 10000;
+    const ok = await uiConfirm({ title: @json(__('paylater.borrow_btn')), message: `Pinjam <b>${(+amt).toLocaleString('id-ID')} TLKM</b>. Wajib bayar <b>${due.toLocaleString('id-ID')} TLKM</b> (bunga ${PL_INTEREST_BPS / 100}%) sebelum tenggat.`, confirmText: 'Ya, pinjam' });
+    if (!ok) return;
+    txProgress.open('Pinjam TLKM', ['Menandatangani', 'Menyiarkan']);
+    try { txProgress.active(0); const h = await borrowPaylater(amt); if (!h) return txProgress.close(); txProgress.done(0); txProgress.active(1); txProgress.done(1); await recordPaylater('borrow', amt, h); plOk(h); } catch (e) { plFail(e); }
+}
+async function doPaylaterRepay() {
+    const amt = await uiPrompt({ title: @json(__('paylater.repay_btn')), label: 'Jumlah TLKM yang dilunasi:', type: 'number', min: 0, step: 'any', placeholder: '0', confirmText: 'Lunasi' });
+    if (amt === null || +amt <= 0) return;
+    txProgress.open('Melunasi', ['Approve TLKM', 'Menyiarkan']);
+    try { txProgress.active(0); const h = await repayPaylater(amt); if (!h) return txProgress.close(); txProgress.done(0); txProgress.active(1); txProgress.done(1); await recordPaylater('repay', amt, h); plOk(h); } catch (e) { plFail(e); }
+}
+async function doPaylaterWithdraw() {
+    const amt = await uiPrompt({ title: @json(__('paylater.withdraw_btn')), label: 'Jumlah tBNB agunan yang ditarik (kewajiban harus 0):', type: 'number', min: 0, step: 'any', placeholder: '0.00', confirmText: 'Tarik' });
+    if (amt === null || +amt <= 0) return;
+    txProgress.open('Tarik agunan', ['Menandatangani', 'Menyiarkan']);
+    try { txProgress.active(0); const h = await withdrawCollateralPaylater(amt); if (!h) return txProgress.close(); txProgress.done(0); txProgress.active(1); txProgress.done(1); await recordPaylater('withdraw', amt, h); plOk(h); } catch (e) { plFail(e); }
+}
+
 // Cari penerima via No HP / wallet → tampilkan namanya.
 let _lookupTimer = null;
 async function lookupRecipient(q) {

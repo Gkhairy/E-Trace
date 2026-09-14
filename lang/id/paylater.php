@@ -9,9 +9,11 @@ return [
     'collateral'     => 'Agunan',
     'limit'          => 'Limit kredit',
     'debt'           => 'Utang',
+    'due_amount'     => 'Kewajiban',
     'available'      => 'Sisa limit',
     'liquidity'      => 'Likuiditas tersedia',
     'due'            => 'Jatuh tempo',
+    'interest_note'  => 'Bunga :pct% flat per pinjaman.',
 
     'deposit_title'  => 'Deposit agunan (tBNB)',
     'deposit_hint'   => 'Makin banyak agunan, makin besar limit TLKM-mu.',

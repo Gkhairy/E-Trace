@@ -42,7 +42,8 @@ class PaylaterVerifier
     }
 
     /**
-     * Posisi user (wei string): collateral (tBNB), debt (TLKM), due_date (unix), limit (TLKM).
+     * Posisi user (wei string): collateral (tBNB), principal (TLKM pokok), due_amount
+     * (TLKM kewajiban = pokok+bunga), due_date (unix), limit (TLKM).
      * Null bila kontrak belum diset atau RPC gagal.
      */
     public function positionOf(string $address): ?array
@@ -53,26 +54,27 @@ class PaylaterVerifier
         $sel = substr(Keccak::hash('positionOf(address)', 256), 0, 8);
         $arg = str_pad(substr(strtolower($address), 2), 64, '0', STR_PAD_LEFT);
         $res = $this->rpc('eth_call', [['to' => $this->contract, 'data' => '0x' . $sel . $arg], 'latest']);
-        if (!$res || strlen($res) < 2 + 64 * 4) {
+        if (!$res || strlen($res) < 2 + 64 * 5) {
             return null;
         }
         $h = substr($res, 2);
         $word = fn ($i) => gmp_strval(gmp_init('0x' . substr($h, $i * 64, 64)));
         return [
             'collateral' => $word(0),   // tBNB wei
-            'debt'       => $word(1),   // TLKM wei
-            'due_date'   => (int) $word(2),
-            'limit'      => $word(3),   // TLKM wei
+            'principal'  => $word(1),   // TLKM wei (pokok)
+            'due_amount' => $word(2),   // TLKM wei (kewajiban = pokok + bunga)
+            'due_date'   => (int) $word(3),
+            'limit'      => $word(4),   // TLKM wei
         ];
     }
 
     /** Likuiditas TLKM tersedia di kontrak (wei string). Null bila gagal. */
-    public function ownerFundInfo(): ?string
+    public function availableLiquidity(): ?string
     {
         if (!$this->contract) {
             return null;
         }
-        $sel = substr(Keccak::hash('ownerFundInfo()', 256), 0, 8);
+        $sel = substr(Keccak::hash('availableLiquidity()', 256), 0, 8);
         $res = $this->rpc('eth_call', [['to' => $this->contract, 'data' => '0x' . $sel], 'latest']);
         if (!$res || $res === '0x') {
             return null;

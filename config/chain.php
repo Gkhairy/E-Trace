@@ -22,10 +22,12 @@ return [
     // Dompet komunitas on-chain (opsional; alur custodial saat ini tak memakainya).
     'community_wallet' => env('COMMUNITY_WALLET_ADDRESS', '0x0000000000000000000000000000000000000000'),
 
-    // Paylater (kredit berjaminan on-chain, DEMO testnet). Isi setelah deploy TlkmPaylater.sol.
+    // Paylater (kredit berjaminan on-chain DENGAN BUNGA, DEMO testnet). Isi setelah deploy.
     'paylater_address' => env('PAYLATER_ADDRESS'),
     // Rate DEMO untuk estimasi limit di UI: TLKM per 1 tBNB (samakan dgn `rate` kontrak / 1e18).
     'paylater_rate_tlkm_per_bnb' => (int) env('PAYLATER_RATE_TLKM_PER_BNB', 1000000),
+    // Bunga flat per pinjaman (basis poin) untuk estimasi UI (samakan dgn `interestBps` kontrak).
+    'paylater_interest_bps' => (int) env('PAYLATER_INTEREST_BPS', 300),
 
     // Konfirmasi: 1 = terdeteksi, >= paid_confirmations dianggap 'paid',
     // >= finalized_confirmations dianggap final (catatan audit).

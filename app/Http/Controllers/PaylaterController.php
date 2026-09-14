@@ -7,43 +7,13 @@ use App\Services\PaylaterVerifier;
 use Illuminate\Http\Request;
 
 /**
- * Paylater — kredit berjaminan on-chain (DEMO testnet). Posisi (agunan/utang/limit)
- * SELALU dibaca dari chain via PaylaterVerifier (sumber kebenaran). Tabel paylater_loans
- * hanya cermin aksi untuk riwayat. Eksekusi tx: MetaMask (frontend) atau PIN (PinTxController).
+ * Paylater — kredit berjaminan on-chain DENGAN BUNGA (DEMO testnet). Posisi
+ * (agunan/kewajiban/limit) SELALU dibaca dari chain via PaylaterVerifier (sumber
+ * kebenaran) dan ditampilkan di halaman Wallet. Tabel paylater_loans hanya cermin
+ * aksi untuk riwayat. Eksekusi tx: MetaMask (frontend) atau PIN (PinTxController).
  */
 class PaylaterController extends Controller
 {
-    public function index(PaylaterVerifier $verifier)
-    {
-        $user   = auth()->user();
-        $wallet = strtolower((string) $user->wallet_address);
-
-        $configured   = $verifier->configured();
-        $pos          = $configured ? $verifier->positionOf($wallet) : null;
-        $liquidityWei = $configured ? $verifier->ownerFundInfo() : null;
-
-        // wei (18 desimal) -> string human.
-        $fmt = fn ($wei, $dp = 6) => $wei !== null
-            ? rtrim(rtrim(bcdiv((string) $wei, bcpow('10', '18'), $dp), '0'), '.')
-            : null;
-
-        $available = $pos ? bcsub($pos['limit'], $pos['debt']) : '0';
-        $position = [
-            'collateral' => $pos ? $fmt($pos['collateral']) : '0',       // tBNB
-            'debt'       => $pos ? $fmt($pos['debt'], 2) : '0',          // TLKM
-            'limit'      => $pos ? $fmt($pos['limit'], 2) : '0',         // TLKM
-            'available'  => $fmt($available, 2) ?: '0',                  // sisa limit (TLKM)
-            'due_date'   => ($pos && $pos['due_date'] > 0) ? \Carbon\Carbon::createFromTimestamp($pos['due_date']) : null,
-            'has_debt'   => $pos ? bccomp($pos['debt'], '0') > 0 : false,
-        ];
-        $liquidity = $fmt($liquidityWei, 2);
-
-        $history = PaylaterLoan::where('user_id', $user->id)->latest()->limit(30)->get();
-        $rate    = (int) config('chain.paylater_rate_tlkm_per_bnb', 1000000);
-
-        return view('paylater.index', compact('configured', 'position', 'liquidity', 'history', 'rate', 'wallet'));
-    }
-
     /** Dipanggil frontend SETELAH tx sukses; simpan jejak aksi (cegah duplikat tx_hash). */
     public function record(Request $req, PaylaterVerifier $verifier)
     {

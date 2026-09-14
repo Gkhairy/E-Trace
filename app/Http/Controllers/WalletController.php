@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Transfer;
 use App\Models\PaymentRequest;
 use App\Models\User;
+use App\Models\PaylaterLoan;
 use App\Support\Identity;
 use App\Services\ChainVerifier;
+use App\Services\PaylaterVerifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -65,7 +67,33 @@ class WalletController extends Controller
 
         $requests = PaymentRequest::where('user_id', auth()->id())->latest()->get();
 
-        return view('wallet.index', compact('wallet', 'transfers', 'requests'));
+        // ===== Paylater (kredit berjaminan on-chain, DEMO). Kebenaran posisi dari chain. =====
+        // Aman-nonaktif bila PAYLATER_ADDRESS kosong.
+        $pv = new PaylaterVerifier();
+        $paylater = ['configured' => $pv->configured()];
+        if ($pv->configured()) {
+            $pos          = $wallet ? $pv->positionOf($wallet) : null;
+            $liquidityWei = $pv->availableLiquidity();
+            $fmt = fn ($wei, $dp = 6) => $wei !== null
+                ? rtrim(rtrim(bcdiv((string) $wei, bcpow('10', '18'), $dp), '0'), '.')
+                : null;
+
+            $paylater += [
+                'collateral' => $pos ? $fmt($pos['collateral']) : '0',                 // tBNB
+                'limit'      => $pos ? $fmt($pos['limit'], 2) : '0',                    // TLKM
+                'due_amount' => $pos ? $fmt($pos['due_amount'], 2) : '0',              // TLKM (pokok+bunga)
+                'principal'  => $pos ? $fmt($pos['principal'], 2) : '0',               // TLKM
+                'available'  => $pos ? ($fmt(bcsub($pos['limit'], $pos['principal']), 2) ?: '0') : '0',
+                'liquidity'  => $fmt($liquidityWei, 2),
+                'due_date'   => ($pos && $pos['due_date'] > 0) ? \Carbon\Carbon::createFromTimestamp($pos['due_date']) : null,
+                'has_debt'   => $pos ? bccomp($pos['due_amount'], '0') > 0 : false,
+                'rate'       => (int) config('chain.paylater_rate_tlkm_per_bnb', 1000000),
+                'interest_bps' => (int) config('chain.paylater_interest_bps', 300),
+            ];
+        }
+        $paylaterHistory = PaylaterLoan::where('user_id', auth()->id())->latest()->limit(20)->get();
+
+        return view('wallet.index', compact('wallet', 'transfers', 'requests', 'paylater', 'paylaterHistory'));
     }
 
     /** Catat transfer TLKM setelah verifikasi on-chain. */

@@ -306,6 +306,7 @@
     const DONATION_POOL_ADDRESS   = @json(config('chain.donation_pool'));
     const PAYLATER_ADDRESS        = @json(config('chain.paylater_address'));
     const PAYLATER_RATE_TLKM_PER_BNB = {{ (int) config('chain.paylater_rate_tlkm_per_bnb', 1000000) }};
+    const PAYLATER_INTEREST_BPS      = {{ (int) config('chain.paylater_interest_bps', 300) }};
     const TOKEN_DECIMALS = 18;
     const PLATFORM_FEE_BPS = {{ (int) config('chain.platform_fee_bps', 100) }}; // 1% — dipotong dari penjual saat dana dilepas
 
@@ -350,8 +351,8 @@
         "function repay(uint256 amount)",
         "function withdrawCollateral(uint256 amount)",
         "function creditLimit(address u) view returns (uint256)",
-        "function positionOf(address u) view returns (uint256 collateral, uint256 debt, uint256 dueDate, uint256 limit)",
-        "function ownerFundInfo() view returns (uint256)"
+        "function positionOf(address u) view returns (uint256 collateral, uint256 principal, uint256 dueAmount, uint256 dueDate, uint256 limit)",
+        "function availableLiquidity() view returns (uint256)"
     ];
 
     // =========================================================

@@ -9,9 +9,11 @@ return [
     'collateral'     => 'Collateral',
     'limit'          => 'Credit limit',
     'debt'           => 'Debt',
+    'due_amount'     => 'Amount due',
     'available'      => 'Available',
     'liquidity'      => 'Available liquidity',
     'due'            => 'Due date',
+    'interest_note'  => ':pct% flat interest per loan.',
 
     'deposit_title'  => 'Deposit collateral (tBNB)',
     'deposit_hint'   => 'More collateral means a bigger TLKM limit.',

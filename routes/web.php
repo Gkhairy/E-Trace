@@ -149,8 +149,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/pin/paylater-repay',    [\App\Http\Controllers\PinTxController::class, 'paylaterRepay'])->middleware('throttle:15,1');
     Route::post('/pin/paylater-withdraw', [\App\Http\Controllers\PinTxController::class, 'paylaterWithdraw'])->middleware('throttle:15,1');
 
-    // PAYLATER (kredit berjaminan on-chain, DEMO)
-    Route::get('/paylater', [\App\Http\Controllers\PaylaterController::class, 'index']);
+    // PAYLATER (kredit berjaminan on-chain DENGAN BUNGA, DEMO) — UI digabung ke halaman Wallet.
     Route::post('/paylater/record', [\App\Http\Controllers\PaylaterController::class, 'record'])->middleware('throttle:15,1');
 
     // BAYAR QRIS pakai stablecoin — PROTOTIPE (receipt simulasi, tanpa settlement nyata)
