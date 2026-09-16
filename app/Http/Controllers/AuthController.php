@@ -26,6 +26,11 @@ class AuthController extends Controller
 
     public function registerStore(Request $request)
     {
+        // Cloudflare Turnstile (anti-bot). Aman-nonaktif bila belum dikonfigurasi.
+        if (!\App\Services\Turnstile::verify($request->input('cf-turnstile-response'), $request->ip())) {
+            return back()->withErrors(['email' => 'Verifikasi anti-bot gagal. Muat ulang halaman lalu coba lagi.'])->withInput();
+        }
+
         // Dua jalur: (1) MetaMask (wallet+signature) ATAU (2) embedded wallet (PIN 6 angka).
         $usesMetamask = $request->filled('wallet_address') && $request->filled('signature');
 
@@ -289,6 +294,12 @@ class AuthController extends Controller
             'email'    => 'required|email',
             'password' => 'required'
         ]);
+
+        // Cloudflare Turnstile (anti-bot). Aman-nonaktif bila belum dikonfigurasi.
+        if (!\App\Services\Turnstile::verify($request->input('cf-turnstile-response'), $request->ip())) {
+            return back()->withErrors(['email' => 'Verifikasi anti-bot gagal. Muat ulang halaman lalu coba lagi.'])
+                ->withInput($request->only('email'));
+        }
 
         // Proteksi brute force: kunci per (email + IP) setelah 5x gagal.
         $throttleKey = 'login:' . Str::lower($data['email']) . '|' . $request->ip();

@@ -33,6 +33,16 @@ class Product extends Model
         return array_map(fn ($r) => self::resolveImage($r), $refs);
     }
 
+    /**
+     * URL thumbnail siap-tayang (gambar pertama gallery; fallback kolom `image`).
+     * Aman untuk file lokal MAUPUN URL remote (http). Null bila produk tak bergambar.
+     * Pakai ini di keranjang/order/checkout alih-alih menempel '/product_images/' manual.
+     */
+    public function thumbnail(): ?string
+    {
+        return $this->images()[0] ?? null;
+    }
+
     public function store()
     {
         return $this->belongsTo(Store::class);

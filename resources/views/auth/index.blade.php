@@ -7,6 +7,9 @@
     <title>{{ ($mode ?? 'login') === 'register' ? 'Daftar' : 'Masuk' }} — E-Trace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.1/dist/ethers.umd.min.js"></script>
+    @if(\App\Services\Turnstile::enabled())
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    @endif
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -114,6 +117,9 @@
                 <div class="text-right -mt-1">
                     <a href="/forgot-password" class="text-xs text-blue-600 hover:underline">{{ __('auth.forgot_password') }}</a>
                 </div>
+                @if(\App\Services\Turnstile::enabled())
+                    <div class="cf-turnstile flex justify-center" data-sitekey="{{ \App\Services\Turnstile::siteKey() }}"></div>
+                @endif
                 <button class="w-full py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm mt-1">{{ __('auth.sign_in') }}</button>
             </form>
             <p class="text-[11px] text-slate-400 text-center mt-2">{{ __('auth.pin_after_pw') }}</p>
@@ -187,6 +193,9 @@
                     <input type="hidden" name="sig_timestamp" id="sig_timestamp" value="{{ old('sig_timestamp') }}" disabled>
                 </div>
 
+                @if(\App\Services\Turnstile::enabled())
+                    <div class="cf-turnstile flex justify-center" data-sitekey="{{ \App\Services\Turnstile::siteKey() }}"></div>
+                @endif
                 <button type="button" onclick="openPinModal()" class="w-full py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm mt-1">{{ __('auth.create_account') }}</button>
                 <p class="text-[11px] text-slate-400 text-center">{{ __('auth.pin_after') }}</p>
             </form>

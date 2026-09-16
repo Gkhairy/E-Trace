@@ -27,6 +27,7 @@ class Order extends Model
         'is_insured',
         'premium_tlkm',
         'promised_date',
+        'eta_days',
         'insurance_status',
         'payout_tx',
         'payout_tlkm',

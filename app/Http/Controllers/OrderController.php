@@ -223,6 +223,7 @@ class OrderController extends Controller
             $ins   = config('chain.insurance');
             $insOn = (bool) ($ins['enabled'] ?? false) && !empty($ins['pool_wallet']);
             $order->shipping_tlkm = round($shipTlkm, 6);
+            $order->eta_days      = $etaMax;
             $order->promised_date = now()->addDays($etaMax + (int) ($ins['eta_buffer_days'] ?? 3));
             if (!empty($data['is_insured']) && $insOn) {
                 $order->is_insured       = true;
@@ -351,14 +352,41 @@ class OrderController extends Controller
         abort_unless(auth()->user()->isSupervisor() || config('app.debug'), 403, 'Khusus dev/pengawas.');
         $data = $req->validate([
             'order_id' => 'required|string',
-            'preset'   => 'required|in:on_time,late_courier,failed_address',
+            'preset'   => 'required|in:on_time,late_courier,failed_address,not_shipped_late,delivered_unconfirmed',
         ]);
 
         $order = Order::where('order_id', $data['order_id'])
             ->when(!auth()->user()->isSupervisor(), fn ($q) => $q->where('user_id', auth()->id()))
             ->firstOrFail();
 
-        $grace = (int) config('chain.insurance.grace_days', 2);
+        $grace   = (int) config('chain.insurance.grace_days', 2);
+        $shipDl  = (int) config('chain.settlement.ship_deadline_days', 3);
+        $autoDl  = (int) config('chain.settlement.auto_complete_days', 3);
+
+        // Preset aturan-WAKTU (deterministik): geser tanggal agar timeout langsung terpicu.
+        if ($data['preset'] === 'not_shipped_late') {
+            // Pesanan lama tak kunjung dikirim penjual → auto-refund saat keeper jalan.
+            $order->created_at = now()->subDays($shipDl + 1);
+            $order->save();
+            \App\Models\TrackingEvent::create(['order_id' => $order->id, 'source' => 'simulated',
+                'raw_text' => "Simulasi: pesanan sudah > {$shipDl} hari, penjual belum mengirim (belum ada resi)."]);
+            return response()->json(['success' => true, 'message' => 'Disimulasikan: penjual telat kirim. Klik "Jalankan keeper".']);
+        }
+        if ($data['preset'] === 'delivered_unconfirmed') {
+            // Barang sudah diterima tapi pembeli lupa konfirmasi > M hari.
+            foreach ($order->items()->where('status', 'paid')->get() as $it) {
+                $it->fulfillment_status = 'delivered';
+                $it->delivered_at = now()->subDays($autoDl + 1);
+                $it->save();
+            }
+            \App\Models\TrackingEvent::create(['order_id' => $order->id, 'source' => 'simulated',
+                'raw_text' => 'Paket DITERIMA penerima (DELIVERED). Simulasi: pembeli belum konfirmasi.']);
+            $far = ($order->eta_days ?? 0) >= (int) config('chain.settlement.far_eta_days', 10);
+            $note = $far ? ' Tujuan JAUH — auto-selesai dilewati (perlu manual).' : ' Klik "Jalankan keeper" untuk auto-selesai.';
+            return response()->json(['success' => true, 'message' => 'Disimulasikan: sudah diterima, belum dikonfirmasi.' . $note]);
+        }
+
+        // Preset berbasis TRACKING (dinilai AI).
         [$text, $promised] = match ($data['preset']) {
             'on_time'        => ['Paket DITERIMA penerima di alamat tujuan. Status: DELIVERED. Pengiriman tepat waktu.', now()->addDay()],
             'late_courier'   => ['Paket tertahan di gudang transit kurir karena keterlambatan operasional kurir; estimasi mundur, belum terkirim ke penerima.', now()->subDays($grace + 2)],

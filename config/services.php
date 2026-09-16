@@ -41,4 +41,11 @@ return [
         'model' => env('OPENAI_MODEL', 'gpt-4o-mini'), // paling ringan & murah
     ],
 
+    // Cloudflare Turnstile (anti-bot di login/daftar). Aman-nonaktif bila kosong.
+    // site_key boleh publik (dipakai di frontend); secret HANYA di backend/.env.
+    'turnstile' => [
+        'site_key' => env('TURNSTILE_SITE_KEY'),
+        'secret'   => env('TURNSTILE_SECRET_KEY'),
+    ],
+
 ];

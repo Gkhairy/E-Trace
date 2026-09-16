@@ -29,7 +29,7 @@
             @foreach($items as $it)
                 <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 flex gap-4 items-center">
                     <a href="/products/{{ $it->product->id }}" class="w-20 h-20 rounded-xl bg-white border border-slate-100 flex items-center justify-center p-1 shrink-0">
-                        <img src="{{ $it->product->image ? '/product_images/'.$it->product->image : 'https://placehold.co/100x100/f1f5f9/94a3b8?text=—' }}"
+                        <img src="{{ $it->product?->thumbnail() ?? 'https://placehold.co/100x100/f1f5f9/94a3b8?text=—' }}"
                              onerror="this.src='https://placehold.co/100x100/f1f5f9/94a3b8?text=—'"
                              class="max-w-full max-h-full object-contain">
                     </a>

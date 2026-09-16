@@ -88,9 +88,14 @@
                         'rejected' => ['🛡️ '.__('insurance.status.rejected'), 'bg-slate-100 text-slate-500 border-slate-300'],
                         default    => ['🛡️ '.__('insurance.status.active'), 'bg-amber-50 text-amber-700 border-amber-200'],
                     } : null;
-                    $isDemo = auth()->user()->isSupervisor() || config('app.debug');
+                    // Kontrol simulasi HANYA untuk pengawas — user biasa tak melihatnya
+                    // (keeper tetap jalan di belakang lewat scheduler).
+                    $isDemo = auth()->user()->isSupervisor();
+                    // Tampilkan alasan AI hanya bila sudah ada hasil bermakna (bukan "belum ada tracking").
+                    $showReason = $order->ai_reason
+                        && ($ss !== 'pending' || in_array($order->insurance_status, ['paid', 'rejected'], true));
                 @endphp
-                @if($settleBadge || $insBadge || $order->ai_reason || $isDemo)
+                @if($settleBadge || $insBadge || $showReason || $isDemo)
                 <div class="px-5 py-3 border-b border-slate-100 bg-indigo-50/30">
                     <div class="flex flex-wrap items-center gap-2">
                         @if($settleBadge)<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium border {{ $settleBadge[1] }}">{{ $settleBadge[0] }}</span>@endif
@@ -100,7 +105,7 @@
                             <a href="{{ config('chain.explorer_url') }}/tx/{{ $order->payout_tx }}" target="_blank" rel="noopener" class="text-[11px] text-green-600 hover:underline">{{ __('insurance.payout_label') }} {{ rtrim(rtrim(number_format($order->payout_tlkm ?? 0, 2), '0'), '.') }} TLKM ↗</a>
                         @endif
                     </div>
-                    @if($order->ai_reason)
+                    @if($showReason)
                         <p class="text-[11px] text-slate-500 mt-1.5"><b class="text-indigo-600">{{ __('insurance.ai_badge') }}:</b> {{ $order->ai_reason }}</p>
                     @endif
                     @if($isDemo)
@@ -109,6 +114,8 @@
                             <button onclick="simTrack('{{ $order->order_id }}','on_time',this)" class="text-[11px] bg-white hover:bg-green-50 border border-slate-200 hover:border-green-300 text-slate-600 px-2 py-1 rounded-md transition">Terkirim tepat waktu</button>
                             <button onclick="simTrack('{{ $order->order_id }}','late_courier',this)" class="text-[11px] bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-slate-600 px-2 py-1 rounded-md transition">Telat karena kurir</button>
                             <button onclick="simTrack('{{ $order->order_id }}','failed_address',this)" class="text-[11px] bg-white hover:bg-red-50 border border-slate-200 hover:border-red-300 text-slate-600 px-2 py-1 rounded-md transition">Gagal kirim — alamat salah</button>
+                            <button onclick="simTrack('{{ $order->order_id }}','not_shipped_late',this)" class="text-[11px] bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-slate-600 px-2 py-1 rounded-md transition" title="Uji auto-refund">Penjual telat kirim</button>
+                            <button onclick="simTrack('{{ $order->order_id }}','delivered_unconfirmed',this)" class="text-[11px] bg-white hover:bg-green-50 border border-slate-200 hover:border-green-300 text-slate-600 px-2 py-1 rounded-md transition" title="Uji auto-selesai (dilewati bila tujuan jauh)">Diterima, lupa konfirmasi</button>
                             <button onclick="runKeeper('{{ $order->order_id }}',this)" class="text-[11px] bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded-md font-semibold transition">▶ Jalankan keeper</button>
                         </div>
                     @endif
@@ -125,7 +132,7 @@
                                     @php $b = $badgeMap[$item->status] ?? $badgeMap['paid']; @endphp
                                     <div class="flex items-center gap-3">
                                         <div class="w-12 h-12 rounded-lg bg-white border border-slate-100 flex items-center justify-center p-1 shrink-0">
-                                            <img src="{{ $item->product && $item->product->image ? '/product_images/'.$item->product->image : 'https://placehold.co/80x80/f1f5f9/94a3b8?text=—' }}" onerror="this.src='https://placehold.co/80x80/f1f5f9/94a3b8?text=—'" class="max-w-full max-h-full object-contain">
+                                            <img src="{{ $item->product?->thumbnail() ?? 'https://placehold.co/80x80/f1f5f9/94a3b8?text=—' }}" onerror="this.src='https://placehold.co/80x80/f1f5f9/94a3b8?text=—'" class="max-w-full max-h-full object-contain">
                                         </div>
                                         <div class="flex-1 min-w-0">
                                             <p class="text-sm font-medium text-slate-800 line-clamp-1">{{ $item->product->name ?? '—' }}</p>

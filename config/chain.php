@@ -48,6 +48,10 @@ return [
     // Utama: RajaOngkir (Komerce API v1). Fallback: jarak garis lurus (haversine)
     // antar kota dari koordinat bawaan (gratis, tanpa API).
     'shipping' => [
+        // Wallet penerima ongkir (custodial platform/logistik). Ongkir dibayar sebagai
+        // transfer TLKM TERPISAH dari escrow produk. Kosong = pakai wallet pool asuransi
+        // (sama-sama custodial platform); bila keduanya kosong, ongkir tetap estimasi non-on-chain.
+        'fee_wallet'    => env('SHIPPING_FEE_WALLET'),
         'base_fee'      => (int) env('SHIP_BASE_FEE', 20000),   // untuk 10 km pertama (Rupiah)
         'base_km'       => (int) env('SHIP_BASE_KM', 10),
         'step_km'       => (int) env('SHIP_STEP_KM', 5),        // tiap tambahan 5 km
@@ -83,6 +87,19 @@ return [
     'ai' => [
         'min_confidence'       => (float) env('AI_MIN_CONFIDENCE', 0.8),        // ambang auto-eksekusi
         'max_auto_amount_tlkm' => (float) env('AI_MAX_AUTO_AMOUNT_TLKM', 1000), // di atas ini → eskalasi pengawas
+    ],
+
+    // Aturan penyelesaian DETERMINISTIK (tanpa AI) yang dijalankan keeper.
+    'settlement' => [
+        // Auto-refund bila penjual TAK mengirim dalam N hari (soal penjual mengirim,
+        // jadi TIDAK bergantung jarak). 0 = matikan aturan ini.
+        'ship_deadline_days'  => (int) env('SETTLE_SHIP_DEADLINE_DAYS', 3),
+        // Auto-selesai (rilis ke penjual) bila barang sudah DITERIMA tapi pembeli tak
+        // konfirmasi dalam M hari. 0 = matikan.
+        'auto_complete_days'  => (int) env('SETTLE_AUTO_COMPLETE_DAYS', 3),
+        // Tujuan JAUH (eta_days >= nilai ini) TIDAK di-auto-selesaikan — beri pembeli
+        // remote waktu lebih; biar dikonfirmasi manual / lewat pengawas.
+        'far_eta_days'        => (int) env('SETTLE_FAR_ETA_DAYS', 10),
     ],
 
     // Kunci ARBITER (pengawas otomatis) untuk AI auto-settlement lewat ChainSigner.

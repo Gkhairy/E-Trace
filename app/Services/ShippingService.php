@@ -35,6 +35,31 @@ class ShippingService
         'pekalongan' => [-6.8898, 109.6753], 'serang' => [-6.1200, 106.1503],
         'cilegon' => [-6.0025, 106.0113], 'karawang' => [-6.3227, 107.3376],
         'purwakarta' => [-6.5569, 107.4431], 'garut' => [-7.2145, 107.9081],
+        // Bali & Nusa Tenggara
+        'denpasar' => [-8.6705, 115.2126], 'bali' => [-8.4095, 115.1889],
+        'mataram' => [-8.5833, 116.1167], 'lombok' => [-8.6500, 116.3200],
+        'kupang' => [-10.1772, 123.6070], 'ntt' => [-10.1772, 123.6070],
+        // Sumatra
+        'medan' => [3.5952, 98.6722], 'padang' => [-0.9471, 100.4172],
+        'pekanbaru' => [0.5071, 101.4478], 'palembang' => [-2.9761, 104.7754],
+        'bandar lampung' => [-5.3971, 105.2668], 'lampung' => [-5.3971, 105.2668],
+        'jambi' => [-1.6101, 103.6131], 'bengkulu' => [-3.8004, 102.2655],
+        'banda aceh' => [5.5483, 95.3238], 'aceh' => [5.5483, 95.3238], 'batam' => [1.0456, 104.0305],
+        // Kalimantan
+        'pontianak' => [-0.0263, 109.3425], 'banjarmasin' => [-3.3194, 114.5906],
+        'balikpapan' => [-1.2379, 116.8529], 'samarinda' => [-0.5022, 117.1536],
+        'palangkaraya' => [-2.2088, 113.9213],
+        // Sulawesi
+        'makassar' => [-5.1477, 119.4327], 'manado' => [1.4748, 124.8421],
+        'palu' => [-0.8917, 119.8707], 'kendari' => [-3.9985, 122.5127], 'gorontalo' => [0.5435, 123.0568],
+        // Maluku
+        'ambon' => [-3.6954, 128.1814], 'maluku' => [-3.6954, 128.1814], 'ternate' => [0.7833, 127.3667],
+        // Papua (jauh — SLA garansi otomatis lebih panjang)
+        'jayapura' => [-2.5337, 140.7181], 'papua' => [-2.5337, 140.7181],
+        'wamena' => [-4.0989, 138.9568], 'papua pegunungan' => [-4.0989, 138.9568],
+        'yahukimo' => [-4.1300, 139.4900], 'merauke' => [-8.4934, 140.4017],
+        'nabire' => [-3.3600, 135.4900], 'timika' => [-4.5477, 136.8888],
+        'sorong' => [-0.8762, 131.2558], 'manokwari' => [-0.8615, 134.0620],
     ];
 
     /** Normalisasi & cari koordinat kota (pencocokan substring toleran). */
@@ -126,10 +151,11 @@ class ShippingService
         $a = $this->coordsFor($fromCity);
         $b = $this->coordsFor($toCity);
         if (!$a || !$b) {
-            return 4; // kota tak dikenal — asumsi konservatif 4 hari.
+            return 7; // kota tak dikenal — asumsi lintas pulau, cukup lama.
         }
         $km = $this->haversineKm($a, $b);
-        // ~1 hari per 400 km + 1 hari proses; dibatasi 1..7 hari.
-        return max(1, min(7, (int) ceil($km / 400) + 1));
+        // SLA berbasis jarak: 1 hari proses + 1 hari per 250 km. Dekat ~1-4 hari,
+        // lintas pulau jauh (mis. Jawa→Papua ~3.600 km) belasan hari. Dibatasi 1..30.
+        return max(1, min(30, (int) ceil($km / 250) + 1));
     }
 }

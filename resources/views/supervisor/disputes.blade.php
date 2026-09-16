@@ -31,7 +31,7 @@
                 <div class="flex flex-wrap items-start justify-between gap-4">
                     <div class="flex gap-3 min-w-0">
                         <div class="w-14 h-14 rounded-lg bg-white border border-slate-100 flex items-center justify-center p-1 shrink-0">
-                            <img src="{{ $it->product && $it->product->image ? '/product_images/'.$it->product->image : 'https://placehold.co/80x80/f1f5f9/94a3b8?text=—' }}" onerror="this.src='https://placehold.co/80x80/f1f5f9/94a3b8?text=—'" class="max-w-full max-h-full object-contain">
+                            <img src="{{ $it->product?->thumbnail() ?? 'https://placehold.co/80x80/f1f5f9/94a3b8?text=—' }}" onerror="this.src='https://placehold.co/80x80/f1f5f9/94a3b8?text=—'" class="max-w-full max-h-full object-contain">
                         </div>
                         <div class="min-w-0">
                             <p class="font-semibold text-slate-900">{{ $it->product->name ?? '—' }}</p>

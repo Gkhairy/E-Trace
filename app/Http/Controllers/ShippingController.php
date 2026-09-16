@@ -27,6 +27,7 @@ class ShippingController extends Controller
 
         $sellers = [];
         $total = 0.0;
+        $etaMax = 1;
         foreach ($groups as $seller => $g) {
             $store = Store::where('payout_wallet', $seller)->first();
             $est = $shipping->estimate($store?->origin_address, $buyerCity ?: null);
@@ -36,11 +37,19 @@ class ShippingController extends Controller
                 'km'       => $est['km'],
             ];
             $total += $est['fee_tlkm'];
+            $etaMax = max($etaMax, $shipping->etaDays($store?->origin_address, $buyerCity ?: null));
         }
 
+        // SLA Garansi Tepat Waktu: promised = ETA (berbasis jarak) + buffer. Berubah per kota.
+        $promisedDays = $etaMax + (int) config('chain.insurance.eta_buffer_days', 3);
+        $promised = now()->addDays($promisedDays);
+
         return response()->json([
-            'total_tlkm' => round($total, 2),
-            'sellers'    => $sellers,
+            'total_tlkm'    => round($total, 2),
+            'sellers'       => $sellers,
+            'eta_days'      => $etaMax,
+            'promised_days' => $promisedDays,
+            'promised_date' => $promised->translatedFormat('d M Y'),
         ]);
     }
 }

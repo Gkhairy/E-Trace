@@ -123,7 +123,7 @@
                             @foreach($group as $it)
                                 <div class="px-4 py-3 flex items-center gap-3">
                                     <div class="w-12 h-12 rounded-lg bg-white border border-slate-100 flex items-center justify-center p-1 shrink-0">
-                                        <img src="{{ $it->product->image ? '/product_images/'.$it->product->image : 'https://placehold.co/80x80/f1f5f9/94a3b8?text=—' }}" onerror="this.src='https://placehold.co/80x80/f1f5f9/94a3b8?text=—'" class="max-w-full max-h-full object-contain">
+                                        <img src="{{ $it->product?->thumbnail() ?? 'https://placehold.co/80x80/f1f5f9/94a3b8?text=—' }}" onerror="this.src='https://placehold.co/80x80/f1f5f9/94a3b8?text=—'" class="max-w-full max-h-full object-contain">
                                     </div>
                                     <div class="flex-1 min-w-0">
                                         <p class="text-sm font-medium text-slate-800 line-clamp-1">{{ $it->product->name }}</p>
@@ -145,16 +145,26 @@
             <h3 class="font-semibold text-slate-900 mb-4">Pembayaran</h3>
             <div class="flex justify-between text-sm text-slate-600 mb-2"><span>Jumlah item</span><span>{{ $items->sum('quantity') }}</span></div>
             <div class="flex justify-between text-sm text-slate-600 mb-2"><span>Penjual</span><span>{{ $groups->count() }}</span></div>
-            {{-- H7: estimasi ongkir (produk fisik) dalam TLKM (Rp1.000 = 1 TLKM) --}}
-            <div class="flex justify-between text-sm text-slate-600 mb-2 border-t border-slate-100 pt-3 mt-3">
-                <span>Estimasi ongkir<sup class="text-slate-400">*</sup></span>
-                <span id="ongkirTotal">{{ rtrim(rtrim(number_format($shipTotalTlkm, 2), '0'), '.') }} TLKM</span>
+            @php
+                $f = fn ($n) => rtrim(rtrim(number_format((float) $n, 2), '0'), '.');
+                $shipWallet  = config('chain.shipping.fee_wallet') ?: config('chain.insurance.pool_wallet');
+                $shipCharged = (bool) $shipWallet;                      // ongkir ditagih on-chain?
+                $grand       = $total + ($shipCharged ? $shipTotalTlkm : 0);
+            @endphp
+            {{-- Rincian bayar (produk escrow + ongkir) --}}
+            <div class="flex justify-between text-sm text-slate-500 mb-2 border-t border-slate-100 pt-3 mt-3">
+                <span>Produk (escrow)</span>
+                <span>{{ $f($total) }} TLKM</span>
             </div>
-            <div class="flex justify-between items-end">
-                <span class="text-sm text-slate-500">Total produk (on-chain)</span>
-                <span class="text-2xl font-extrabold text-slate-900">{{ rtrim(rtrim(number_format($total, 2), '0'), '.') }} <span class="text-sm text-blue-600 font-semibold">TLKM</span></span>
+            <div class="flex justify-between text-sm text-slate-600 mb-3">
+                <span>{{ $shipCharged ? 'Ongkir' : 'Estimasi ongkir' }}<sup class="text-slate-400">*</sup></span>
+                <span id="ongkirTotal">{{ $f($shipTotalTlkm) }} TLKM</span>
             </div>
-            <p class="text-[11px] text-slate-400 mt-1.5 leading-snug">*Ongkir dihitung via <b>RajaOngkir</b> (tarif kurir termurah) atau estimasi jarak bila kota tak dikenali, dikonversi ke TLKM (Rp1.000 = 1 TLKM), diselesaikan terpisah dari escrow produk. {{ $buyerCity ? 'Kota tujuan: '.$buyerCity.'.' : 'Pilih/isi alamat untuk estimasi akurat.' }}</p>
+            <div class="flex justify-between items-end border-t border-slate-100 pt-3">
+                <span class="text-sm font-semibold text-slate-700">{{ $shipCharged ? 'Total bayar' : 'Total produk (on-chain)' }}</span>
+                <span class="text-2xl font-extrabold text-slate-900"><span id="grandTotal">{{ $f($grand) }}</span> <span class="text-sm text-blue-600 font-semibold">TLKM</span></span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1.5 leading-snug">*Ongkir dihitung via <b>RajaOngkir</b> (tarif kurir termurah) atau estimasi jarak bila kota tak dikenali, dikonversi ke TLKM (Rp1.000 = 1 TLKM). {{ $shipCharged ? 'Ongkir dibayar sebagai transaksi terpisah ke wallet platform (di luar escrow produk).' : 'Diselesaikan terpisah dari escrow produk.' }} {{ $buyerCity ? 'Kota tujuan: '.$buyerCity.'.' : 'Pilih/isi alamat untuk estimasi akurat.' }}</p>
 
             @if($insurance['enabled'])
             {{-- Garansi Tepat Waktu (asuransi pengiriman parametrik) — opsional --}}
@@ -165,7 +175,7 @@
                     <span class="text-amber-700 font-semibold">(+{{ rtrim(rtrim(number_format($insurance['premium_tlkm'], 2), '0'), '.') }} TLKM)</span>
                     — {{ __('insurance.checkout_desc') }}
                     <span class="block text-[11px] text-slate-500 mt-1">
-                        {{ __('insurance.eta_label') }} <b>{{ $insurance['promised_date']->translatedFormat('d M Y') }}</b>.
+                        {{ __('insurance.eta_label') }} <b id="insEtaDate">{{ $insurance['promised_date']->translatedFormat('d M Y') }}</b>.
                         {{ __('insurance.terms_short', ['grace' => $insurance['grace_days'], 'cap' => rtrim(rtrim(number_format($insurance['payout_cap_tlkm'], 2), '0'), '.')]) }}
                         <span class="text-amber-600">{{ __('insurance.demo_note') }}</span>
                     </span>
@@ -185,16 +195,21 @@
 
             <button id="payBtn" onclick="checkoutPay()"
                 class="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-3 rounded-xl text-sm font-bold transition shadow-sm">
-                Bayar {{ rtrim(rtrim(number_format($total, 2), '0'), '.') }} TLKM
+                Bayar <span id="payBtnAmt">{{ $f($grand) }}</span> TLKM
             </button>
 
             @if(config('chain.paylater_address'))
                 <button id="payLaterBtn" onclick="checkoutPayWithPaylater()"
-                    class="mt-2 w-full bg-white hover:bg-teal-50 border border-teal-200 text-teal-700 py-3 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2">
+                    class="mt-2 w-full bg-white hover:bg-teal-50 border border-teal-200 text-teal-700 py-3 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white"
+                    {{ $paylaterBtn['available'] ? '' : 'disabled' }}>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                     {{ __('paylater.pay_with') }}
                 </button>
-                <p class="text-[11px] text-slate-400 text-center mt-1">Pinjam TLKM dari agunanmu bila saldo kurang, lalu bayar seperti biasa. <span class="text-amber-600">Demo testnet.</span></p>
+                @if($paylaterBtn['available'])
+                    <p class="text-[11px] text-slate-400 text-center mt-1">Pinjam TLKM dari agunanmu bila saldo kurang, lalu bayar seperti biasa. <span class="text-amber-600">Demo testnet.</span></p>
+                @else
+                    <p class="text-[11px] text-amber-600 text-center mt-1">{{ $paylaterBtn['reason'] ?? 'Paylater tidak tersedia untuk order ini.' }}</p>
+                @endif
             @endif
         </div>
     </div>
@@ -217,8 +232,9 @@ const INSURANCE_POOL    = @json($insurance['pool_wallet'] ?? null);
 const INSURANCE_PREMIUM = @json($insurance['premium_tlkm']);
 function onInsToggle() {
     const box = document.getElementById('insBox');
-    if (box) box.classList.toggle('ring-2', document.getElementById('insToggle')?.checked);
-    if (box) box.classList.toggle('ring-amber-300', document.getElementById('insToggle')?.checked);
+    const on = document.getElementById('insToggle')?.checked;
+    if (box) { box.classList.toggle('ring-2', on); box.classList.toggle('ring-amber-300', on); }
+    if (typeof refreshGrand === 'function') refreshGrand();
 }
 // Bayar premi ke pool asuransi (transaksi terpisah dari escrow). Return tx hash.
 async function payInsurancePremium(pin) {
@@ -227,6 +243,31 @@ async function payInsurancePremium(pin) {
     const { signer } = await connectWallet();
     const token = new ethers.Contract(TLKM_ADDRESS, ERC20_ABI, signer);
     const tx = await token.transfer(INSURANCE_POOL, ethers.parseUnits(amt, TOKEN_DECIMALS));
+    return (await tx.wait()).hash;
+}
+
+// ===== Ongkir (transfer terpisah ke wallet platform) =====
+const SHIPPING_WALLET = @json(config('chain.shipping.fee_wallet') ?: config('chain.insurance.pool_wallet'));
+const SHIP_CHARGED    = {{ (config('chain.shipping.fee_wallet') ?: config('chain.insurance.pool_wallet')) ? 'true' : 'false' }};
+let   SHIP_TLKM       = @json($shipTotalTlkm);
+const PROD_TOTAL      = parseFloat(TOTAL) || 0;
+function _fmtTlkm(n) { return (Math.round((+n || 0) * 100) / 100).toString(); }
+// Perbarui "Total bayar" & label tombol = produk + ongkir (+ premi garansi bila dicentang).
+function refreshGrand() {
+    const insured = INSURANCE_ENABLED && (document.getElementById('insToggle')?.checked || false);
+    const grand = PROD_TOTAL
+        + (SHIP_CHARGED ? (SHIP_TLKM || 0) : 0)
+        + (insured ? (+INSURANCE_PREMIUM || 0) : 0);
+    const g = document.getElementById('grandTotal'); if (g) g.textContent = _fmtTlkm(grand);
+    const b = document.getElementById('payBtnAmt');  if (b) b.textContent = _fmtTlkm(grand);
+}
+async function payShipping(pin) {
+    if (!SHIP_CHARGED || !SHIPPING_WALLET || !(SHIP_TLKM > 0)) return null;
+    const amt = SHIP_TLKM.toString();
+    if (IS_EMBEDDED) return await pinTx('/pin/transfer', { pin, to: SHIPPING_WALLET, amount: amt });
+    const { signer } = await connectWallet();
+    const token = new ethers.Contract(TLKM_ADDRESS, ERC20_ABI, signer);
+    const tx = await token.transfer(SHIPPING_WALLET, ethers.parseUnits(amt, TOKEN_DECIMALS));
     return (await tx.wait()).hash;
 }
 
@@ -279,6 +320,12 @@ function updateOngkir(city) {
                 const mEl = document.querySelector(`[data-ongkir-method="${wallet}"]`);
                 if (mEl) mEl.textContent = 'Ongkir · ' + s.method + (s.km != null ? ' (~' + s.km + ' km)' : '');
             });
+            // Garansi Tepat Waktu: estimasi tiba (SLA) ikut berubah menurut jarak.
+            const etaEl = document.getElementById('insEtaDate');
+            if (etaEl && d.promised_date) etaEl.textContent = d.promised_date;
+            // Ongkir berubah → perbarui "Total bayar" & label tombol.
+            SHIP_TLKM = d.total_tlkm;
+            refreshGrand();
         } catch (_) { if (totalEl) totalEl.textContent = '—'; }
     }, 400);
 }
@@ -385,9 +432,12 @@ async function checkoutPay() {
     const productIds = LINES.map(l => l.product_uuid);
     const orderId    = 'CART-' + Date.now();
 
+    const _grandFmt = _fmtTlkm(PROD_TOTAL + (SHIP_CHARGED ? (SHIP_TLKM || 0) : 0));
     const ok = await uiConfirm({
         title: 'Konfirmasi Pembayaran',
-        message: `Bayar total <b class="text-blue-600">${TOTAL_FMT} TLKM</b> untuk ${LINES.length} item?<br><span class="text-xs text-slate-400">Dana tiap penjual ditahan di escrow terpisah.</span>`,
+        message: (SHIP_CHARGED && SHIP_TLKM > 0)
+            ? `Bayar <b class="text-blue-600">${_grandFmt} TLKM</b> untuk ${LINES.length} item?<br><span class="text-xs text-slate-400">Produk ${TOTAL_FMT} ke escrow penjual + ongkir ${_fmtTlkm(SHIP_TLKM)} ke platform (transaksi terpisah).</span>`
+            : `Bayar total <b class="text-blue-600">${TOTAL_FMT} TLKM</b> untuk ${LINES.length} item?<br><span class="text-xs text-slate-400">Dana tiap penjual ditahan di escrow terpisah.</span>`,
         confirmText: 'Ya, bayar'
     });
     if (!ok) return;
@@ -413,6 +463,12 @@ async function checkoutPay() {
         try { payload.premium_tx = await payInsurancePremium(pin); }
         catch (e) { payload.is_insured = 0; showToast('Premi garansi gagal dibayar — order diproses tanpa garansi.', 'warn'); }
     };
+    // Bayar ongkir ke wallet platform (transaksi terpisah). Best-effort.
+    const payShip = async () => {
+        if (!SHIP_CHARGED || !(SHIP_TLKM > 0)) return;
+        try { payload.shipping_tx = await payShipping(pin); }
+        catch (e) { showToast('Ongkir gagal dibayar — order tetap diproses (ongkir menyusul).', 'warn'); }
+    };
 
     txProgress.open('Memproses Pembayaran', IS_EMBEDDED
         ? ['Tanda tangan dengan PIN', 'Verifikasi & simpan']
@@ -427,6 +483,7 @@ async function checkoutPay() {
             payload.tx_hash = txHash;
             txProgress.done(0);
             if (INSURED) { txProgress.active(1, 'Membayar premi garansi…'); await payPremium(); }
+            if (SHIP_CHARGED && SHIP_TLKM > 0) { txProgress.active(1, 'Membayar ongkir…'); await payShip(); }
             localStorage.setItem('pendingOrder:' + orderId, JSON.stringify(payload));
             txProgress.active(1, 'Verifikasi on-chain & menyimpan…');
             await submitOrder(payload);
@@ -442,6 +499,7 @@ async function checkoutPay() {
             payload.tx_hash = txHash;
             txProgress.done(2);
             if (INSURED) { txProgress.active(3, 'Membayar premi garansi…'); await payPremium(); }
+            if (SHIP_CHARGED && SHIP_TLKM > 0) { txProgress.active(3, 'Membayar ongkir…'); await payShip(); }
             localStorage.setItem('pendingOrder:' + orderId, JSON.stringify(payload));
             txProgress.active(3, 'Verifikasi on-chain & menyimpan…');
             await submitOrder(payload);

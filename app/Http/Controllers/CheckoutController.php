@@ -55,9 +55,35 @@ class CheckoutController extends Controller
             'promised_date'   => now()->addDays($etaMax + $bufferDays),
         ];
 
+        // Kelayakan tombol "Bayar pakai Paylater": sisa limit kredit & likuiditas pool
+        // harus cukup untuk total produk. Kalau tidak, tombol di-disable + alasan.
+        $paylaterBtn = ['available' => false, 'reason' => null];
+        $pv = new \App\Services\PaylaterVerifier();
+        if ($pv->configured()) {
+            $wallet = strtolower(auth()->user()->wallet_address ?? '');
+            $pos = $wallet ? $pv->positionOf($wallet) : null;
+            if (!$pos) {
+                $paylaterBtn['reason'] = 'Posisi Paylater belum terbaca.';
+            } else {
+                $availTlkm = (float) bcdiv(bcsub($pos['limit'], $pos['principal']), bcpow('10', '18'), 6);
+                if ($availTlkm + 1e-6 < $total) {
+                    $shown = rtrim(rtrim(number_format($availTlkm, 2), '0'), '.');
+                    $paylaterBtn['reason'] = "Sisa limit Paylater ({$shown} TLKM) kurang dari total. Tambah agunan di Dompet.";
+                } else {
+                    $liqWei = $pv->availableLiquidity();
+                    $liqTlkm = $liqWei !== null ? (float) bcdiv($liqWei, bcpow('10', '18'), 6) : 0.0;
+                    if ($liqTlkm + 1e-6 < $total) {
+                        $paylaterBtn['reason'] = 'Likuiditas pool Paylater belum cukup.';
+                    } else {
+                        $paylaterBtn['available'] = true;
+                    }
+                }
+            }
+        }
+
         return view('checkout.index', compact(
             'items', 'groups', 'total', 'addresses', 'lastAddress',
-            'shipEstimates', 'shipTotalTlkm', 'buyerCity', 'insurance'
+            'shipEstimates', 'shipTotalTlkm', 'buyerCity', 'insurance', 'paylaterBtn'
         ));
     }
 }

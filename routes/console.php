@@ -12,6 +12,8 @@ Artisan::command('inspire', function () {
 // Aktif jika `php artisan schedule:work` berjalan (atau cron memanggil schedule:run).
 Schedule::command('chain:index')->everyMinute()->withoutOverlapping();
 
-// AI Auto-Settlement + klaim Garansi Tepat Waktu — nilai order escrow aktif tiap 5 menit.
-// Memanggil LLM (biaya token) → tidak tiap menit. Aman-nonaktif bila belum dikonfigurasi.
-Schedule::command('settlement:keep')->everyFiveMinutes()->withoutOverlapping();
+// AI Auto-Settlement + klaim Garansi Tepat Waktu — jalan DI BELAKANG, cek HARIAN.
+// Tenggat penyelesaian dihitung dalam hari, jadi cukup sekali sehari; ini juga menekan
+// biaya token LLM (tak memanggil AI berulang untuk order yang sama). Pengawas bisa memicu
+// manual kapan saja lewat tombol di /orders. Aman-nonaktif bila belum dikonfigurasi.
+Schedule::command('settlement:keep')->daily()->withoutOverlapping();

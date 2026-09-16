@@ -88,6 +88,11 @@ class SettlementKeeper extends Command
             $order->save();
         }
 
+        // ===== 0) Aturan DETERMINISTIK (timeout) — jalan lebih dulu, tanpa AI =====
+        $this->applyTimeouts($order, $paidItems, $o, $signer);
+        // Segarkan daftar item 'paid' setelah kemungkinan aksi timeout.
+        $paidItems = $order->items()->where('status', 'paid')->get();
+
         // Butuh AI hanya bila masih ada yang harus diputuskan.
         $needSettle = $order->settlement_status === 'pending' && $paidItems->isNotEmpty();
         $needClaim  = $order->is_insured && $order->insurance_status === 'active';
@@ -167,6 +172,87 @@ class SettlementKeeper extends Command
         // ===== 3) Klaim asuransi (hanya is_insured & active) =====
         if ($needClaim) {
             $this->evaluateClaim($order, $decision, $signer, $o, $confOk);
+        }
+    }
+
+    /**
+     * Aturan penyelesaian DETERMINISTIK (tanpa AI):
+     *  (a) Penjual tak mengirim dalam N hari → auto-REFUND (tak bergantung jarak).
+     *  (b) Barang DITERIMA tapi pembeli tak konfirmasi M hari → auto-SELESAI, KECUALI
+     *      tujuan JAUH (eta_days >= far_eta_days) → dilewati agar pembeli remote punya
+     *      waktu lebih (konfirmasi manual / lewat pengawas).
+     */
+    private function applyTimeouts(Order $order, $paidItems, array $o, ChainSigner $signer): void
+    {
+        if ($order->settlement_status !== 'pending' || $paidItems->isEmpty()) {
+            return;
+        }
+        if (!$o['gatewayOk'] || empty($o['arbiterKey'])) {
+            return; // eksekusi on-chain butuh gateway + kunci arbiter
+        }
+
+        $shipDeadline = (int) config('chain.settlement.ship_deadline_days', 3);
+        $autoComplete = (int) config('chain.settlement.auto_complete_days', 3);
+        $farEta       = (int) config('chain.settlement.far_eta_days', 10);
+        $isFar        = $farEta > 0 && (int) ($order->eta_days ?? 0) >= $farEta;
+        $now = now();
+        $acted = false;
+
+        foreach ($paidItems as $it) {
+            $notShipped = in_array($it->fulfillment_status, [null, 'pending', 'processing'], true);
+
+            // (a) Tak dikirim dalam N hari → refund.
+            if ($shipDeadline > 0 && $notShipped && $order->created_at->copy()->addDays($shipDeadline)->lt($now)) {
+                if ($this->arbiterItem($order, $it, false, $o, $signer)) {
+                    $acted = true;
+                    Notify::send($order->user_id, 'order', 'Dana dikembalikan otomatis',
+                        "Penjual tak mengirim dalam {$shipDeadline} hari — dana item dikembalikan.", '/orders', '↩️');
+                }
+                continue;
+            }
+
+            // (b) Sudah diterima & tak dikonfirmasi M hari → selesai (kecuali tujuan jauh).
+            if ($autoComplete > 0 && !$isFar && $it->fulfillment_status === 'delivered' && $it->delivered_at
+                && $it->delivered_at->copy()->addDays($autoComplete)->lt($now)) {
+                if ($this->arbiterItem($order, $it, true, $o, $signer)) {
+                    $acted = true;
+                    Notify::send($order->user_id, 'order', 'Pesanan diselesaikan otomatis',
+                        "Barang sudah diterima & tak dikonfirmasi {$autoComplete} hari — dana dilepas ke penjual.", '/orders', '✅');
+                }
+            }
+        }
+
+        if (!$acted) {
+            return;
+        }
+        // Bila tak ada lagi item 'paid', tandai order selesai (refunded bila semua refund).
+        if (!OrderItem::where('order_ref_id', $order->id)->where('status', 'paid')->exists()) {
+            $statuses = OrderItem::where('order_ref_id', $order->id)->pluck('status')->unique();
+            $order->settlement_status = ($statuses->count() === 1 && $statuses->first() === 'refunded') ? 'refunded' : 'released';
+            if (!OrderItem::where('order_ref_id', $order->id)->whereIn('status', ['paid', 'disputed', 'pending_confirmation'])->exists()) {
+                $order->status = 'completed';
+            }
+            $order->ai_reason = 'Diselesaikan otomatis oleh aturan waktu (timeout).';
+            $order->save();
+        }
+    }
+
+    /** Aksi arbiter on-chain untuk satu item + update status DB. Return true bila sukses. */
+    private function arbiterItem(Order $order, OrderItem $it, bool $release, array $o, ChainSigner $signer): bool
+    {
+        $method = $release ? 'arbiterRelease' : 'arbiterRefund';
+        try {
+            $signer->sendContractCall($o['arbiterKey'], $o['gateway'], self::GATEWAY_ABI, $method, [$order->order_id, (int) $it->item_index]);
+            $it->status = $release ? 'completed' : 'refunded';
+            if ($release) {
+                $it->fulfillment_status = 'delivered';
+                $it->delivered_at = $it->delivered_at ?? now();
+            }
+            $it->save();
+            return true;
+        } catch (\Throwable $e) {
+            Log::error("Keeper {$method} {$order->order_id}#{$it->item_index}: " . $e->getMessage());
+            return false;
         }
     }
 
