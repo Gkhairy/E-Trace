@@ -148,6 +148,55 @@
     <div class="mt-6">{{ $recent->links() }}</div>
 </div>
 
+{{-- ===== TRANSFER TLKM TERBARU (on-chain, via BscScan) ===== --}}
+<div class="flex items-center gap-2 mt-10 mb-3">
+    <h2 class="text-lg font-bold text-slate-900">Transfer TLKM Terbaru</h2>
+    <span class="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200" title="Pergerakan token TLKM langsung di blockchain: transfer biasa, Paylater, donasi, payout asuransi.">on-chain</span>
+</div>
+@if(!$transfersEnabled)
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 text-sm text-slate-500">
+        Feed transfer nonaktif — alamat <code class="text-slate-700 bg-slate-100 px-1 rounded">TLKM_ADDRESS</code> belum diset di <code class="text-slate-700 bg-slate-100 px-1 rounded">.env</code>.
+    </div>
+@else
+<div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
+                <tr>
+                    <th class="px-4 py-3 font-medium">Dari</th>
+                    <th class="px-4 py-3 font-medium">Ke</th>
+                    <th class="px-4 py-3 font-medium">Jumlah</th>
+                    <th class="px-4 py-3 font-medium">Waktu</th>
+                    <th class="px-4 py-3 font-medium">Tx</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php
+                    $addrChip = function ($L) {
+                        $chk = (!empty($L['verified']) && empty($L['system'])) ? ' <svg class="w-3.5 h-3.5 inline text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.7-9.3a1 1 0 00-1.4-1.4L9 10.6 7.7 9.3a1 1 0 00-1.4 1.4l2 2a1 1 0 001.4 0l4-4z"/></svg>' : '';
+                        if (!empty($L['system'])) {
+                            return '<span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">'.e($L['name']).'</span>';
+                        }
+                        return '<a href="/explorer/'.$L['addr'].'" class="text-blue-600 hover:underline font-medium">'.e($L['name']).'</a>'.$chk;
+                    };
+                @endphp
+                @forelse($transfers as $t)
+                    <tr class="border-t border-slate-100 hover:bg-slate-50 transition">
+                        <td class="px-4 py-3">{!! $addrChip($t['fromL']) !!}</td>
+                        <td class="px-4 py-3">{!! $addrChip($t['toL']) !!}</td>
+                        <td class="px-4 py-3 font-semibold text-slate-900 whitespace-nowrap">{{ $fmt($t['tlkm']) }} TLKM</td>
+                        <td class="px-4 py-3 text-slate-500 whitespace-nowrap">{{ $t['time'] ? \Carbon\Carbon::createFromTimestamp($t['time'])->diffForHumans() : '—' }}</td>
+                        <td class="px-4 py-3"><a href="{{ config('chain.explorer_url') }}/tx/{{ $t['tx'] }}" target="_blank" rel="noopener" class="text-green-600 hover:underline font-mono text-xs">{{ substr($t['tx'],0,8) }}… ↗</a></td>
+                    </tr>
+                @empty
+                    <tr><td colspan="5" class="px-4 py-10 text-center text-slate-400">Belum ada transfer dalam rentang blok yang dipantau. Perlebar lewat <code class="bg-slate-100 px-1 rounded">EXPLORER_TRANSFERS_LOOKBACK</code>.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
+
 @endsection
 
 @section('scripts')

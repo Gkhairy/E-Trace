@@ -70,6 +70,37 @@ class ExplorerController extends Controller
             ->map(fn ($r) => ['status' => $r->status, 'count' => (int) $r->c, 'amount' => (float) $r->amt])
             ->values());
 
+        // Transfer TLKM terbaru (event Transfer via eth_getLogs). Aman-nonaktif bila TLKM belum diset.
+        $transfersEnabled = \App\Services\TransferFeed::enabled();
+        $transfersRaw = $transfersEnabled
+            ? Cache::remember('explorer:transfers', 60, fn () => app(\App\Services\TransferFeed::class)->recent(25))
+            : [];
+
+        // Beri label alamat: kontrak sistem + entitas terverifikasi, sisanya alamat pendek.
+        $zero  = '0x0000000000000000000000000000000000000000';
+        $known = array_filter([
+            strtolower((string) config('chain.gateway'))               => 'Escrow',
+            strtolower((string) config('chain.paylater_address'))      => 'Pool Paylater',
+            strtolower((string) config('chain.donation_pool'))         => 'Donasi',
+            strtolower((string) config('chain.insurance.pool_wallet')) => 'Pool Asuransi',
+        ], fn ($name, $addr) => $name && $addr && $addr !== $zero, ARRAY_FILTER_USE_BOTH);
+        $known[$zero] = 'Mint / Burn';
+
+        $labelAddr = function (string $addr) use ($known) {
+            $a = strtolower($addr);
+            if (!empty($known[$a])) {
+                return ['name' => $known[$a], 'system' => true, 'addr' => $a, 'verified' => true];
+            }
+            $id   = Identity::resolve($a);
+            $name = ($id['name'] ?? '—') !== '—' ? $id['name'] : substr($a, 0, 8) . '…' . substr($a, -4);
+            return ['name' => $name, 'system' => false, 'addr' => $a, 'verified' => (bool) ($id['verified'] ?? false)];
+        };
+
+        $transfers = collect($transfersRaw)->map(fn ($t) => $t + [
+            'fromL' => $labelAddr($t['from']),
+            'toL'   => $labelAddr($t['to']),
+        ])->all();
+
         // Ringkasan penjualan + rating per toko (cache per mode urutan), ambil TOP 4.
         $stores = Cache::remember("explorer:stores:{$storeSort}", 120, function () use ($storeSort) {
             $sold = OrderItem::where('status', 'completed')
@@ -108,7 +139,7 @@ class ExplorerController extends Controller
                 ];
             });
 
-        return view('explorer.index', compact('totals', 'labels', 'stores', 'recent', 'range', 'storeSort', 'daily', 'statusDist'));
+        return view('explorer.index', compact('totals', 'labels', 'stores', 'recent', 'range', 'storeSort', 'daily', 'statusDist', 'transfers', 'transfersEnabled'));
     }
 
     // Profil satu wallet/entitas.
