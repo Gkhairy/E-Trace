@@ -9,6 +9,12 @@ return [
     'name'         => env('CHAIN_NAME', 'BNB Smart Chain Testnet'),
     'explorer_url' => rtrim(env('CHAIN_EXPLORER_URL', 'https://testnet.bscscan.com'), '/'),
 
+    // Feed "Transfer TLKM" di Explorer — baca event Transfer via eth_getLogs.
+    // RPC utama (data-seed) memblokir getLogs, jadi pakai RPC khusus yang mengizinkannya
+    // (publicnode). Tanpa API key. Lookback dibatasi karena getLogs peka rentang.
+    'logs_rpc_url'              => env('CHAIN_LOGS_RPC_URL', 'https://bsc-testnet-rpc.publicnode.com'),
+    'transfers_lookback_blocks' => (int) env('EXPLORER_TRANSFERS_LOOKBACK', 5000),
+
     // Alamat kontrak — HARUS sama dengan yang dipakai frontend (layouts/app.blade.php).
     // Diisi lewat .env setelah redeploy ke BSC Testnet. Default = alamat nol (fitur
     // nonaktif sampai alamat asli dipasang) agar tak menunjuk kontrak jaringan lain.
