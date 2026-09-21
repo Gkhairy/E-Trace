@@ -36,23 +36,46 @@ return [
     ],
 
     'features' => [
-        'eyebrow'  => 'Fitur Lengkap',
-        'title'    => 'Semua yang kamu butuhkan, di atas satu infrastruktur on-chain.',
-        'subtitle' => 'Dari belanja sampai kredit dan donasi — dijelaskan dengan bahasa sederhana.',
-        'items' => [
-            ['t' => 'Escrow Trustless',        'd' => 'Dana ditahan smart contract, lepas hanya saat pembeli konfirmasi terima.'],
-            ['t' => 'Keranjang Multi-Penjual', 'd' => 'Satu keranjang banyak penjual; escrow dipisah per item.'],
-            ['t' => 'Token TLKM',              'd' => 'Alat bayar BEP-20 di jaringan BNB Smart Chain Testnet.'],
-            ['t' => 'Wallet + PIN',            'd' => 'Daftar pakai email/HP tanpa seed phrase, atau MetaMask. Bayar cukup PIN.'],
-            ['t' => 'Paylater — Pinjam & Danai','d' => 'Belanja bayar nanti, atau danai pool likuiditas & panen bagi hasil (fleksibel/30/90 hari).'],
-            ['t' => 'AI Auto-Settlement',      'd' => 'Tak dikirim 3 hari → dana otomatis kembali; diterima & lupa konfirmasi → otomatis selesai.'],
-            ['t' => 'Garansi Tepat Waktu',     'd' => 'Asuransi ongkir: telat karena penjual/kurir → ongkir diganti dari pool. Estimasi dari jarak.'],
-            ['t' => 'Explorer Transparansi',   'd' => 'Lihat transaksi + transfer TLKM on-chain, toko teratas, dan entitas terverifikasi.'],
-            ['t' => 'Donasi & Dompet Komunitas','d' => 'Donasi tercatat on-chain (0% fee); dana komunitas butuh persetujuan multisig.'],
-            ['t' => 'EVA — Asisten AI',        'd' => 'Bantu pemakaian aplikasi & jelaskan blockchain untuk orang awam.'],
-            ['t' => 'Keamanan Berlapis',       'd' => 'OTP email, 2FA, gerbang PIN, dan proteksi anti-bot.'],
-            ['t' => 'Laporan Penjual',         'd' => 'Rekap penjualan otomatis + HPP, ekspor Excel/PDF.'],
-            ['t' => 'Peran & Dwibahasa',       'd' => 'Pembeli, penjual, pengawas — tersedia Bahasa Indonesia & Inggris.'],
+        'eyebrow'  => 'Kemampuan',
+        'title'    => 'Semua kebutuhanmu, dirangkum jadi empat pilar.',
+        'subtitle' => 'Satu aplikasi, empat pilar yang saling menopang — tanpa bikin bingung.',
+        'groups' => [
+            [
+                't' => 'Belanja Aman',
+                'intro' => 'Transaksi tanpa harus saling percaya.',
+                'items' => [
+                    ['t' => 'Escrow trustless',        'd' => 'Dana ditahan smart contract, lepas saat konfirmasi terima.'],
+                    ['t' => 'Keranjang multi-penjual', 'd' => 'Banyak penjual dalam satu keranjang, escrow terpisah per item.'],
+                    ['t' => 'Verifikasi on-chain',     'd' => 'Smart contract jadi sumber kebenaran, bukan data browser.'],
+                ],
+            ],
+            [
+                't' => 'Keuangan On-Chain',
+                'intro' => 'Bukan sekadar alat bayar.',
+                'items' => [
+                    ['t' => 'Wallet + PIN',             'd' => 'Daftar pakai email/HP tanpa seed phrase, bayar cukup PIN.'],
+                    ['t' => 'Token TLKM',               'd' => 'Alat bayar BEP-20 di BNB Smart Chain Testnet.'],
+                    ['t' => 'Paylater — Pinjam & Danai','d' => 'Belanja bayar nanti, atau danai pool & panen bagi hasil.'],
+                ],
+            ],
+            [
+                't' => 'Otomatis & Terlindungi',
+                'intro' => 'Dijaga sistem, bukan sekadar janji.',
+                'items' => [
+                    ['t' => 'AI Auto-Settlement',   'd' => 'Tak dikirim 3 hari → refund; lupa konfirmasi → auto-selesai.'],
+                    ['t' => 'Garansi Tepat Waktu',  'd' => 'Asuransi ongkir bila telat karena penjual/kurir.'],
+                    ['t' => 'Keamanan berlapis',    'd' => 'OTP, 2FA, gerbang PIN, dan proteksi anti-bot.'],
+                ],
+            ],
+            [
+                't' => 'Transparan & Sosial',
+                'intro' => 'Terbuka untuk siapa saja.',
+                'items' => [
+                    ['t' => 'Explorer transparansi',    'd' => 'Lihat transaksi & transfer TLKM langsung on-chain.'],
+                    ['t' => 'Donasi & dompet komunitas','d' => 'Tercatat on-chain, 0% fee, dana komunitas multisig.'],
+                    ['t' => 'EVA & laporan penjual',    'd' => 'Asisten AI + rekap penjualan otomatis (Excel/PDF).'],
+                ],
+            ],
         ],
     ],
 

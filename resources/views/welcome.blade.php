@@ -141,29 +141,15 @@
     </div>
   </section>
 
-  {{-- ===================== FITUR LENGKAP ===================== --}}
+  {{-- ===================== FITUR (4 pilar) ===================== --}}
   @php
-    // Ikon + aksen per fitur (dipasangkan berdasarkan indeks dengan landing.features.items).
-    $bl = ['#2563eb', '#eff6ff', '#bfdbfe']; // biru
-    $rd = ['#e5121f', '#fef2f2', '#fecaca']; // merah
-    $vt = ['#7c3aed', '#f5f3ff', '#ddd6fe']; // ungu
-    $gr = ['#059669', '#ecfdf5', '#a7f3d0']; // hijau
-    $featMeta = [
-      ['<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>', $bl],
-      ['<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/>', $bl],
-      ['<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4"/>', $rd],
-      ['<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="17" cy="14.5" r="1.2"/>', $bl],
-      ['<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>', $rd],
-      ['<rect x="4" y="7" width="16" height="12" rx="2"/><path d="M9 7V4h6v3M9 13h.01M15 13h.01M12 2v2"/>', $vt],
-      ['<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>', $gr],
-      ['<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M8 12h1.5M11 9v6M14 11h1.5"/>', $bl],
-      ['<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21.2l8.8-8.8a5.5 5.5 0 0 0 0-7.8z"/>', $rd],
-      ['<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M12 7v1M9 11h6"/>', $vt],
-      ['<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>', $bl],
-      ['<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>', $gr],
-      ['<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/>', $vt],
+    $groupMeta = [
+      [['#2563eb', '#eff6ff', '#bfdbfe'], '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>'],
+      [['#e5121f', '#fef2f2', '#fecaca'], '<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>'],
+      [['#059669', '#ecfdf5', '#a7f3d0'], '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>'],
+      [['#7c3aed', '#f5f3ff', '#ddd6fe'], '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>'],
     ];
-    $featItems = __('landing.features.items');
+    $groups = __('landing.features.groups');
   @endphp
   <section id="features" class="sec" style="position:relative;padding:120px 40px;max-width:1200px;margin:0 auto;">
     <div class="reveal" data-reveal="fade" style="max-width:680px;margin-bottom:52px;">
@@ -171,15 +157,27 @@
       <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);line-height:1.15;letter-spacing:-0.02em;color:#0f172a;margin:0 0 14px;">{{ __('landing.features.title') }}</h2>
       <p style="font-size:17px;line-height:1.6;color:#475569;margin:0;">{{ __('landing.features.subtitle') }}</p>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;">
-      @foreach($featItems as $i => $f)
-        @php $m = $featMeta[$i] ?? $featMeta[0]; $c = $m[1]; @endphp
-        <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:28px;">
-          <div style="width:42px;height:42px;border-radius:11px;background:{{ $c[1] }};border:1px solid {{ $c[2] }};display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{ $c[0] }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{!! $m[0] !!}</svg>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:22px;">
+      @foreach($groups as $gi => $g)
+        @php $c = $groupMeta[$gi][0]; $svg = $groupMeta[$gi][1]; @endphp
+        <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:22px;padding:34px;">
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+            <div style="width:48px;height:48px;border-radius:13px;background:{{ $c[1] }};border:1px solid {{ $c[2] }};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ $c[0] }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{!! $svg !!}</svg>
+            </div>
+            <div>
+              <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:20px;color:#0f172a;margin:0;">{{ $g['t'] }}</h3>
+              <p style="font-size:13.5px;color:#64748b;margin:2px 0 0;">{{ $g['intro'] }}</p>
+            </div>
           </div>
-          <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">{{ $f['t'] }}</h3>
-          <p style="font-size:14px;line-height:1.55;color:#475569;margin:0;">{{ $f['d'] }}</p>
+          <div style="display:flex;flex-direction:column;gap:14px;border-top:1px solid #f1f5f9;padding-top:22px;">
+            @foreach($g['items'] as $it)
+              <div style="display:flex;gap:11px;align-items:flex-start;">
+                <span style="margin-top:7px;flex-shrink:0;width:6px;height:6px;border-radius:50%;background:{{ $c[0] }};display:inline-block;"></span>
+                <p style="font-size:14px;line-height:1.5;color:#475569;margin:0;"><b style="color:#0f172a;font-weight:600;">{{ $it['t'] }}</b> — {{ $it['d'] }}</p>
+              </div>
+            @endforeach
+          </div>
         </div>
       @endforeach
     </div>

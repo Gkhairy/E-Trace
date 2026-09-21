@@ -36,23 +36,46 @@ return [
     ],
 
     'features' => [
-        'eyebrow'  => 'Full Feature Set',
-        'title'    => 'Everything you need, on a single on-chain infrastructure.',
-        'subtitle' => 'From shopping to credit and donations — explained in plain language.',
-        'items' => [
-            ['t' => 'Trustless Escrow',        'd' => 'Funds held by a smart contract, released only when the buyer confirms receipt.'],
-            ['t' => 'Multi-Seller Cart',       'd' => 'One cart, many sellers; escrow is split per item.'],
-            ['t' => 'TLKM Token',              'd' => 'A BEP-20 means of payment on the BNB Smart Chain Testnet.'],
-            ['t' => 'Wallet + PIN',            'd' => 'Sign up with email/phone, no seed phrase — or MetaMask. Pay with just a PIN.'],
-            ['t' => 'Paylater — Borrow & Fund','d' => 'Buy now pay later, or fund the liquidity pool and earn profit-share (flexible/30/90 days).'],
-            ['t' => 'AI Auto-Settlement',      'd' => 'Not shipped in 3 days → auto refund; received but not confirmed → auto complete.'],
-            ['t' => 'On-Time Guarantee',       'd' => 'Shipping insurance: late due to seller/courier → shipping fee refunded from a pool. ETA by distance.'],
-            ['t' => 'Transparency Explorer',   'd' => 'See transactions + on-chain TLKM transfers, top stores, and verified entities.'],
-            ['t' => 'Donations & Community Wallet','d' => 'Donations recorded on-chain (0% fee); community funds need multisig approval.'],
-            ['t' => 'EVA — AI Assistant',      'd' => 'Helps you use the app and explains blockchain for everyday users.'],
-            ['t' => 'Layered Security',        'd' => 'Email OTP, 2FA, a PIN gate, and anti-bot protection.'],
-            ['t' => 'Seller Reports',          'd' => 'Automatic sales recap + COGS, export to Excel/PDF.'],
-            ['t' => 'Roles & Bilingual',       'd' => 'Buyer, seller, supervisor — available in Indonesian & English.'],
+        'eyebrow'  => 'Capabilities',
+        'title'    => 'Everything you need, distilled into four pillars.',
+        'subtitle' => 'One app, four pillars that reinforce each other — without the overwhelm.',
+        'groups' => [
+            [
+                't' => 'Safe Shopping',
+                'intro' => 'Transact without having to trust anyone.',
+                'items' => [
+                    ['t' => 'Trustless escrow',   'd' => 'Funds held by a smart contract, released on confirmation.'],
+                    ['t' => 'Multi-seller cart',  'd' => 'Many sellers in one cart, escrow split per item.'],
+                    ['t' => 'On-chain verification','d' => 'The smart contract is the source of truth, not the browser.'],
+                ],
+            ],
+            [
+                't' => 'On-Chain Finance',
+                'intro' => 'More than a means of payment.',
+                'items' => [
+                    ['t' => 'Wallet + PIN',         'd' => 'Sign up with email/phone, no seed phrase; pay with a PIN.'],
+                    ['t' => 'TLKM token',           'd' => 'A BEP-20 means of payment on BNB Smart Chain Testnet.'],
+                    ['t' => 'Paylater — Borrow & Fund','d' => 'Buy now pay later, or fund the pool and earn profit-share.'],
+                ],
+            ],
+            [
+                't' => 'Automated & Protected',
+                'intro' => 'Guarded by the system, not just promises.',
+                'items' => [
+                    ['t' => 'AI Auto-Settlement', 'd' => 'Not shipped in 3 days → refund; not confirmed → auto-complete.'],
+                    ['t' => 'On-Time Guarantee',  'd' => 'Shipping insurance when late due to seller/courier.'],
+                    ['t' => 'Layered security',   'd' => 'OTP, 2FA, a PIN gate, and anti-bot protection.'],
+                ],
+            ],
+            [
+                't' => 'Transparent & Social',
+                'intro' => 'Open for everyone.',
+                'items' => [
+                    ['t' => 'Transparency explorer', 'd' => 'See transactions & TLKM transfers live on-chain.'],
+                    ['t' => 'Donations & community wallet','d' => 'Recorded on-chain, 0% fee, multisig community funds.'],
+                    ['t' => 'EVA & seller reports',  'd' => 'AI assistant + automatic sales recap (Excel/PDF).'],
+                ],
+            ],
         ],
     ],
 
