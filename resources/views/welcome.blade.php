@@ -4,395 +4,283 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 @include('partials.favicon')
-<title>E-Trace — Marketplace On-Chain yang Transparan Sepenuhnya</title>
-<meta name="description" content="E-Trace: marketplace berbasis blockchain dengan escrow trustless, keranjang multi-penjual, dan transparansi on-chain penuh.">
+<title>E-Trace — {{ __('landing.footer.tagline') }}</title>
+<meta name="description" content="{{ __('landing.hero.subtitle') }}">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://unpkg.com/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
 <style>
   body { margin: 0; background: #f6f7fb; }
-  ::selection { background: rgba(8,145,178,0.18); color: #0f172a; }
+  ::selection { background: rgba(37,99,235,0.18); color: #0f172a; }
   a { color: #2563eb; text-decoration: none; }
-  a:hover { color: #1d4ed8; }
 
-  /* Reveal awal (di-animate GSAP). Kalau reduced-motion / GSAP gagal -> tampil. */
   .reveal { opacity: 0; }
   @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1 !important; transform: none !important; } }
 
-  /* Hover tombol (menimpa inline style) */
-  .lnk-cta:hover  { background: #1d4ed8 !important; color: #fff !important; }
+  /* ---- Header states ---- */
+  #site-header { transition: background .3s ease, border-color .3s ease, box-shadow .3s ease; }
+  #site-header .hlink { color: #e2e8f0; transition: color .3s ease; }
+  #site-header .hlogo { color: #fff; }
+  #site-header.scrolled { background: rgba(246,247,251,0.88); backdrop-filter: blur(8px); border-bottom: 1px solid rgba(15,23,42,0.06); }
+  #site-header.scrolled .hlink { color: #475569; }
+  #site-header.scrolled .hlink:hover { color: #2563eb; }
+  #site-header.scrolled .hlogo { color: #0f172a; }
+  #site-header.scrolled .h-cta { background: #0f172a !important; color: #fff !important; }
+
+  /* ---- Hero video ---- */
+  #hero { background: #0a0e17 center/cover no-repeat; }
+  #hero-video { transition: opacity .6s ease; }
+  @media (prefers-reduced-motion: reduce) { #hero-video { display: none !important; } }
+
+  /* ---- Buttons ---- */
   .btn-primary:hover { background: #1d4ed8 !important; }
-  .btn-ghost:hover   { border-color: rgba(37,99,235,0.4) !important; }
+  .btn-ghost:hover { border-color: rgba(255,255,255,0.6) !important; background: rgba(255,255,255,0.08) !important; }
+  .btn-light:hover { background: #f1f5f9 !important; }
+  .lnk-arrow:hover { gap: 12px; }
 
-  /* Hero responsif — 3D tampil di semua ukuran. Di mobile: kristal jadi backdrop
-     ambient di paruh atas, teks turun ke bawah (satu kolom, tetap terbaca). */
-  #hero-canvas { transition: opacity .35s ease; }
-  /* Halaman ini pakai inline-style, jadi override mobile WAJIB !important. */
+  /* ---- Sustainability ---- */
+  .sustain-visual { animation: sfloat 7s ease-in-out infinite; }
+  @keyframes sfloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+  @media (prefers-reduced-motion: reduce) { .sustain-visual { animation: none !important; } }
+
+  /* ---- Mobile ---- */
   @media (max-width: 767px) {
-    #hero-canvas   { width: 100% !important; height: 54% !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: auto !important; opacity: 0.5 !important; }
-    #hero-content  { justify-content: flex-end !important; padding: 0 24px 96px !important; }
-    #hero-content h1 { font-size: clamp(2.1rem, 9vw, 3rem) !important; }
+    #hero-content h1 { font-size: clamp(2.1rem, 8vw, 3rem) !important; }
     #hero-content p  { font-size: 16px !important; }
+    .sec { padding: 90px 22px !important; }
   }
-
-  /* ============ PAYLATER — fitur borrow/lending (koin TLKM di atas terang) ============ */
-  /* Artwork koin melayang naik-turun lembut (tanpa rotasi — tulisan menyatu di gambar). */
-  .pl-coin { will-change:transform; animation:pl-bob 7s ease-in-out infinite;
-    filter:drop-shadow(0 22px 34px rgba(15,23,42,0.14)); }
-  @keyframes pl-bob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-16px); } }
-  .pl-cta:hover  { background:#c30f1b !important; box-shadow:0 14px 34px rgba(229,18,31,0.32) !important; }
-  .pl-link:hover { color:#0f172a !important; }
-  @media (prefers-reduced-motion: reduce) { .pl-coin { animation:none !important; } }
-  @media (max-width: 860px) {
-    #pl-grid     { grid-template-columns:1fr !important; gap:8px !important; }
-    #pl-visual   { order:-1; min-height:300px !important; }
-    #pl-split    { grid-template-columns:1fr !important; }
-    #pl-coin-img { width:min(100%,360px) !important; }
-  }
-
-  /* Grid ekosistem: 5 kartu sejajar di layar lebar, luruh bertahap ke bawah. */
-  .eco-grid { display:grid; gap:18px; grid-template-columns:1fr; }
-  .eco-grid > div { padding:26px !important; }
-  @media (min-width:600px)  { .eco-grid { grid-template-columns:repeat(2,1fr); } }
-  @media (min-width:1024px) { .eco-grid { grid-template-columns:repeat(5,1fr); } }
 </style>
 </head>
 <body>
 
 <div id="page" style="position:relative;min-height:100vh;background:#f6f7fb;color:#334155;font-family:'Hanken Grotesk',sans-serif;overflow-x:hidden;">
 
-  <header style="position:fixed;top:0;left:0;right:0;z-index:50;background:linear-gradient(180deg, rgba(246,247,251,0.9), rgba(246,247,251,0.75));backdrop-filter:blur(6px);border-bottom:1px solid rgba(15,23,42,0.06);">
-    <div style="max-width:1200px;margin:0 auto;height:80px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;">
-      <a href="/" style="display:flex;align-items:center;gap:9px;font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;">
+  {{-- ===================== HEADER ===================== --}}
+  <header id="site-header" style="position:fixed;top:0;left:0;right:0;z-index:50;">
+    <div style="max-width:1200px;margin:0 auto;height:76px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;">
+      <a href="/" class="hlogo" style="display:flex;align-items:center;gap:9px;font-family:'Bricolage Grotesque',sans-serif;font-size:18px;">
         <span style="width:10px;height:10px;border-radius:50%;background:#2563eb;box-shadow:0 0 14px 3px rgba(37,99,235,0.6);display:inline-block;"></span>
         E-Trace
       </a>
-      <div style="display:flex;align-items:center;gap:24px;">
-        <a href="/products" style="font-size:14px;color:#475569;">Lihat Katalog</a>
-        <a href="/login" class="lnk-cta" style="font-size:14px;font-weight:500;padding:11px 22px;border-radius:999px;background:#0f172a;color:#fff;">Masuk Toko</a>
+      <div style="display:flex;align-items:center;gap:22px;">
+        <a href="/products" class="hlink" style="font-size:14px;">{{ __('landing.nav.catalog') }}</a>
+        <a href="#how" class="hlink" style="font-size:14px;">{{ __('landing.nav.how') }}</a>
+        <a href="{{ route('lang.switch', app()->getLocale() === 'en' ? 'id' : 'en') }}" class="hlink" style="font-size:13px;font-weight:600;border:1px solid rgba(148,163,184,0.5);border-radius:8px;padding:4px 9px;">{{ app()->getLocale() === 'en' ? 'ID' : 'EN' }}</a>
+        <a href="/login" class="hlink h-cta" style="font-size:14px;font-weight:600;padding:10px 20px;border-radius:999px;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.25);color:#fff;">{{ __('landing.nav.login') }}</a>
       </div>
     </div>
   </header>
 
-  <section id="hero" style="position:relative;height:100vh;height:100dvh;min-height:640px;overflow:hidden;">
-    <div style="position:absolute;inset:0;z-index:-1;background:radial-gradient(circle at 50% 45%, rgba(37,99,235,0.14), transparent 70%);"></div>
-    <div id="hero-canvas" style="position:absolute;top:0;right:0;bottom:0;width:58%;z-index:0;"></div>
-    <div id="hero-fallback" style="position:absolute;inset:0;display:none;background:radial-gradient(circle at 50% 38%, rgba(37,99,235,0.16), transparent 62%);"></div>
+  {{-- ===================== HERO (video sinematik) ===================== --}}
+  <section id="hero" style="position:relative;height:100vh;height:100dvh;min-height:640px;overflow:hidden;" data-poster="/media/hero-poster.jpg">
+    <video id="hero-video" autoplay muted loop playsinline poster="/media/hero-poster.jpg"
+           style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;">
+      <source src="/media/hero.mp4" type="video/mp4">
+    </video>
+    {{-- Overlay gelap agar teks terbaca --}}
+    <div aria-hidden="true" style="position:absolute;inset:0;z-index:1;background:linear-gradient(90deg, rgba(6,10,20,0.86) 0%, rgba(6,10,20,0.6) 42%, rgba(6,10,20,0.28) 100%);"></div>
+    <div aria-hidden="true" style="position:absolute;inset:0;z-index:1;background:linear-gradient(180deg, rgba(6,10,20,0.45), transparent 26%, transparent 55%, rgba(6,10,20,0.7));"></div>
 
-    <div id="hero-content" style="position:relative;z-index:10;max-width:1200px;margin:0 auto;height:100%;padding:0 40px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;">
-      <div class="reveal" data-reveal="hero" style="display:inline-flex;align-items:center;gap:8px;padding:7px 16px;border-radius:999px;background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);font-size:13px;color:#2563eb;margin-bottom:28px;">
-        <span style="width:6px;height:6px;border-radius:50%;background:#2563eb;display:inline-block;"></span>
-        Escrow trustless &middot; Ethereum &middot; Token TLKM
+    <div id="hero-content" style="position:relative;z-index:2;max-width:1200px;margin:0 auto;height:100%;padding:0 40px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;">
+      <div class="reveal" data-reveal="hero" style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);backdrop-filter:blur(6px);font-size:13px;color:#dbe4f5;margin-bottom:26px;">
+        <span style="width:6px;height:6px;border-radius:50%;background:#2563eb;box-shadow:0 0 10px 1px rgba(37,99,235,0.9);display:inline-block;"></span>
+        {{ __('landing.hero.badge') }}
       </div>
-      <h1 class="reveal" data-reveal="hero" style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(2.6rem,6vw,4.6rem);line-height:1.04;color:#0f172a;max-width:760px;margin:0;">
-        Marketplace yang <span style="color:#2563eb;">transparan sepenuhnya.</span>
+      <h1 class="reveal" data-reveal="hero" style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(2.7rem,6vw,4.8rem);line-height:1.03;letter-spacing:-0.03em;color:#fff;max-width:900px;margin:0;text-wrap:balance;text-shadow:0 2px 30px rgba(0,0,0,0.4);">
+        {{ __('landing.hero.title') }} <span style="color:#60a5fa;">{{ __('landing.hero.title_hl') }}</span>
       </h1>
-      <p class="reveal" data-reveal="hero" style="max-width:560px;font-size:19px;line-height:1.65;color:#475569;margin-top:26px;">
-        Login dengan wallet, tanpa password. Setiap pembayaran ditahan smart contract hingga barang diterima — dan setiap transaksi bisa diverifikasi siapa saja di block explorer.
+      <p class="reveal" data-reveal="hero" style="max-width:60ch;font-size:19px;line-height:1.6;color:#c7d2e5;margin-top:24px;text-shadow:0 1px 16px rgba(0,0,0,0.5);">
+        {{ __('landing.hero.subtitle') }}
       </p>
       <div class="reveal" data-reveal="hero" style="display:flex;flex-wrap:wrap;gap:16px;margin-top:38px;">
-        <a href="/login" class="btn-primary" style="padding:15px 30px;border-radius:999px;background:#2563eb;color:#fff;font-weight:600;font-size:15px;">Masuk Toko</a>
-        <a href="#solusi" class="btn-ghost" style="padding:15px 30px;border-radius:999px;background:#fff;border:1px solid #e2e8f0;color:#1e293b;font-weight:500;font-size:15px;box-shadow:0 1px 2px rgba(15,23,42,0.04);cursor:pointer;">Pelajari</a>
+        <a href="/login" class="btn-primary" style="padding:15px 32px;border-radius:999px;background:#2563eb;color:#fff;font-weight:600;font-size:15px;box-shadow:0 12px 30px rgba(37,99,235,0.4);">{{ __('landing.hero.cta') }}</a>
+        <a href="#how" class="btn-ghost" style="padding:15px 30px;border-radius:999px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.35);color:#fff;font-weight:500;font-size:15px;backdrop-filter:blur(6px);cursor:pointer;">{{ __('landing.hero.cta2') }}</a>
       </div>
     </div>
 
-    <div class="reveal" data-reveal="hero" style="position:absolute;bottom:32px;left:0;right:0;display:flex;justify-content:center;">
-      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;color:#64748b;font-size:11px;letter-spacing:0.1em;">
-        <span>SCROLL</span>
-        <span style="width:1px;height:32px;background:linear-gradient(180deg,#64748b,transparent);"></span>
+    <div class="reveal" data-reveal="hero" style="position:absolute;bottom:30px;left:0;right:0;z-index:2;display:flex;justify-content:center;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;color:rgba(255,255,255,0.7);font-size:11px;letter-spacing:0.15em;">
+        <span>{{ __('landing.hero.scroll') }}</span>
+        <span style="width:1px;height:32px;background:linear-gradient(180deg,rgba(255,255,255,0.7),transparent);"></span>
       </div>
     </div>
   </section>
 
-  {{-- ================= PAYLATER (borrow / lending) — pita gelap spotlight ================= --}}
-  <section id="paylater" style="position:relative;overflow:hidden;background:#f6f7fb;color:#334155;padding:130px 40px;">
-    <div id="pl-grid" style="position:relative;z-index:2;max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1.05fr 0.95fr;gap:56px;align-items:center;">
-      {{-- Kolom kiri: cerita fitur --}}
-      <div>
-        <h2 class="reveal" data-reveal="left" style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(2rem,4.4vw,3.3rem);line-height:1.08;letter-spacing:-0.02em;text-wrap:balance;color:#0f172a;margin:0;">
-          Belanja dulu, bayar nanti — <span style="color:#2563eb;">atau danai, panen bagi hasil.</span>
-        </h2>
-        <p class="reveal" data-reveal="left" style="max-width:60ch;font-size:18px;line-height:1.65;color:#475569;margin-top:22px;">
-          TLKM bukan cuma alat bayar. Kunci jaminan untuk dapat limit belanja, atau setor ke pool likuiditas dan dapat bagi hasil dari bunga peminjam. Semua tercatat di smart contract — pool, bunga, dan jangka waktunya terbuka untuk siapa saja.
-        </p>
-
-        <div id="pl-split" class="reveal" data-reveal="left" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:40px;">
-          <div style="background:#fff;border:1px solid #bfdbfe;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:24px 22px;">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-              <span style="width:9px;height:9px;border-radius:50%;background:#2563eb;"></span>
-              <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:19px;color:#0f172a;">Pinjam</span>
-            </div>
-            <p style="margin:0;font-size:14.5px;line-height:1.55;color:#475569;">Jaminkan aset, dapat limit TLKM. Checkout sekarang, lunasi sesuai jangka yang kamu pilih.</p>
-          </div>
-          <div style="background:#fff;border:1px solid #fecaca;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:24px 22px;">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-              <span style="width:9px;height:9px;border-radius:50%;background:#e5121f;"></span>
-              <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:19px;color:#0f172a;">Danai</span>
-            </div>
-            <p style="margin:0;font-size:14.5px;line-height:1.55;color:#475569;">Setor TLKM ke pool — fleksibel, 30, atau 90 hari. Bagi hasil naik seiring jangka.</p>
-          </div>
-        </div>
-
-      </div>
-
-      {{-- Kolom kanan: koin TLKM melayang di atas putih --}}
-      <div id="pl-visual" class="reveal" data-reveal="right" style="position:relative;display:flex;align-items:center;justify-content:center;min-height:440px;">
-        <img id="pl-coin-img" class="pl-coin" src="/img/tlkm-coin.png" alt="Koin TLKM dengan latar tulisan TLKM"
-             width="2848" height="1490" decoding="async"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
-             style="position:relative;z-index:1;width:min(112%,560px);height:auto;aspect-ratio:2848/1490;">
-        {{-- Fallback bila gambar koin belum diletakkan di public/img/tlkm-coin.png --}}
-        <div style="display:none;position:relative;z-index:1;width:min(78%,320px);aspect-ratio:1;border-radius:50%;
-             background:radial-gradient(circle at 38% 32%, #ffffff, #dfe4ee 55%, #b3bccd);
-             box-shadow:0 26px 44px rgba(15,23,42,0.18), inset 0 4px 14px rgba(255,255,255,0.9), inset 0 -10px 24px rgba(15,23,42,0.12);
-             align-items:center;justify-content:center;flex-direction:column;font-family:'Bricolage Grotesque',sans-serif;">
-          <span style="font-size:clamp(2.4rem,6vw,3.4rem);color:#e5121f;letter-spacing:-0.03em;">TLKM</span>
-          <span style="font-size:12px;letter-spacing:0.28em;color:#64748b;margin-top:4px;">TOKEN</span>
-        </div>
-      </div>
-    </div>
+  {{-- ===================== VALUE PROP ===================== --}}
+  <section class="sec" style="position:relative;padding:110px 40px;max-width:1000px;margin:0 auto;text-align:center;">
+    <h2 class="reveal" data-reveal="fade" style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.7rem,3.6vw,2.7rem);line-height:1.22;letter-spacing:-0.02em;color:#0f172a;margin:0;text-wrap:balance;">
+      {{ __('landing.value.title') }}
+    </h2>
   </section>
 
   <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(148,163,184,0.3),transparent);max-width:1200px;margin:0 auto;"></div>
 
-  <section id="solusi" style="position:relative;padding:130px 40px;max-width:1200px;margin:0 auto;">
-    <div class="reveal" data-reveal="fade" style="max-width:660px;margin-bottom:60px;">
-      <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">Masalah &amp; Solusi</p>
-      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0;">Marketplace biasa menahan dana Anda di tempat yang gelap.</h2>
+  {{-- ===================== CARA KERJA ===================== --}}
+  <section id="how" class="sec" style="position:relative;padding:120px 40px;max-width:1200px;margin:0 auto;">
+    <div class="reveal" data-reveal="fade" style="max-width:680px;margin-bottom:56px;">
+      <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">{{ __('landing.how.eyebrow') }}</p>
+      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);line-height:1.15;letter-spacing:-0.02em;color:#0f172a;margin:0 0 14px;">{{ __('landing.how.title') }}</h2>
+      <p style="font-size:17px;line-height:1.6;color:#475569;margin:0;">{{ __('landing.how.subtitle') }}</p>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;">
-      <div class="reveal" data-reveal="left" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:44px;">
-        <p style="color:#64748b;font-size:13px;margin:0 0 8px;">Cara konvensional</p>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:22px;color:#475569;margin:0 0 22px;">Perantara memegang dana</h3>
-        <div style="display:flex;flex-direction:column;gap:16px;color:#475569;font-size:15px;line-height:1.5;">
-          <div style="display:flex;gap:12px;"><span style="color:#475569;">—</span>Dana pembeli dipegang platform, prosesnya tidak terlihat.</div>
-          <div style="display:flex;gap:12px;"><span style="color:#475569;">—</span>Sengketa bergantung keputusan sepihak platform, tanpa bukti terbuka.</div>
-          <div style="display:flex;gap:12px;"><span style="color:#475569;">—</span>Tidak ada cara publik memverifikasi transaksi terjadi.</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;">
+      @foreach(__('landing.how.steps') as $i => $s)
+        <div class="reveal" data-reveal="step" style="position:relative;background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:16px;padding:26px 22px;">
+          <div style="width:30px;height:30px;border-radius:9px;background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">{{ $i + 1 }}</div>
+          <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:16px;color:#0f172a;margin:0 0 7px;">{{ $s['t'] }}</h3>
+          <p style="font-size:13.5px;line-height:1.55;color:#475569;margin:0;">{{ $s['d'] }}</p>
         </div>
-      </div>
-      <div class="reveal" data-reveal="right" style="position:relative;background:#fff;border:1px solid #bfdbfe;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:44px;">
-        <p style="color:#2563eb;font-size:13px;margin:0 0 8px;position:relative;">Pendekatan E-Trace</p>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:22px;color:#0f172a;margin:0 0 22px;position:relative;">Smart contract memegang dana</h3>
-        <div style="display:flex;flex-direction:column;gap:16px;color:#334155;font-size:15px;line-height:1.5;position:relative;">
-          <div style="display:flex;gap:12px;"><span style="color:#2563eb;">✓</span>Dana ditahan escrow on-chain, dilepas hanya saat pembeli konfirmasi.</div>
-          <div style="display:flex;gap:12px;"><span style="color:#2563eb;">✓</span>Ada masalah? Ajukan sengketa dengan bukti — diputus pengawas, bukan refund otomatis.</div>
-          <div style="display:flex;gap:12px;"><span style="color:#2563eb;">✓</span>Setiap transaksi tercatat &amp; terbuka di block explorer.</div>
-        </div>
-      </div>
+      @endforeach
+    </div>
+    <div class="reveal" data-reveal="fade" style="margin-top:22px;display:flex;gap:12px;align-items:flex-start;background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:18px 22px;max-width:900px;">
+      <span style="color:#2563eb;flex-shrink:0;font-size:16px;">ⓘ</span>
+      <p style="font-size:14px;line-height:1.55;color:#1e3a8a;margin:0;">{{ __('landing.how.note') }}</p>
     </div>
   </section>
 
-  <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(148,163,184,0.3),transparent);max-width:1200px;margin:0 auto;"></div>
-
-  <section style="position:relative;padding:130px 40px;max-width:1200px;margin:0 auto;">
-    <div class="reveal" data-reveal="fade" style="max-width:660px;margin-bottom:70px;">
-      <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">Cara Kerja</p>
-      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0;">Tiga langkah, dana selalu di bawah kendali Anda.</h2>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:40px;">
-      <div class="reveal" data-reveal="step" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
-        <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:46px;color:transparent;-webkit-text-stroke:1.5px rgba(15,23,42,0.4);display:block;margin-bottom:20px;">01</span>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:20px;color:#0f172a;margin:0 0 10px;">Connect Wallet</h3>
-        <p style="color:#475569;line-height:1.6;margin:0;">Login dengan MetaMask — tanpa email, tanpa password. Identitas Anda adalah wallet Anda.</p>
-      </div>
-      <div class="reveal" data-reveal="step" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
-        <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:46px;color:transparent;-webkit-text-stroke:1.5px rgba(15,23,42,0.4);display:block;margin-bottom:20px;">02</span>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:20px;color:#0f172a;margin:0 0 10px;">Bayar via Escrow</h3>
-        <p style="color:#475569;line-height:1.6;margin:0;">Bayar dengan token TLKM. Dana masuk ke smart contract escrow, terpisah per penjual.</p>
-      </div>
-      <div class="reveal" data-reveal="step" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
-        <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:46px;color:transparent;-webkit-text-stroke:1.5px rgba(15,23,42,0.4);display:block;margin-bottom:20px;">03</span>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:20px;color:#0f172a;margin:0 0 10px;">Konfirmasi &amp; Dana Lepas</h3>
-        <p style="color:#475569;line-height:1.6;margin:0;">Barang diterima, Anda konfirmasi — escrow melepas dana ke penjual. Bermasalah? Ajukan sengketa dengan bukti; pengawas yang memutus.</p>
-      </div>
-    </div>
-  </section>
-
-  <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(148,163,184,0.3),transparent);max-width:1200px;margin:0 auto;"></div>
-
-  {{-- ===== SENGKETA YANG ADIL (melindungi kedua pihak) ===== --}}
-  <section id="sengketa" style="position:relative;padding:130px 40px;max-width:1200px;margin:0 auto;">
-    <div class="reveal" data-reveal="fade" style="max-width:720px;margin-bottom:52px;">
-      <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">Penyelesaian Sengketa</p>
-      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0 0 16px;">Adil untuk pembeli <span style="color:#2563eb;">dan</span> penjual.</h2>
-      <p style="color:#475569;font-size:17px;line-height:1.65;margin:0;">Escrow menahan dana sampai transaksi selesai. Jika ada masalah, keputusan tidak diambil sepihak — sengketa diputus berdasarkan <b>bukti</b>, bukan sekadar komplain.</p>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;margin-bottom:32px;">
-      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
-        <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:40px;color:transparent;-webkit-text-stroke:1.5px rgba(37,99,235,0.5);display:block;margin-bottom:16px;">01</span>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Dana ditahan escrow</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Pembayaran dikunci di smart contract. Penjual tidak bisa kabur membawa uang, pembeli tidak bisa menahan barang tanpa bayar.</p>
-      </div>
-      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
-        <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:40px;color:transparent;-webkit-text-stroke:1.5px rgba(37,99,235,0.5);display:block;margin-bottom:16px;">02</span>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Ajukan sengketa + bukti</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Pembeli maupun penjual melampirkan bukti: nomor resi/tracking pengiriman, foto barang, dan kronologi. Semua tercatat.</p>
-      </div>
-      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #bfdbfe;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
-        <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:40px;color:transparent;-webkit-text-stroke:1.5px rgba(37,99,235,0.5);display:block;margin-bottom:16px;">03</span>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Pengawas memutus</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Pengawas (supervisor) meninjau bukti kedua pihak dan memutuskan. Dana dilepas ke pihak yang benar — <b>bukan refund otomatis</b> hanya karena komplain.</p>
-      </div>
-    </div>
-    <div class="reveal" data-reveal="fade" style="display:flex;gap:12px;align-items:flex-start;background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:18px 22px;">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" style="flex-shrink:0;margin-top:1px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-      <p style="color:#1e3a8a;font-size:14px;line-height:1.6;margin:0;"><b>Melindungi kedua belah pihak:</b> pembeli tidak bisa asal klaim untuk menahan uang, dan penjual tidak bisa kabur dengan dana. Keputusan berbasis bukti dan tercatat on-chain.</p>
-    </div>
-  </section>
-
-  <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(148,163,184,0.3),transparent);max-width:1200px;margin:0 auto;"></div>
-
-  <section style="position:relative;padding:130px 40px;max-width:1200px;margin:0 auto;">
-    <div class="reveal" data-reveal="fade" style="max-width:660px;margin-bottom:52px;">
-      <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">Fitur Unggulan</p>
-      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0;">Dibangun untuk kepercayaan yang bisa dibuktikan.</h2>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;">
-      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
-        <div style="width:40px;height:40px;border-radius:10px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
-        </div>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">Escrow Trustless</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Dana ditahan smart contract, dilepas hanya saat pembeli konfirmasi barang diterima.</p>
-      </div>
-      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
-        <div style="width:40px;height:40px;border-radius:10px;background:#f5f3ff;border:1px solid #ddd6fe;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-        </div>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">Multi-Penjual</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Satu pembayaran, banyak penjual — tiap penjual punya escrow terpisah yang independen.</p>
-      </div>
-      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
-        <div style="width:40px;height:40px;border-radius:10px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg>
-        </div>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">Token TLKM</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Token BEP-20 milik platform, digunakan untuk seluruh transaksi di jaringan BNB Smart Chain.</p>
-      </div>
-      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
-        <div style="width:40px;height:40px;border-radius:10px;background:#f5f3ff;border:1px solid #ddd6fe;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"></path></svg>
-        </div>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">Transparansi On-Chain</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Setiap transaksi tercatat permanen dan bisa diverifikasi siapa saja di block explorer.</p>
-      </div>
-    </div>
-  </section>
-
-  <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(148,163,184,0.3),transparent);max-width:1200px;margin:0 auto;"></div>
-
-  {{-- ===== FITUR UNGGULAN E-TRACE (kapabilitas tambahan) ===== --}}
-  <section style="position:relative;padding:130px 40px;max-width:1200px;margin:0 auto;">
+  {{-- ===================== FITUR LENGKAP ===================== --}}
+  @php
+    // Ikon + aksen per fitur (dipasangkan berdasarkan indeks dengan landing.features.items).
+    $bl = ['#2563eb', '#eff6ff', '#bfdbfe']; // biru
+    $rd = ['#e5121f', '#fef2f2', '#fecaca']; // merah
+    $vt = ['#7c3aed', '#f5f3ff', '#ddd6fe']; // ungu
+    $gr = ['#059669', '#ecfdf5', '#a7f3d0']; // hijau
+    $featMeta = [
+      ['<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>', $bl],
+      ['<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/>', $bl],
+      ['<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4"/>', $rd],
+      ['<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="17" cy="14.5" r="1.2"/>', $bl],
+      ['<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>', $rd],
+      ['<rect x="4" y="7" width="16" height="12" rx="2"/><path d="M9 7V4h6v3M9 13h.01M15 13h.01M12 2v2"/>', $vt],
+      ['<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>', $gr],
+      ['<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M8 12h1.5M11 9v6M14 11h1.5"/>', $bl],
+      ['<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21.2l8.8-8.8a5.5 5.5 0 0 0 0-7.8z"/>', $rd],
+      ['<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M12 7v1M9 11h6"/>', $vt],
+      ['<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>', $bl],
+      ['<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>', $gr],
+      ['<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/>', $vt],
+    ];
+    $featItems = __('landing.features.items');
+  @endphp
+  <section id="features" class="sec" style="position:relative;padding:120px 40px;max-width:1200px;margin:0 auto;">
     <div class="reveal" data-reveal="fade" style="max-width:680px;margin-bottom:52px;">
-      <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">Lebih dari Marketplace</p>
-      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0;">Ekosistem keuangan yang transparan &amp; bisa diaudit.</h2>
+      <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">{{ __('landing.features.eyebrow') }}</p>
+      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);line-height:1.15;letter-spacing:-0.02em;color:#0f172a;margin:0 0 14px;">{{ __('landing.features.title') }}</h2>
+      <p style="font-size:17px;line-height:1.6;color:#475569;margin:0;">{{ __('landing.features.subtitle') }}</p>
     </div>
-    <div class="eco-grid">
-
-      {{-- Paylater: Pinjam / Danai (fitur baru) --}}
-      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:34px;">
-        <div style="width:42px;height:42px;border-radius:11px;background:#fef2f2;border:1px solid #fecaca;display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#e5121f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"></circle><path d="M18.09 10.37A6 6 0 1 1 10.34 18"></path><path d="M7 6h1v4"></path><path d="m16.71 13.88.7.71-2.82 2.82"></path></svg>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;">
+      @foreach($featItems as $i => $f)
+        @php $m = $featMeta[$i] ?? $featMeta[0]; $c = $m[1]; @endphp
+        <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:28px;">
+          <div style="width:42px;height:42px;border-radius:11px;background:{{ $c[1] }};border:1px solid {{ $c[2] }};display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{ $c[0] }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{!! $m[0] !!}</svg>
+          </div>
+          <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">{{ $f['t'] }}</h3>
+          <p style="font-size:14px;line-height:1.55;color:#475569;margin:0;">{{ $f['d'] }}</p>
         </div>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Paylater &mdash; Pinjam &amp; Danai</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Belanja sekarang bayar nanti dengan jaminan, atau <b>danai</b> pool likuiditas dan dapat bagi hasil. Bunga, jangka, &amp; pool semua tercatat on-chain.</p>
-      </div>
-
-
-      {{-- E-Wallet Crypto (QRIS: rencana) --}}
-      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:34px;">
-        <div style="width:42px;height:42px;border-radius:11px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><path d="M2 10h20"></path></svg>
-        </div>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">E-Wallet Crypto</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Dompet dalam aplikasi untuk menyimpan &amp; mengirim TLKM/stablecoin, dilindungi PIN.</p>
-      </div>
-
-      {{-- Dompet Bersama + Multisig --}}
-      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:34px;">
-        <div style="width:42px;height:42px;border-radius:11px;background:#f5f3ff;border:1px solid #ddd6fe;display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-        </div>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Dompet Bersama + Multisig</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Dana komunitas yang butuh persetujuan beberapa orang (<b>M dari N</b>) sebelum dicairkan. Setiap usulan &amp; persetujuan tercatat dan bisa diaudit publik.</p>
-      </div>
-
-      {{-- Laporan Otomatis Penjual --}}
-      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:34px;">
-        <div style="width:42px;height:42px;border-radius:11px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8M8 17h5"></path></svg>
-        </div>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Laporan Otomatis Penjual</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Penjual mengunduh laporan penjualan <b>Excel &amp; PDF</b> otomatis — harian (rincian transaksi) dan bulanan (rekap) — langsung dari transaksi di aplikasi.</p>
-      </div>
-
-      {{-- Donasi Transparan & Anti-Beku --}}
-      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:34px;">
-        <div style="width:42px;height:42px;border-radius:11px;background:#fef2f2;border:1px solid #fecaca;display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-        </div>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Donasi Transparan &amp; Anti-Beku</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Donasi tercatat on-chain dan tersalur lewat smart contract — tidak bisa dibekukan sepihak. Belajar dari kasus donasi yang pernah dibekukan di Indonesia: transparansi &amp; desentralisasi menjaga dana tetap sampai ke tujuan.</p>
-      </div>
-
+      @endforeach
     </div>
   </section>
 
-  <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(148,163,184,0.3),transparent);max-width:1200px;margin:0 auto;"></div>
-
-  <section style="position:relative;padding:130px 40px;max-width:1200px;margin:0 auto;overflow:hidden;">
-    <div style="position:relative;display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:56px;align-items:center;">
-      <div class="reveal" data-reveal="left">
-        <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">Transparansi Penuh</p>
-        <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0 0 20px;">Tak perlu percaya kami. Verifikasi sendiri.</h2>
-        <p style="color:#475569;font-size:17px;line-height:1.65;max-width:460px;margin:0;">Tiap escrow, pembayaran, dan pelepasan dana adalah entri publik di blockchain Ethereum — bisa dibuka lewat block explorer mana pun. Cocok untuk lembaga dan mitra yang butuh jejak akuntabilitas yang tidak bisa diubah sepihak.</p>
+  {{-- ===================== SUSTAINABILITY × BLOCKCHAIN ===================== --}}
+  @php
+    $sustainVisuals = [
+      ['#059669', '#ecfdf5', '<path d="M4 12a8 8 0 0 1 8-8M20 12a8 8 0 0 1-8 8" /><path d="M12 4l3 3-3 3M12 20l-3-3 3-3"/>'], // loop
+      ['#16a34a', '#f0fdf4', '<path d="M12 22V8M12 8l-4-3M12 8l4-3M12 14l-5-3M12 14l5-3"/><circle cx="12" cy="6" r="2"/>'], // pohon jaringan
+      ['#0891b2', '#ecfeff', '<circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/>'], // node menyinari
+    ];
+    $sustainItems = __('landing.sustain.items');
+  @endphp
+  <section id="sustain" class="sec" style="position:relative;padding:130px 40px;background:linear-gradient(180deg,#f6f7fb, #f0fdf4 40%, #f6f7fb);overflow:hidden;">
+    <div style="max-width:1200px;margin:0 auto;">
+      <div class="reveal" data-reveal="fade" style="max-width:720px;margin-bottom:60px;">
+        <p style="color:#059669;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">🌱 {{ __('landing.sustain.eyebrow') }}</p>
+        <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.9rem,4.2vw,3rem);line-height:1.12;letter-spacing:-0.02em;color:#0f172a;margin:0 0 14px;text-wrap:balance;">{{ __('landing.sustain.title') }}</h2>
+        <p style="font-size:17px;line-height:1.6;color:#475569;margin:0;">{{ __('landing.sustain.subtitle') }}</p>
       </div>
-      <div class="reveal" data-reveal="right" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:26px;">
-        <p style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 16px;">Contoh entri escrow on-chain</p>
-        <div style="display:flex;flex-direction:column;gap:12px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:13px 16px;">
-            <div><p style="font-size:14px;color:#1e293b;font-family:monospace;margin:0;">0x8f...2a91</p><p style="font-size:12px;color:#64748b;margin:4px 0 0;">Escrow dibuat &middot; Penjual A</p></div>
-            <span style="font-size:11px;padding:5px 10px;border-radius:999px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;">Ditahan</span>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;">
+        @foreach($sustainItems as $i => $s)
+          @php $v = $sustainVisuals[$i] ?? $sustainVisuals[0]; @endphp
+          <div class="reveal" data-reveal="card" style="position:relative;background:#fff;border:1px solid #d1fae5;box-shadow:0 4px 20px rgba(5,150,105,0.06);border-radius:22px;padding:34px;overflow:hidden;">
+            <div style="position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,{{ $v[1] }},transparent 70%);"></div>
+            <div class="sustain-visual" style="position:relative;width:88px;height:88px;border-radius:24px;background:{{ $v[1] }};border:1px solid #a7f3d0;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="{{ $v[0] }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">{!! $v[2] !!}</svg>
+              <span style="position:absolute;bottom:-9px;right:-9px;font-size:9px;font-weight:700;letter-spacing:0.05em;color:{{ $v[0] }};background:#fff;border:1px solid #a7f3d0;border-radius:999px;padding:2px 7px;">{{ __('landing.sustain.asset_note') }}</span>
+            </div>
+            <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:20px;color:#0f172a;margin:0 0 10px;position:relative;">{{ $s['t'] }}</h3>
+            <p style="font-size:14.5px;line-height:1.6;color:#475569;margin:0;position:relative;">{{ $s['d'] }}</p>
           </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:13px 16px;">
-            <div><p style="font-size:14px;color:#1e293b;font-family:monospace;margin:0;">0x3c...9e0d</p><p style="font-size:12px;color:#64748b;margin:4px 0 0;">Konfirmasi diterima &middot; Penjual B</p></div>
-            <span style="font-size:11px;padding:5px 10px;border-radius:999px;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;">Dilepas</span>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:13px 16px;">
-            <div><p style="font-size:14px;color:#1e293b;font-family:monospace;margin:0;">0x1b...7f44</p><p style="font-size:12px;color:#64748b;margin:4px 0 0;">Refund diproses &middot; Penjual C</p></div>
-            <span style="font-size:11px;padding:5px 10px;border-radius:999px;background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;">Refund</span>
-          </div>
-        </div>
+        @endforeach
       </div>
     </div>
   </section>
 
-  <section style="position:relative;padding:150px 40px;max-width:1200px;margin:0 auto;text-align:center;overflow:hidden;">
-    <div class="reveal" data-reveal="fade" style="position:relative;">
-      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(2rem,5vw,3.6rem);color:#0f172a;line-height:1.15;max-width:760px;margin:0 auto;">Belanja dengan transparansi yang bisa Anda buktikan sendiri.</h2>
-      <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin-top:40px;">
-        <a href="/login" class="btn-primary" style="padding:16px 34px;border-radius:999px;background:#2563eb;color:#fff;font-weight:600;font-size:15px;">Masuk Toko</a>
-        <a href="/products" class="btn-ghost" style="padding:16px 34px;border-radius:999px;background:#fff;border:1px solid #e2e8f0;color:#1e293b;font-weight:500;font-size:15px;box-shadow:0 1px 2px rgba(15,23,42,0.04);">Lihat Katalog</a>
+  {{-- ===================== TRANSPARANSI ===================== --}}
+  <section class="sec" style="position:relative;padding:120px 40px;max-width:1200px;margin:0 auto;">
+    <div class="reveal" data-reveal="fade" style="background:#0b1020;border-radius:26px;padding:64px 48px;text-align:center;position:relative;overflow:hidden;">
+      <div aria-hidden="true" style="position:absolute;inset:0;background:radial-gradient(700px 380px at 50% 0%, rgba(37,99,235,0.28), transparent 60%);"></div>
+      <div style="position:relative;">
+        <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.8rem);line-height:1.15;letter-spacing:-0.02em;color:#fff;margin:0 auto 16px;max-width:720px;text-wrap:balance;">{{ __('landing.transparency.title') }}</h2>
+        <p style="font-size:17px;line-height:1.6;color:#aab6cf;margin:0 auto 32px;max-width:620px;">{{ __('landing.transparency.desc') }}</p>
+        <a href="/explorer" class="btn-light" style="display:inline-block;padding:15px 34px;border-radius:999px;background:#fff;color:#0b1020;font-weight:700;font-size:15px;box-shadow:0 12px 30px rgba(0,0,0,0.3);">{{ __('landing.transparency.cta') }} &rarr;</a>
       </div>
     </div>
   </section>
 
-  <footer style="border-top:1px solid rgba(15,23,42,0.08);padding:36px 40px;">
-    <div style="max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;font-size:13px;color:#64748b;">
-      <p style="margin:0;">© {{ date('Y') }} E-Trace. {{ __('footer.rights') }}</p>
-      <div style="display:flex;gap:24px;align-items:center;">
-        <a href="/products" style="color:#475569;">{{ __('footer.catalog') }}</a>
-        <a href="/login" style="color:#475569;">{{ __('footer.login') }}</a>
-        @php $cur = app()->getLocale(); @endphp
-        <span style="display:inline-flex;align-items:center;gap:6px;border:1px solid #e2e8f0;border-radius:999px;padding:3px 6px;">
-          <a href="{{ route('lang.switch','id') }}" style="padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;{{ $cur==='id' ? 'background:#2563eb;color:#fff;' : 'color:#64748b;' }}">ID</a>
-          <a href="{{ route('lang.switch','en') }}" style="padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;{{ $cur==='en' ? 'background:#2563eb;color:#fff;' : 'color:#64748b;' }}">EN</a>
-        </span>
+  {{-- ===================== UNTUK SIAPA ===================== --}}
+  @php
+    $personaMeta = [
+      ['#2563eb', '#eff6ff', '#bfdbfe'],
+      ['#e5121f', '#fef2f2', '#fecaca'],
+      ['#7c3aed', '#f5f3ff', '#ddd6fe'],
+    ];
+    $personaItems = __('landing.personas.items');
+  @endphp
+  <section id="personas" class="sec" style="position:relative;padding:60px 40px 120px;max-width:1200px;margin:0 auto;">
+    <div class="reveal" data-reveal="fade" style="max-width:680px;margin-bottom:44px;">
+      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.7rem);line-height:1.15;letter-spacing:-0.02em;color:#0f172a;margin:0;">{{ __('landing.personas.title') }}</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;">
+      @foreach($personaItems as $i => $p)
+        @php $c = $personaMeta[$i] ?? $personaMeta[0]; @endphp
+        <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:20px;padding:32px;">
+          <div style="width:44px;height:44px;border-radius:12px;background:{{ $c[1] }};border:1px solid {{ $c[2] }};display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{{ $c[0] }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
+          </div>
+          <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:19px;color:#0f172a;margin:0 0 9px;">{{ $p['t'] }}</h3>
+          <p style="font-size:14.5px;line-height:1.6;color:#475569;margin:0;">{{ $p['d'] }}</p>
+        </div>
+      @endforeach
+    </div>
+  </section>
+
+  {{-- ===================== CTA PENUTUP ===================== --}}
+  <section class="sec" style="position:relative;padding:0 40px 120px;max-width:1200px;margin:0 auto;">
+    <div class="reveal" data-reveal="fade" style="background:linear-gradient(135deg,#2563eb,#1e40af);border-radius:26px;padding:70px 48px;text-align:center;position:relative;overflow:hidden;">
+      <div aria-hidden="true" style="position:absolute;inset:0;background:radial-gradient(600px 300px at 80% 120%, rgba(229,18,31,0.3), transparent 60%);"></div>
+      <div style="position:relative;">
+        <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.9rem,4.2vw,3rem);line-height:1.12;letter-spacing:-0.02em;color:#fff;margin:0 auto 16px;max-width:720px;text-wrap:balance;">{{ __('landing.cta.title') }}</h2>
+        <p style="font-size:18px;line-height:1.6;color:#dbe4f5;margin:0 auto 34px;max-width:560px;">{{ __('landing.cta.desc') }}</p>
+        <a href="/login" class="btn-light" style="display:inline-block;padding:16px 40px;border-radius:999px;background:#fff;color:#1e40af;font-weight:700;font-size:16px;box-shadow:0 14px 34px rgba(0,0,0,0.25);">{{ __('landing.cta.button') }}</a>
+        <p style="font-size:12.5px;line-height:1.55;color:rgba(219,228,245,0.75);margin:28px auto 0;max-width:640px;">{{ __('landing.cta.disclaimer') }}</p>
+      </div>
+    </div>
+  </section>
+
+  {{-- ===================== FOOTER ===================== --}}
+  <footer style="border-top:1px solid rgba(15,23,42,0.06);padding:40px;">
+    <div style="max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;">
+      <div style="display:flex;align-items:center;gap:9px;font-family:'Bricolage Grotesque',sans-serif;font-size:16px;color:#0f172a;">
+        <span style="width:9px;height:9px;border-radius:50%;background:#2563eb;display:inline-block;"></span>
+        E-Trace
+      </div>
+      <p style="font-size:13px;color:#64748b;margin:0;">{{ __('landing.footer.tagline') }}</p>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#64748b;">
+        <span style="width:7px;height:7px;border-radius:50%;background:#059669;display:inline-block;"></span>
+        BNB Smart Chain Testnet
       </div>
     </div>
   </footer>
@@ -401,21 +289,34 @@
 
 <script>
 (function () {
-  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var isMobile = window.innerWidth < 768;
+  // Header: transparan di atas hero, jadi terang saat scroll.
+  var header = document.getElementById('site-header');
+  var onScroll = function () {
+    if (window.scrollY > 60) header.classList.add('scrolled');
+    else header.classList.remove('scrolled');
+  };
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
 
-  // Fallback aman: kalau GSAP gagal load, tampilkan semua konten & pakai fallback hero.
+  // Video hero: fade-in saat siap; sembunyikan bila gagal (poster tetap tampil via bg).
+  var v = document.getElementById('hero-video');
+  var hero = document.getElementById('hero');
+  if (v && hero) {
+    hero.style.backgroundImage = "url('" + hero.getAttribute('data-poster') + "')";
+    v.addEventListener('error', function () { v.style.display = 'none'; });
+  }
+
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Fallback: GSAP gagal → tampilkan semua konten apa adanya.
   if (typeof window.gsap === 'undefined' || typeof window.ScrollTrigger === 'undefined') {
     document.querySelectorAll('.reveal').forEach(function (el) { el.style.opacity = 1; el.style.transform = 'none'; });
-    var fb0 = document.getElementById('hero-fallback');
-    if (fb0) fb0.style.display = 'block';
     return;
   }
 
-  var gsap = window.gsap, ScrollTrigger = window.ScrollTrigger, THREE = window.THREE, Lenis = window.Lenis;
+  var gsap = window.gsap, ScrollTrigger = window.ScrollTrigger, Lenis = window.Lenis;
   gsap.registerPlugin(ScrollTrigger);
 
-  // ---- Lenis smooth scroll ----
   var lenis = null;
   if (!reduceMotion && Lenis) {
     lenis = new Lenis({ lerp: 0.1, smoothWheel: true });
@@ -433,135 +334,17 @@
     });
   });
 
-  // ---- Reveal (transform + opacity) ----
   document.querySelectorAll('[data-reveal="hero"]').forEach(function (el, i) {
     gsap.fromTo(el, { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 1, delay: 0.15 + i * 0.1, ease: 'power3.out' });
   });
   document.querySelectorAll('[data-reveal="fade"]').forEach(function (el) {
-    gsap.fromTo(el, { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 82%' } });
-  });
-  document.querySelectorAll('[data-reveal="left"]').forEach(function (el) {
-    gsap.fromTo(el, { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.9, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 82%' } });
-  });
-  document.querySelectorAll('[data-reveal="right"]').forEach(function (el) {
-    gsap.fromTo(el, { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.9, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 82%' } });
+    gsap.fromTo(el, { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 85%' } });
   });
   document.querySelectorAll('[data-reveal="step"]').forEach(function (el, i) {
-    gsap.fromTo(el, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.7, delay: (i % 3) * 0.15, ease: 'power3.out', scrollTrigger: { trigger: el.closest('section'), start: 'top 70%' } });
+    gsap.fromTo(el, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6, delay: (i % 5) * 0.08, ease: 'power3.out', scrollTrigger: { trigger: el.closest('section'), start: 'top 75%' } });
   });
   document.querySelectorAll('[data-reveal="card"]').forEach(function (el, i) {
-    gsap.fromTo(el, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.7, delay: (i % 4) * 0.1, ease: 'power3.out', scrollTrigger: { trigger: el.closest('section'), start: 'top 75%' } });
-  });
-
-  // ---- 3D hero (Three.js): kristal wireframe + jaringan node ----
-  // Desktop: di kanan 58%. Mobile: backdrop ambient full-width (lihat CSS @media).
-  // Dimatikan hanya untuk prefers-reduced-motion / WebGL tak tersedia.
-  var enable3D = !reduceMotion && typeof THREE !== 'undefined';
-  var heroSection = document.getElementById('hero');
-  var wrap = document.getElementById('hero-canvas');
-  var fallback = document.getElementById('hero-fallback');
-  if (!enable3D) { if (fallback) fallback.style.display = 'block'; return; }
-
-  var cyanHex = 0x2563eb, violetHex = 0x7c3aed;
-  var width = wrap.clientWidth, height = wrap.clientHeight;
-  var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
-  renderer.setSize(width, height);
-  wrap.appendChild(renderer.domElement);
-
-  var scene = new THREE.Scene();
-  var camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
-  camera.position.set(0, 0, 7);
-
-  var group = new THREE.Group();
-  scene.add(group);
-
-  var icoGeo = new THREE.IcosahedronGeometry(1.15, 1);
-  var edges = new THREE.EdgesGeometry(icoGeo);
-  var crystal = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: cyanHex, transparent: true, opacity: 0.85 }));
-  group.add(crystal);
-  var crystalFill = new THREE.Mesh(icoGeo, new THREE.MeshBasicMaterial({ color: 0x1e293b, transparent: true, opacity: 0.18 }));
-  group.add(crystalFill);
-
-  var NODE_COUNT = isMobile ? 40 : 90;
-  var RADIUS = 2.5;
-  var positions = [];
-  for (var i = 0; i < NODE_COUNT; i++) {
-    var v = new THREE.Vector3((Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2)
-      .normalize().multiplyScalar(RADIUS * (0.55 + Math.random() * 0.45));
-    positions.push(v);
-  }
-  var pointsGeo = new THREE.BufferGeometry();
-  var posArr = new Float32Array(NODE_COUNT * 3);
-  positions.forEach(function (v, i) { posArr[i * 3] = v.x; posArr[i * 3 + 1] = v.y; posArr[i * 3 + 2] = v.z; });
-  pointsGeo.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
-
-  var dotCanvas = document.createElement('canvas');
-  dotCanvas.width = dotCanvas.height = 64;
-  var dctx = dotCanvas.getContext('2d');
-  var grad = dctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-  grad.addColorStop(0, 'rgba(255,255,255,1)');
-  grad.addColorStop(1, 'rgba(255,255,255,0)');
-  dctx.fillStyle = grad; dctx.fillRect(0, 0, 64, 64);
-  var dotTexture = new THREE.CanvasTexture(dotCanvas);
-
-  var pointCloud = new THREE.Points(pointsGeo, new THREE.PointsMaterial({
-    size: 0.09, color: cyanHex, map: dotTexture, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false
-  }));
-  group.add(pointCloud);
-
-  var linePositions = [];
-  var THRESH = 1.2;
-  for (var a = 0; a < positions.length; a++) {
-    for (var b = a + 1; b < positions.length; b++) {
-      if (positions[a].distanceTo(positions[b]) < THRESH) {
-        linePositions.push(positions[a].x, positions[a].y, positions[a].z, positions[b].x, positions[b].y, positions[b].z);
-      }
-    }
-  }
-  var lineGeo = new THREE.BufferGeometry();
-  lineGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(linePositions), 3));
-  var network = new THREE.LineSegments(lineGeo, new THREE.LineBasicMaterial({ color: violetHex, transparent: true, opacity: 0.22 }));
-  group.add(network);
-
-  scene.add(new THREE.AmbientLight(0x8fd7ff, 0.6));
-
-  var mouseX = 0, mouseY = 0, targetRotX = 0, targetRotY = 0;
-  window.addEventListener('mousemove', function (e) {
-    mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-    mouseY = (e.clientY / window.innerHeight) * 2 - 1;
-  });
-
-  var scrollProgress = { v: 0 };
-  ScrollTrigger.create({ trigger: heroSection, start: 'top top', end: 'bottom top', scrub: true, onUpdate: function (self) { scrollProgress.v = self.progress; } });
-  gsap.to(wrap, { opacity: 0.15, scrollTrigger: { trigger: heroSection, start: 'top top', end: 'bottom top', scrub: true } });
-
-  var visible = true;
-  document.addEventListener('visibilitychange', function () { visible = document.visibilityState === 'visible'; });
-  var heroInView = true;
-  var io = new IntersectionObserver(function (entries) { heroInView = entries[0].isIntersecting; }, { threshold: 0.01 });
-  io.observe(heroSection);
-
-  var clock = new THREE.Clock();
-  function animate() {
-    requestAnimationFrame(animate);
-    if (!visible || !heroInView) return;
-    var t = clock.getElapsedTime();
-    targetRotX += (mouseY * 0.35 - targetRotX) * 0.05;
-    targetRotY += (mouseX * 0.45 - targetRotY) * 0.05;
-    group.rotation.x = targetRotX + t * 0.04 + scrollProgress.v * 0.6;
-    group.rotation.y = targetRotY + t * 0.06 + scrollProgress.v * 1.1;
-    camera.position.z = 7 - scrollProgress.v * 1.8;
-    crystal.rotation.y = -t * 0.08;
-    renderer.render(scene, camera);
-  }
-  animate();
-
-  window.addEventListener('resize', function () {
-    var w = wrap.clientWidth, h = wrap.clientHeight;
-    renderer.setSize(w, h);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
+    gsap.fromTo(el, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6, delay: (i % 4) * 0.08, ease: 'power3.out', scrollTrigger: { trigger: el.closest('section'), start: 'top 80%' } });
   });
 })();
 </script>
