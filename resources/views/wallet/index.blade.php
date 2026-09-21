@@ -11,7 +11,6 @@
     <div class="min-w-0">
         <div class="flex items-center gap-2">
             <h2 class="font-bold text-white">Bayar QRIS pakai Stablecoin</h2>
-            <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/90 text-slate-900 font-bold">PROTOTIPE</span>
         </div>
         <p class="text-xs text-slate-300 mt-1">Scan QRIS/GPN, masukkan nominal, konfirmasi PIN — dibayar dari saldo stablecoin (USDC). <b>Simulasi</b>: belum settlement nyata.</p>
     </div>

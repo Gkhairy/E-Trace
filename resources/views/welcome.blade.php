@@ -39,6 +39,27 @@
     #hero-content h1 { font-size: clamp(2.1rem, 9vw, 3rem) !important; }
     #hero-content p  { font-size: 16px !important; }
   }
+
+  /* ============ PAYLATER — fitur borrow/lending (koin TLKM di atas terang) ============ */
+  /* Artwork koin melayang naik-turun lembut (tanpa rotasi — tulisan menyatu di gambar). */
+  .pl-coin { will-change:transform; animation:pl-bob 7s ease-in-out infinite;
+    filter:drop-shadow(0 22px 34px rgba(15,23,42,0.14)); }
+  @keyframes pl-bob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-16px); } }
+  .pl-cta:hover  { background:#c30f1b !important; box-shadow:0 14px 34px rgba(229,18,31,0.32) !important; }
+  .pl-link:hover { color:#0f172a !important; }
+  @media (prefers-reduced-motion: reduce) { .pl-coin { animation:none !important; } }
+  @media (max-width: 860px) {
+    #pl-grid     { grid-template-columns:1fr !important; gap:8px !important; }
+    #pl-visual   { order:-1; min-height:300px !important; }
+    #pl-split    { grid-template-columns:1fr !important; }
+    #pl-coin-img { width:min(100%,360px) !important; }
+  }
+
+  /* Grid ekosistem: 5 kartu sejajar di layar lebar, luruh bertahap ke bawah. */
+  .eco-grid { display:grid; gap:18px; grid-template-columns:1fr; }
+  .eco-grid > div { padding:26px !important; }
+  @media (min-width:600px)  { .eco-grid { grid-template-columns:repeat(2,1fr); } }
+  @media (min-width:1024px) { .eco-grid { grid-template-columns:repeat(5,1fr); } }
 </style>
 </head>
 <body>
@@ -87,6 +108,57 @@
       </div>
     </div>
   </section>
+
+  {{-- ================= PAYLATER (borrow / lending) — pita gelap spotlight ================= --}}
+  <section id="paylater" style="position:relative;overflow:hidden;background:#f6f7fb;color:#334155;padding:130px 40px;">
+    <div id="pl-grid" style="position:relative;z-index:2;max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1.05fr 0.95fr;gap:56px;align-items:center;">
+      {{-- Kolom kiri: cerita fitur --}}
+      <div>
+        <h2 class="reveal" data-reveal="left" style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(2rem,4.4vw,3.3rem);line-height:1.08;letter-spacing:-0.02em;text-wrap:balance;color:#0f172a;margin:0;">
+          Belanja dulu, bayar nanti — <span style="color:#2563eb;">atau danai, panen bagi hasil.</span>
+        </h2>
+        <p class="reveal" data-reveal="left" style="max-width:60ch;font-size:18px;line-height:1.65;color:#475569;margin-top:22px;">
+          TLKM bukan cuma alat bayar. Kunci jaminan untuk dapat limit belanja, atau setor ke pool likuiditas dan dapat bagi hasil dari bunga peminjam. Semua tercatat di smart contract — pool, bunga, dan jangka waktunya terbuka untuk siapa saja.
+        </p>
+
+        <div id="pl-split" class="reveal" data-reveal="left" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:40px;">
+          <div style="background:#fff;border:1px solid #bfdbfe;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:24px 22px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+              <span style="width:9px;height:9px;border-radius:50%;background:#2563eb;"></span>
+              <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:19px;color:#0f172a;">Pinjam</span>
+            </div>
+            <p style="margin:0;font-size:14.5px;line-height:1.55;color:#475569;">Jaminkan aset, dapat limit TLKM. Checkout sekarang, lunasi sesuai jangka yang kamu pilih.</p>
+          </div>
+          <div style="background:#fff;border:1px solid #fecaca;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:24px 22px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+              <span style="width:9px;height:9px;border-radius:50%;background:#e5121f;"></span>
+              <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:19px;color:#0f172a;">Danai</span>
+            </div>
+            <p style="margin:0;font-size:14.5px;line-height:1.55;color:#475569;">Setor TLKM ke pool — fleksibel, 30, atau 90 hari. Bagi hasil naik seiring jangka.</p>
+          </div>
+        </div>
+
+      </div>
+
+      {{-- Kolom kanan: koin TLKM melayang di atas putih --}}
+      <div id="pl-visual" class="reveal" data-reveal="right" style="position:relative;display:flex;align-items:center;justify-content:center;min-height:440px;">
+        <img id="pl-coin-img" class="pl-coin" src="/img/tlkm-coin.png" alt="Koin TLKM dengan latar tulisan TLKM"
+             width="2848" height="1490" decoding="async"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+             style="position:relative;z-index:1;width:min(112%,560px);height:auto;aspect-ratio:2848/1490;">
+        {{-- Fallback bila gambar koin belum diletakkan di public/img/tlkm-coin.png --}}
+        <div style="display:none;position:relative;z-index:1;width:min(78%,320px);aspect-ratio:1;border-radius:50%;
+             background:radial-gradient(circle at 38% 32%, #ffffff, #dfe4ee 55%, #b3bccd);
+             box-shadow:0 26px 44px rgba(15,23,42,0.18), inset 0 4px 14px rgba(255,255,255,0.9), inset 0 -10px 24px rgba(15,23,42,0.12);
+             align-items:center;justify-content:center;flex-direction:column;font-family:'Bricolage Grotesque',sans-serif;">
+          <span style="font-size:clamp(2.4rem,6vw,3.4rem);color:#e5121f;letter-spacing:-0.03em;">TLKM</span>
+          <span style="font-size:12px;letter-spacing:0.28em;color:#64748b;margin-top:4px;">TOKEN</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(148,163,184,0.3),transparent);max-width:1200px;margin:0 auto;"></div>
 
   <section id="solusi" style="position:relative;padding:130px 40px;max-width:1200px;margin:0 auto;">
     <div class="reveal" data-reveal="fade" style="max-width:660px;margin-bottom:60px;">
@@ -220,7 +292,26 @@
       <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">Lebih dari Marketplace</p>
       <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0;">Ekosistem keuangan yang transparan &amp; bisa diaudit.</h2>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;">
+    <div class="eco-grid">
+
+      {{-- Paylater: Pinjam / Danai (fitur baru) --}}
+      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:34px;">
+        <div style="width:42px;height:42px;border-radius:11px;background:#fef2f2;border:1px solid #fecaca;display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#e5121f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"></circle><path d="M18.09 10.37A6 6 0 1 1 10.34 18"></path><path d="M7 6h1v4"></path><path d="m16.71 13.88.7.71-2.82 2.82"></path></svg>
+        </div>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Paylater &mdash; Pinjam &amp; Danai</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Belanja sekarang bayar nanti dengan jaminan, atau <b>danai</b> pool likuiditas dan dapat bagi hasil. Bunga, jangka, &amp; pool semua tercatat on-chain.</p>
+      </div>
+
+
+      {{-- E-Wallet Crypto (QRIS: rencana) --}}
+      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:34px;">
+        <div style="width:42px;height:42px;border-radius:11px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><path d="M2 10h20"></path></svg>
+        </div>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">E-Wallet Crypto</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Dompet dalam aplikasi untuk menyimpan &amp; mengirim TLKM/stablecoin, dilindungi PIN.</p>
+      </div>
 
       {{-- Dompet Bersama + Multisig --}}
       <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:34px;">
@@ -229,19 +320,6 @@
         </div>
         <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Dompet Bersama + Multisig</h3>
         <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Dana komunitas yang butuh persetujuan beberapa orang (<b>M dari N</b>) sebelum dicairkan. Setiap usulan &amp; persetujuan tercatat dan bisa diaudit publik.</p>
-      </div>
-
-      {{-- E-Wallet Crypto (QRIS: rencana) --}}
-      <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:34px;">
-        <div style="width:42px;height:42px;border-radius:11px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><path d="M2 10h20"></path></svg>
-        </div>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">E-Wallet Crypto</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 12px;">Dompet dalam aplikasi untuk menyimpan &amp; mengirim TLKM/stablecoin, dilindungi PIN.</p>
-        <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:5px 11px;border-radius:999px;background:#fef9c3;color:#854d0e;border:1px solid #fde68a;">
-          <span style="width:6px;height:6px;border-radius:50%;background:#ca8a04;display:inline-block;"></span>
-          Dukungan pembayaran QRIS sedang dikembangkan
-        </span>
       </div>
 
       {{-- Laporan Otomatis Penjual --}}

@@ -162,10 +162,16 @@ class AuthController extends Controller
         ])->save();
 
         session()->forget('otp_user_id');
-        Auth::login($user);
-        $request->session()->regenerate();
 
-        return redirect()->intended('/products')->with('success', 'Akun terverifikasi. Selamat datang di E-Trace!');
+        // Email terverifikasi — JANGAN langsung login penuh. Lewatkan ke PIN gate dulu
+        // (defense-in-depth: PIN wajib sebelum sesi authenticated, konsisten dgn login biasa).
+        // Bila akun punya 2FA, dahulukan tantangan 2FA.
+        if ($user->hasTwoFactor()) {
+            session(['2fa:user:id' => $user->id]);
+            return redirect('/two-factor-challenge');
+        }
+        session(['pin:user:id' => $user->id, 'pin:remember' => false]);
+        return redirect('/pin-challenge')->with('success', 'Akun terverifikasi. Masukkan PIN untuk masuk.');
     }
 
     public function resendOtp(Request $request)

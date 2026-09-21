@@ -388,12 +388,28 @@
 
     const noWalletMsg = 'Belum ada wallet Web3 terpasang. Pasang MetaMask / Coinbase / Rabby / Trust / OKX dll dulu, lalu coba lagi.';
 
+    // Cegah permintaan wallet ganda (penyebab error -32002 "already pending").
+    let _walletBusy = false;
+    // Terjemahkan error wallet jadi pesan ramah. Null = pakai default pemanggil.
+    function walletErr(e) {
+        if (e && (e.code === 4001 || e.code === 'ACTION_REJECTED')) return 'Kamu membatalkan tanda tangan di wallet.';
+        const msg = ((e && (e.message || '')) + '') + JSON.stringify(e?.info || e?.error || '');
+        if ((e && e.code === -32002) || /already pending|-32002/i.test(msg))
+            return 'Ada permintaan tanda tangan yang masih menunggu di wallet-mu. Buka aplikasi wallet, konfirmasi atau tolak dulu, lalu coba lagi.';
+        return null;
+    }
+
     // ===== REGISTER: connect wallet + tanda tangan kepemilikan =====
     async function connectWallet() {
         if (detectedWallets().length === 0) { notify(noWalletMsg, 'warn'); return; }
+        if (_walletBusy) { notify('Ada permintaan wallet yang masih diproses. Cek aplikasi wallet-mu dulu.', 'warn'); return; }
+        _walletBusy = true;
+        const cw = document.getElementById('cwLabel');
+        const prevLabel = cw ? cw.textContent : null;
+        if (cw) cw.textContent = 'Menunggu tanda tangan…';
         try {
             const prov = await pickWallet();
-            if (!prov) return; // batal pilih
+            if (!prov) { if (cw) cw.textContent = prevLabel; return; } // batal pilih
             const accounts = await prov.request({ method: "eth_requestAccounts" });
             const wallet = accounts[0];
             const ts = Math.floor(Date.now() / 1000);
@@ -404,11 +420,12 @@
             document.getElementById("wallet_address").value = wallet;
             document.getElementById("sig_timestamp").value = ts;
             document.getElementById("signature").value = signature;
-            document.getElementById("cwLabel").textContent = "Wallet terhubung ✓";
+            if (cw) cw.textContent = "Wallet terhubung ✓";
         } catch (e) {
-            notify(e.code === 4001 || e.code === 'ACTION_REJECTED'
-                ? "Kamu membatalkan tanda tangan di wallet."
-                : ("Gagal menghubungkan wallet: " + (e.message || e)), 'error');
+            if (cw) cw.textContent = prevLabel;
+            notify(walletErr(e) || ("Gagal menghubungkan wallet: " + (e.message || e)), 'error');
+        } finally {
+            _walletBusy = false;
         }
     }
 
@@ -416,10 +433,12 @@
     async function loginWithWallet() {
         const btn = document.getElementById('mmBtn');
         const orig = btn.innerHTML;
+        if (_walletBusy) { notify('Ada permintaan wallet yang masih diproses. Cek aplikasi wallet-mu dulu.', 'warn'); return; }
         try {
             if (detectedWallets().length === 0) { notify(noWalletMsg, 'warn'); return; }
             const prov = await pickWallet();
             if (!prov) return; // batal pilih
+            _walletBusy = true;
             btn.disabled = true; btn.textContent = "Menghubungkan…";
             const accounts = await prov.request({ method: "eth_requestAccounts" });
             const wallet = accounts[0];
@@ -443,8 +462,9 @@
             else { notify(loginRes.error || "Login gagal.", 'error'); }
         } catch (e) {
             console.error(e);
-            notify((e.code === 4001 || e.code === 'ACTION_REJECTED') ? "Kamu membatalkan tanda tangan di wallet." : (e.message || "Login gagal."), 'error');
+            notify(walletErr(e) || (e.message || "Login gagal."), 'error');
         } finally {
+            _walletBusy = false;
             btn.disabled = false; btn.innerHTML = orig;
         }
     }
