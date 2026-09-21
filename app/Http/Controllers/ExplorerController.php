@@ -44,6 +44,32 @@ class ExplorerController extends Controller
             'address' => $l->address, 'name' => $l->label, 'category' => $l->category, 'verified' => $l->verified,
         ]));
 
+        // Deret 14 hari: volume (TLKM) + jumlah transaksi per hari — untuk grafik.
+        $daily = Cache::remember('explorer:daily', 120, function () {
+            $rows = Order::selectRaw('DATE(created_at) d, SUM(total) vol, COUNT(*) c')
+                ->where('created_at', '>=', now()->subDays(13)->startOfDay())
+                ->groupBy('d')->pluck('vol', 'd');
+            $cnt = Order::selectRaw('DATE(created_at) d, COUNT(*) c')
+                ->where('created_at', '>=', now()->subDays(13)->startOfDay())
+                ->groupBy('d')->pluck('c', 'd');
+            $out = [];
+            for ($i = 13; $i >= 0; $i--) {
+                $day = now()->subDays($i)->toDateString();
+                $out[] = [
+                    'date'   => now()->subDays($i)->translatedFormat('d M'),
+                    'volume' => (float) ($rows[$day] ?? 0),
+                    'count'  => (int) ($cnt[$day] ?? 0),
+                ];
+            }
+            return $out;
+        });
+
+        // Distribusi status escrow (untuk donut).
+        $statusDist = Cache::remember('explorer:status', 120, fn () => OrderItem::selectRaw('status, COUNT(*) c, SUM(amount) amt')
+            ->groupBy('status')->get()
+            ->map(fn ($r) => ['status' => $r->status, 'count' => (int) $r->c, 'amount' => (float) $r->amt])
+            ->values());
+
         // Ringkasan penjualan + rating per toko (cache per mode urutan), ambil TOP 4.
         $stores = Cache::remember("explorer:stores:{$storeSort}", 120, function () use ($storeSort) {
             $sold = OrderItem::where('status', 'completed')
@@ -82,7 +108,7 @@ class ExplorerController extends Controller
                 ];
             });
 
-        return view('explorer.index', compact('totals', 'labels', 'stores', 'recent', 'range', 'storeSort'));
+        return view('explorer.index', compact('totals', 'labels', 'stores', 'recent', 'range', 'storeSort', 'daily', 'statusDist'));
     }
 
     // Profil satu wallet/entitas.

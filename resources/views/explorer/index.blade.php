@@ -29,6 +29,29 @@
     @endforeach
 </div>
 
+{{-- ===== GRAFIK (visualisasi) ===== --}}
+<div class="grid lg:grid-cols-3 gap-4 mb-8">
+    <div class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-bold text-slate-900">Aktivitas 14 Hari</h2>
+            <div class="flex items-center gap-4 text-[11px] text-slate-500">
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-blue-500"></span>Volume (TLKM)</span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>Transaksi</span>
+            </div>
+        </div>
+        <div class="h-56"><canvas id="chartDaily"></canvas></div>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
+        <h2 class="text-sm font-bold text-slate-900 mb-3">Status Escrow</h2>
+        @if($statusDist->sum('count') > 0)
+            <div class="h-40"><canvas id="chartStatus"></canvas></div>
+            <div id="statusLegend" class="mt-4 space-y-1.5 text-xs"></div>
+        @else
+            <div class="h-40 flex items-center justify-center text-slate-400 text-sm">Belum ada data.</div>
+        @endif
+    </div>
+</div>
+
 {{-- ===== ENTITAS TERVERIFIKASI ===== --}}
 @if($labels->isNotEmpty())
     <h2 class="text-lg font-bold text-slate-900 mb-3">Entitas Terverifikasi</h2>
@@ -125,4 +148,77 @@
     <div class="mt-6">{{ $recent->links() }}</div>
 </div>
 
+@endsection
+
+@section('scripts')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+(function () {
+    if (typeof Chart === 'undefined') return;
+    var daily  = @json($daily);
+    var status = @json($statusDist);
+    var money  = function (n) { return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 2 }).format(n); };
+
+    // --- Aktivitas harian: volume (area) + transaksi (bar) ---
+    var dctx = document.getElementById('chartDaily');
+    if (dctx) {
+        var g = dctx.getContext('2d').createLinearGradient(0, 0, 0, 220);
+        g.addColorStop(0, 'rgba(37,99,235,0.25)');
+        g.addColorStop(1, 'rgba(37,99,235,0)');
+        new Chart(dctx, {
+            data: {
+                labels: daily.map(function (d) { return d.date; }),
+                datasets: [
+                    { type: 'line', label: 'Volume', data: daily.map(function (d) { return d.volume; }), yAxisID: 'y',
+                      borderColor: '#2563eb', backgroundColor: g, fill: true, tension: 0.35, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4 },
+                    { type: 'bar', label: 'Transaksi', data: daily.map(function (d) { return d.count; }), yAxisID: 'y1',
+                      backgroundColor: 'rgba(16,185,129,0.55)', borderRadius: 4, barThickness: 10 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (c) {
+                    return c.datasetIndex === 0 ? ' ' + money(c.parsed.y) + ' TLKM' : ' ' + c.parsed.y + ' transaksi';
+                } } } },
+                scales: {
+                    x:  { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+                    y:  { position: 'left',  beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8', font: { size: 10 }, callback: function (v) { return money(v); } } },
+                    y1: { position: 'right', beginAtZero: true, grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 }, precision: 0 } }
+                }
+            }
+        });
+    }
+
+    // --- Distribusi status escrow: donut + legenda ---
+    var meta = {
+        paid:                 { label: 'Escrow (ditahan)',     color: '#f59e0b' },
+        completed:            { label: 'Selesai',              color: '#10b981' },
+        refunded:             { label: 'Refund',               color: '#94a3b8' },
+        disputed:             { label: 'Sengketa',             color: '#ef4444' },
+        pending_confirmation: { label: 'Menunggu konfirmasi',  color: '#cbd5e1' }
+    };
+    var sctx = document.getElementById('chartStatus');
+    if (sctx && status.length) {
+        var rows = status.map(function (s) {
+            var m = meta[s.status] || { label: s.status, color: '#cbd5e1' };
+            return { count: s.count, label: m.label, color: m.color };
+        });
+        new Chart(sctx, {
+            type: 'doughnut',
+            data: { labels: rows.map(function (r) { return r.label; }),
+                    datasets: [{ data: rows.map(function (r) { return r.count; }), backgroundColor: rows.map(function (r) { return r.color; }), borderWidth: 0, cutout: '66%' }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false },
+                       tooltip: { callbacks: { label: function (c) { return ' ' + c.parsed + ' item'; } } } } }
+        });
+        var total = rows.reduce(function (a, r) { return a + r.count; }, 0);
+        document.getElementById('statusLegend').innerHTML = rows.map(function (r) {
+            var pct = total ? Math.round(r.count / total * 100) : 0;
+            return '<div class="flex items-center justify-between">'
+                 +   '<span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-sm" style="background:' + r.color + '"></span><span class="text-slate-600">' + r.label + '</span></span>'
+                 +   '<span class="text-slate-400">' + r.count + ' · ' + pct + '%</span>'
+                 + '</div>';
+        }).join('');
+    }
+})();
+</script>
 @endsection

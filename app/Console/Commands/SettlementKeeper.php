@@ -48,10 +48,12 @@ class SettlementKeeper extends Command
         $gatewayOk  = $gateway && $gateway !== $zero;
         $insEnabled = (bool) ($cfg['enabled'] ?? false) && !empty($cfg['pool_wallet']);
 
-        // Order butuh proses: settlement belum tuntas ATAU klaim asuransi masih aktif.
+        // Order butuh proses: settlement belum tuntas (pending ATAU held) ATAU klaim asuransi
+        // masih aktif. Order 'held' tetap diikutkan agar aturan DETERMINISTIK (mis. tak dikirim
+        // N hari → refund) tetap bisa mengeksekusi walau AI sempat memarkirnya untuk ditinjau.
         $q = Order::query()->with(['items', 'trackingEvents', 'shippingAddress'])
             ->where(function ($w) {
-                $w->where('settlement_status', 'pending')
+                $w->whereIn('settlement_status', ['pending', 'held'])
                   ->orWhere(fn ($x) => $x->where('is_insured', true)->where('insurance_status', 'active'));
             });
         if ($this->option('order')) {
@@ -184,7 +186,9 @@ class SettlementKeeper extends Command
      */
     private function applyTimeouts(Order $order, $paidItems, array $o, ChainSigner $signer): void
     {
-        if ($order->settlement_status !== 'pending' || $paidItems->isEmpty()) {
+        // Aturan deterministik berlaku untuk order yang belum tuntas — termasuk 'held'
+        // (mis. AI memarkirnya karena tak ada tracking), supaya batas kirim tetap ditegakkan.
+        if (!in_array($order->settlement_status, ['pending', 'held'], true) || $paidItems->isEmpty()) {
             return;
         }
         if (!$o['gatewayOk'] || empty($o['arbiterKey'])) {
