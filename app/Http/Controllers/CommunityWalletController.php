@@ -154,7 +154,34 @@ class CommunityWalletController extends Controller
         });
 
         $required = $wallet->requiredApprovals();
+
+        // Struk belanja: ambil foto produk sekali saja (hindari N+1) supaya penanda tangan
+        // bisa melihat barang apa yang akan dibayar dari kas sebelum menyetujui.
+        $pids = collect($wallet->proposals)->flatMap(fn ($p) => collect($p->meta['lines'] ?? [])->pluck('db_product_id'))->filter()->unique();
+        $thumbs = $pids->isEmpty() ? collect() : \App\Models\Product::whereIn('id', $pids)->get()->mapWithKeys(fn ($pr) => [$pr->id => $pr->thumbnail()]);
+        $receiptFor = function ($p) use ($thumbs, $nameFor) {
+            $m = $p->meta ?? [];
+            if (($p->type ?? null) !== 'purchase' || empty($m['lines'])) {
+                return null;
+            }
+            $prop = $p->proposer_id ? \App\Models\User::find($p->proposer_id) : null;
+            return [
+                'order_id' => $m['order_id'] ?? '-',
+                'at'       => optional($p->created_at)->translatedFormat('d M Y, H:i'),
+                'by'       => $prop ? $nameFor($prop->id, $prop->public_name ?: $prop->name) : '-',
+                'items'    => collect($m['lines'])->map(fn ($l) => [
+                    'name'   => $l['name'] ?? 'Produk',
+                    'qty'    => (int) ($l['qty'] ?? 1),
+                    'amount' => (float) ($l['amount'] ?? 0),
+                    'img'    => $thumbs[$l['db_product_id'] ?? null] ?? null,
+                ])->values()->all(),
+                'subtotal' => (float) ($m['total'] ?? 0),
+                'shipping' => (float) ($m['shipping_tlkm'] ?? 0),
+            ];
+        };
+
         $proposals = $wallet->proposals->load('targetUser')->map(fn ($p) => [
+            'receipt' => $receiptFor($p),
             'id' => $p->id, 'type' => $p->type ?: 'transfer',
             'to_wallet' => $p->to_wallet, 'to_name' => $p->to_name,
             'target_name' => $p->targetUser ? $nameFor($p->target_user_id, $p->targetUser->public_name ?: $p->targetUser->name) : null,
