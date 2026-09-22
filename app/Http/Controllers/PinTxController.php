@@ -119,8 +119,18 @@ class PinTxController extends Controller
         $totalWei = array_reduce($amountsWei, fn ($c, $v) => bcadd($c, $v), '0');
 
         $this->ensureAllowance($signer, $priv, $gateway, $totalWei);
-        $hash = $signer->sendContractCall($priv, $gateway, self::GATEWAY_ABI, 'payCart',
-            [$data['sellers'], $amountsWei, $data['productIds'], $data['order_id']]);
+        // Encoder manual: encoder bawaan web3.php salah meng-encode string[] sehingga
+        // calldata malformed dan payCart selalu revert tanpa pesan (lihat AbiEncoder).
+        $payload = \App\Support\AbiEncoder::payCart(
+            $data['sellers'], $amountsWei, $data['productIds'], $data['order_id']
+        );
+        $hash = $signer->sendRaw($priv, $gateway, '0x0', $payload);
+
+        // Tx yang revert tidak boleh dilaporkan sebagai sukses.
+        $r = $signer->waitReceipt($hash);
+        abort_if(!$r, 422, 'Transaksi belum terkonfirmasi. Coba lagi sebentar. (tx: ' . $hash . ')');
+        abort_if(!in_array(strtolower((string) ($r['status'] ?? '')), ['0x1', '1'], true), 422,
+            'Pembayaran escrow gagal di blockchain (transaksi revert). Saldo tidak berkurang. (tx: ' . $hash . ')');
 
         return response()->json(['success' => true, 'tx_hash' => $hash]);
     }

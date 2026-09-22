@@ -186,6 +186,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/community/{id}', [CommunityWalletController::class, 'show'])->whereNumber('id');
     Route::post('/community/withdraw', [CommunityWalletController::class, 'withdraw'])->middleware('throttle:15,1');
     Route::post('/community/propose', [CommunityWalletController::class, 'propose'])->middleware('throttle:15,1');
+    // Checkout: usulkan belanja memakai dana komunitas (multisig Mode B).
+    Route::post('/community/purchase-propose', [CommunityWalletController::class, 'proposePurchase'])->middleware('throttle:10,1');
+    // Konfirmasi terima / sengketa untuk order yang dibayar dana komunitas (ditandatangani kunci komunitas).
+    Route::post('/community/order-action', [CommunityWalletController::class, 'orderAction'])->middleware('throttle:15,1');
     Route::post('/community/approve', [CommunityWalletController::class, 'approve'])->middleware('throttle:15,1');
     Route::post('/community/member-propose', [CommunityWalletController::class, 'memberPropose'])->middleware('throttle:15,1');
     Route::post('/community/owner-propose', [CommunityWalletController::class, 'ownerPropose'])->middleware('throttle:15,1');

@@ -8,6 +8,7 @@ class Order extends Model
 {
     protected $fillable = [
         'user_id',
+        'community_wallet_id', // diisi bila order dibayar dari dana komunitas (multisig)
         'product_id',
         'order_id',
         'tx_hash',

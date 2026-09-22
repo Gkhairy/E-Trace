@@ -120,12 +120,22 @@
                         'add_member'         => '👥 Undang <b>'.e($p['target_name'] ?: $p['to_name']).'</b>'.($p['as_signer'] ? ' (sebagai penanda tangan)' : ' (anggota biasa)'),
                         'remove_member'      => '👋 Keluarkan <b>'.e($p['target_name'] ?: $p['to_name']).'</b>',
                         'transfer_ownership' => '🔑 Transfer kepemilikan ke <b>'.e($p['target_name'] ?: $p['to_name']).'</b>',
+                        'purchase'           => '🛒 Belanja <b>'.$fmt($p['amount']).' TLKM</b>'.(($p['items'] ?? 0) ? ' ('.$p['items'].' barang)' : '').' → ditahan <b>escrow</b>',
                         default              => $fmt($p['amount']).' TLKM → <b>'.e($p['to_name'] ?: (substr($p['to_wallet'],0,8).'…'.substr($p['to_wallet'],-4))).'</b>',
                     };
                 @endphp
                 <div class="px-5 py-3 border-t border-slate-100 flex items-center justify-between gap-3">
                     <div class="min-w-0">
+                        @if($p['receipt'])
+                            {{-- Klik untuk melihat struk: penanda tangan perlu tahu barangnya sebelum menyetujui. --}}
+                            <button type="button" onclick="showReceipt({{ $p['id'] }})" class="text-left group">
+                                <p class="text-sm text-slate-800 group-hover:text-blue-700">{!! $label !!}
+                                    <span class="text-[11px] text-blue-600 group-hover:underline whitespace-nowrap">· lihat struk</span>
+                                </p>
+                            </button>
+                        @else
                         <p class="text-sm text-slate-800">{!! $label !!}</p>
+                        @endif
                         <p class="text-[11px] text-slate-400">{{ $p['approvals'] }}/{{ $p['required'] }} setuju (bulat) @if($p['note'])· {{ $p['note'] }}@endif</p>
                     </div>
                     <div class="shrink-0">
@@ -314,6 +324,54 @@ async function doMemberNickname(userId, currentNick, realName) {
     const nn = await uiPrompt({ title: 'Nickname untuk ' + realName, label: '🔒 Hanya kamu yang melihat julukan ini. Kosongkan untuk pakai nama asli.', placeholder: 'mis. Budi', value: currentNick || '', confirmText: 'Simpan' });
     if (nn === null) return;
     try { await post('/community/member-nickname', { id: WID, target_id: userId, nickname: nn }); showToast('Nickname disimpan.', 'success'); setTimeout(() => location.reload(), 500); } catch (e) { fail(e); }
+}
+// ===== Struk belanja komunitas =====
+const RECEIPTS = @json($proposals->pluck('receipt', 'id')->filter());
+const _rp = (n) => Number(n || 0).toLocaleString('id-ID', { maximumFractionDigits: 2 });
+
+function showReceipt(id) {
+    const r = RECEIPTS[id];
+    if (!r) return;
+    const rows = r.items.map(it => `
+        <div class="flex items-center gap-3 py-2.5 border-b border-dashed border-slate-200">
+            <div class="w-12 h-12 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
+                ${it.img ? `<img src="${it.img}" class="w-full h-full object-cover" alt="">`
+                         : `<div class="w-full h-full flex items-center justify-center text-slate-300 text-[10px]">foto</div>`}
+            </div>
+            <div class="min-w-0 flex-1">
+                <p class="text-sm text-slate-800 leading-snug line-clamp-2">${it.name}</p>
+                <p class="text-[11px] text-slate-400">${it.qty}x</p>
+            </div>
+            <p class="text-sm font-semibold text-slate-900 whitespace-nowrap">${_rp(it.amount)}</p>
+        </div>`).join('');
+
+    const ship = r.shipping > 0
+        ? `<div class="flex justify-between text-xs text-slate-500 mt-1"><span>Ongkir (di luar escrow)</span><span>${_rp(r.shipping)} TLKM</span></div>` : '';
+
+    const el = document.createElement('div');
+    el.className = 'fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm';
+    el.onclick = (e) => { if (e.target === el) el.remove(); };
+    el.innerHTML = `
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
+            <div class="px-5 pt-5 pb-3 text-center border-b border-dashed border-slate-200">
+                <p class="text-lg font-extrabold tracking-tight text-slate-900">E-Trace</p>
+                <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400 mt-0.5">Struk Belanja</p>
+                <p class="text-xs text-slate-500 mt-2">${r.at || '-'}</p>
+                <p class="text-[11px] text-slate-400 font-mono mt-0.5">${r.order_id}</p>
+                <p class="text-[11px] text-slate-400 mt-1">Diajukan oleh <b class="text-slate-600">${r.by}</b></p>
+            </div>
+            <div class="px-5 py-2 overflow-y-auto">${rows}</div>
+            <div class="px-5 py-4 border-t border-slate-200 bg-slate-50">
+                <div class="flex justify-between text-xs text-slate-500"><span>Subtotal (${r.items.length} barang)</span><span>${_rp(r.subtotal)} TLKM</span></div>
+                ${ship}
+                <div class="flex justify-between items-baseline mt-2 pt-2 border-t border-slate-200">
+                    <span class="text-sm font-bold text-slate-900">TOTAL</span>
+                    <span class="text-lg font-extrabold text-slate-900">${_rp(r.subtotal)} <span class="text-xs font-semibold text-slate-500">TLKM</span></span>
+                </div>
+                <button onclick="this.closest('.fixed').remove()" class="mt-4 w-full bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl text-sm font-semibold transition">Tutup</button>
+            </div>
+        </div>`;
+    document.body.appendChild(el);
 }
 </script>
 @endsection

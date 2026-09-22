@@ -75,6 +75,18 @@ class RajaOngkirService
             return null;
         }
 
+        // Tarif jarang berubah tapi panggilannya mahal (~2,5 dt) dan dipanggil per
+        // penjual tiap render checkout. Cache hasilnya; kegagalan di-cache singkat
+        // supaya API yang sedang bermasalah tidak menahan halaman berulang kali.
+        $ck = "rajaongkir:tariff:{$originId}:{$destId}:" . max(1, $weightGrams);
+        if (($hit = Cache::get($ck)) !== null) {
+            return $hit === 'null' ? null : (int) $hit;
+        }
+        $store = function (?int $v) use ($ck) {
+            Cache::put($ck, $v === null ? 'null' : $v, $v === null ? 300 : 60 * 60 * 12);
+            return $v;
+        };
+
         try {
             $res = Http::withHeaders(['key' => $this->key()])->asForm()->timeout(20)
                 ->post($this->base() . '/calculate/domestic-cost', [
@@ -85,15 +97,15 @@ class RajaOngkirService
                     'price'       => 'lowest',
                 ]);
             if (!$res->ok()) {
-                return null;
+                return $store(null);
             }
             // Struktur: { data: [ { name, service, cost, etd }, ... ] } (cost dalam Rupiah).
             $rows = $res->json('data') ?? $res->json('data.calculate_reguler') ?? [];
             $costs = collect($rows)->pluck('cost')->filter(fn ($c) => is_numeric($c) && $c > 0);
-            return $costs->isNotEmpty() ? (int) $costs->min() : null;
+            return $store($costs->isNotEmpty() ? (int) $costs->min() : null);
         } catch (\Throwable $e) {
             Log::warning('RajaOngkir tariff gagal: ' . $e->getMessage());
-            return null;
+            return $store(null);
         }
     }
 

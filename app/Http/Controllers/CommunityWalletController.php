@@ -154,12 +154,40 @@ class CommunityWalletController extends Controller
         });
 
         $required = $wallet->requiredApprovals();
+
+        // Struk belanja: ambil foto produk sekali saja (hindari N+1) supaya penanda tangan
+        // bisa melihat barang apa yang akan dibayar dari kas sebelum menyetujui.
+        $pids = collect($wallet->proposals)->flatMap(fn ($p) => collect($p->meta['lines'] ?? [])->pluck('db_product_id'))->filter()->unique();
+        $thumbs = $pids->isEmpty() ? collect() : \App\Models\Product::whereIn('id', $pids)->get()->mapWithKeys(fn ($pr) => [$pr->id => $pr->thumbnail()]);
+        $receiptFor = function ($p) use ($thumbs, $nameFor) {
+            $m = $p->meta ?? [];
+            if (($p->type ?? null) !== 'purchase' || empty($m['lines'])) {
+                return null;
+            }
+            $prop = $p->proposer_id ? \App\Models\User::find($p->proposer_id) : null;
+            return [
+                'order_id' => $m['order_id'] ?? '-',
+                'at'       => optional($p->created_at)->translatedFormat('d M Y, H:i'),
+                'by'       => $prop ? $nameFor($prop->id, $prop->public_name ?: $prop->name) : '-',
+                'items'    => collect($m['lines'])->map(fn ($l) => [
+                    'name'   => $l['name'] ?? 'Produk',
+                    'qty'    => (int) ($l['qty'] ?? 1),
+                    'amount' => (float) ($l['amount'] ?? 0),
+                    'img'    => $thumbs[$l['db_product_id'] ?? null] ?? null,
+                ])->values()->all(),
+                'subtotal' => (float) ($m['total'] ?? 0),
+                'shipping' => (float) ($m['shipping_tlkm'] ?? 0),
+            ];
+        };
+
         $proposals = $wallet->proposals->load('targetUser')->map(fn ($p) => [
+            'receipt' => $receiptFor($p),
             'id' => $p->id, 'type' => $p->type ?: 'transfer',
             'to_wallet' => $p->to_wallet, 'to_name' => $p->to_name,
             'target_name' => $p->targetUser ? $nameFor($p->target_user_id, $p->targetUser->public_name ?: $p->targetUser->name) : null,
             'as_signer' => (bool) ($p->meta['as_signer'] ?? false),
             'amount' => (float) $p->amount, 'note' => $p->note, 'status' => $p->status, 'tx' => $p->tx_hash,
+            'items' => is_array($p->meta['lines'] ?? null) ? count($p->meta['lines']) : 0,
             'required' => $required,
             'approvals' => $p->approvals()->whereIn('user_id', $signerIds)->count(),
             'approved_by_me' => $p->approvals()->where('user_id', auth()->id())->exists(),
@@ -237,6 +265,153 @@ class CommunityWalletController extends Controller
             $this->meName() . " mengusulkan kirim {$amt} TLKM dari \"{$wallet->name}\". Butuh persetujuan semua penanda tangan.", '🗳️');
 
         return response()->json(['success' => true] + $this->maybeExecute($p, $wallet, $signer));
+    }
+
+    /**
+     * Checkout: usulkan BELANJA memakai dana komunitas (Mode B).
+     * Isi keranjang dikunci jadi snapshot di server (harga/penjual tak bisa diubah dari
+     * browser). Bila semua penanda tangan setuju, dompet komunitas membayar escrow.
+     */
+    public function proposePurchase(Request $req, ChainSigner $signer, ChainVerifier $verifier, \App\Services\ShippingService $shipping)
+    {
+        $data = $req->validate([
+            'id'                  => 'required|integer',
+            'shipping_address_id' => 'nullable|integer',
+            'shipping'            => 'nullable|array',
+            'address_label'       => 'nullable|string|max:60',
+            'is_insured'          => 'nullable|boolean',
+            'note'                => 'nullable|string|max:120',
+            'pin'                 => 'required|digits:6',
+        ]);
+
+        $wallet = CommunityWallet::findOrFail($data['id']);
+        abort_unless($wallet->mode === 'B', 422, 'Dompet ini bukan mode multisig.');
+        $member = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
+        $this->requirePin($data['pin']);
+
+        // Alamat: pakai yang tersimpan bila dipilih & miliknya; kalau tidak, simpan input baru.
+        $addr = null;
+        if (!empty($data['shipping_address_id'])) {
+            $addr = \App\Models\ShippingAddress::where('id', $data['shipping_address_id'])
+                ->where('user_id', auth()->id())->first();
+        }
+        if (!$addr) {
+            $s = $data['shipping'] ?? [];
+            abort_if(empty($s['address']) || empty($s['recipient_name']), 422, 'Alamat pengiriman belum lengkap.');
+            $addr = \App\Models\ShippingAddress::create([
+                'user_id'        => auth()->id(),
+                'label'          => $data['address_label'] ?? null,
+                'recipient_name' => $s['recipient_name'] ?? '',
+                'phone'          => $s['phone'] ?? '',
+                'address'        => $s['address'] ?? '',
+                'city'           => $s['city'] ?? '',
+                'postal_code'    => $s['postal_code'] ?? '',
+                'notes'          => $s['notes'] ?? null,
+            ]);
+        }
+
+        // Snapshot keranjang (otoritatif dari server).
+        $snap = app(\App\Services\CommunityPurchase::class)
+            ->snapshot(auth()->id(), $addr, (bool) ($data['is_insured'] ?? false), $shipping);
+
+        // Saldo kas komunitas harus cukup untuk total produk.
+        $balance = $verifier->tlkmBalance($wallet->address);
+        if ($balance !== null && bccomp($balance, (string) $snap['total'], 6) < 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Saldo dompet komunitas (' . $this->fmtAmt($balance) . ' TLKM) kurang dari total belanja (' . $this->fmtAmt($snap['total']) . ' TLKM).',
+            ], 422);
+        }
+
+        $count = count($snap['lines']);
+        $p = CommunityProposal::create([
+            'community_wallet_id' => $wallet->id,
+            'proposer_id'         => auth()->id(),
+            'type'                => 'purchase',
+            'to_wallet'           => strtolower((string) config('chain.gateway')),
+            'to_name'             => 'Escrow marketplace',
+            'amount'              => $snap['total'],
+            'note'                => $data['note'] ?? ($count . ' barang · order ' . $snap['order_id']),
+            'meta'                => $snap,
+        ]);
+        $this->autoApprove($p, $member);
+
+        $amt = $this->fmtAmt($snap['total']);
+        $this->notifyOtherSigners($wallet, 'Usulan belanja butuh persetujuan',
+            $this->meName() . " ingin belanja {$count} barang senilai {$amt} TLKM memakai dana \"{$wallet->name}\". Butuh persetujuan semua penanda tangan.", '🛒');
+
+        return response()->json([
+            'success'     => true,
+            'proposal_id' => $p->id,
+            'wallet_id'   => $wallet->id,
+        ] + $this->maybeExecute($p, $wallet, $signer));
+    }
+
+    /**
+     * Konfirmasi terima / sengketa untuk order yang dibayar DANA KOMUNITAS.
+     * Pembeli on-chain = dompet komunitas, sehingga confirmItem/disputeItem wajib
+     * ditandatangani kunci dompet komunitas. Pemicunya HANYA pembeli (pemilik order).
+     */
+    public function orderAction(Request $req, ChainSigner $signer)
+    {
+        $data = $req->validate([
+            'order_id'   => 'required|string|max:80',
+            'item_index' => 'required|integer|min:0',
+            'action'     => 'required|in:confirm,dispute,refund',
+            'pin'        => 'required|digits:6',
+        ]);
+
+        $order = \App\Models\Order::where('order_id', $data['order_id'])->firstOrFail();
+        abort_unless($order->community_wallet_id, 422, 'Order ini bukan pembelian dana komunitas.');
+        abort_unless((int) $order->user_id === (int) auth()->id(), 403, 'Hanya pembeli yang boleh melakukan ini.');
+        $this->requirePin($data['pin']);
+
+        $item = \App\Models\OrderItem::where('order_ref_id', $order->id)
+            ->where('item_index', (int) $data['item_index'])->firstOrFail();
+        abort_unless($item->status === 'paid', 422, 'Item tidak dalam status dibayar.');
+
+        $wallet = CommunityWallet::findOrFail($order->community_wallet_id);
+        $this->ensureGas($wallet);
+        $priv = (new EmbeddedWallet())->decryptServer($wallet->only(['wallet_enc', 'wallet_salt', 'wallet_iv', 'wallet_tag']));
+        abort_unless($priv, 500, 'Kunci dompet komunitas gagal dibuka.');
+
+        $method = match ($data['action']) {
+            'confirm' => 'confirmItem',
+            'refund'  => 'refundItem',
+            default   => 'disputeItem',
+        };
+        $abi = [[
+            'inputs' => [['name' => 'orderId', 'type' => 'string'], ['name' => 'index', 'type' => 'uint256']],
+            'name' => $method, 'outputs' => [], 'type' => 'function',
+        ]];
+        $hash = $signer->sendContractCall($priv, config('chain.gateway'), $abi, $method, [$order->order_id, (int) $data['item_index']]);
+
+        if ($data['action'] === 'confirm') {
+            $item->status = 'completed';
+            $item->fulfillment_status = 'delivered';
+            $item->delivered_at = $item->delivered_at ?? now();
+        } elseif ($data['action'] === 'refund') {
+            $item->status = 'refunded'; // dana kembali ke KAS KOMUNITAS (pembeli on-chain)
+        } else {
+            $item->status = 'disputed';
+        }
+        $item->save();
+
+        // Header order selesai bila tak ada lagi item yang menunggu.
+        if (!\App\Models\OrderItem::where('order_ref_id', $order->id)
+            ->whereIn('status', ['paid', 'disputed', 'pending_confirmation'])->exists()) {
+            $order->status = 'completed';
+            $order->save();
+        }
+
+        [$title, $body, $icon] = match ($data['action']) {
+            'confirm' => ['Barang komunitas diterima', ' mengonfirmasi penerimaan barang — dana dilepas ke penjual.', '📦'],
+            'refund'  => ['Dana komunitas dikembalikan', ' mengajukan refund — dana kembali ke kas komunitas.', '↩️'],
+            default   => ['Sengketa dibuka', ' membuka sengketa untuk belanja komunitas.', '⚖️'],
+        };
+        $this->notifyAllMembers($wallet, $title, $this->meName() . $body, $icon);
+
+        return response()->json(['success' => true, 'tx_hash' => $hash]);
     }
 
     /** Owner: usulkan UNDANG (add) / KICK (remove) anggota. BULAT: butuh semua signer. */
@@ -427,6 +602,19 @@ class CommunityWalletController extends Controller
                 $this->notifyAllMembers($wallet, 'Kepemilikan dipindahkan', "Kepemilikan \"{$wallet->name}\" dipindahkan ke \"{$p->to_name}\".", '🔑');
                 return ['executed' => true];
 
+            case 'purchase':
+                // Belanja pakai dana komunitas: dompet komunitas membayar escrow (approve +
+                // payCart), lalu order dicatat atas nama pengusul sebagai pembeli.
+                $this->ensureGas($wallet);
+                $hash = app(\App\Services\CommunityPurchase::class)->payAndRecord($wallet, $p, $signer);
+                $p->update(['status' => 'executed', 'tx_hash' => $hash]);
+                $amt = $this->fmtAmt($p->amount);
+                $this->notifyAllMembers($wallet, 'Belanja komunitas dibayar',
+                    "Usulan disetujui — {$amt} TLKM dibayarkan ke escrow dari \"{$wallet->name}\".", '🛒');
+                \App\Support\Notify::send((int) $p->proposer_id, 'order', 'Belanja komunitas disetujui',
+                    'Pesananmu sudah dibayar dari dana komunitas dan ditahan escrow.', '/orders', '✅');
+                return ['executed' => true, 'tx_hash' => $hash];
+
             default: // transfer dana
                 $hash = $this->communitySign($wallet, $signer, $p->to_wallet, $p->amount);
                 $p->update(['status' => 'executed', 'tx_hash' => $hash]);
@@ -488,9 +676,10 @@ class CommunityWalletController extends Controller
         $user->forceFill(['pin_attempts' => 0])->save();
     }
 
-    private function communitySign(CommunityWallet $wallet, ChainSigner $signer, string $to, string|float $amount): string
+    /** Preflight: dompet komunitas butuh tBNB untuk biaya gas (auto-drip bila tersedia). */
+    private function ensureGas(CommunityWallet $wallet): void
     {
-        // Preflight: dompet komunitas butuh ETH untuk biaya gas.
+        $signer = new ChainSigner();
         $eth = $signer->ethBalance($wallet->address);
         if ($eth !== null && $eth < 0.0003) {
             // Coba isi otomatis bila funder gas tersedia; kalau tetap kosong, pesan jelas.
@@ -499,6 +688,11 @@ class CommunityWalletController extends Controller
             abort_if($eth !== null && $eth < 0.0003, 422,
                 'Dompet komunitas belum punya gas (tBNB testnet — gratis, bukan uang nyata). Isi sedikit tBNB dari faucet BNB Testnet (https://testnet.bnbchain.org/faucet-smart) ke alamat dompet (' . $wallet->address . ') lalu coba lagi.');
         }
+    }
+
+    private function communitySign(CommunityWallet $wallet, ChainSigner $signer, string $to, string|float $amount): string
+    {
+        $this->ensureGas($wallet);
 
         $priv = (new EmbeddedWallet())->decryptServer($wallet->only(['wallet_enc', 'wallet_salt', 'wallet_iv', 'wallet_tag']));
         abort_unless($priv, 500, 'Kunci dompet komunitas gagal dibuka.');
