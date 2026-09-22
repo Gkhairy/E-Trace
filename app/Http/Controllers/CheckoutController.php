@@ -61,7 +61,8 @@ class CheckoutController extends Controller
         $pv = new \App\Services\PaylaterVerifier();
         if ($pv->configured()) {
             $wallet = strtolower(auth()->user()->wallet_address ?? '');
-            $pos = $wallet ? $pv->positionOf($wallet) : null;
+            // RPC ~0,7-1,5 dt tiap panggilan; di-cache singkat agar checkout tidak lambat.
+            $pos = $wallet ? \Illuminate\Support\Facades\Cache::remember("pl:pos:{$wallet}", 30, fn () => $pv->positionOf($wallet)) : null;
             if (!$pos) {
                 $paylaterBtn['reason'] = 'Posisi Paylater belum terbaca.';
             } else {
@@ -70,7 +71,7 @@ class CheckoutController extends Controller
                     $shown = rtrim(rtrim(number_format($availTlkm, 2), '0'), '.');
                     $paylaterBtn['reason'] = "Sisa limit Paylater ({$shown} TLKM) kurang dari total. Tambah agunan di Dompet.";
                 } else {
-                    $liqWei = $pv->availableLiquidity();
+                    $liqWei = \Illuminate\Support\Facades\Cache::remember("pl:liq", 30, fn () => $pv->availableLiquidity());
                     $liqTlkm = $liqWei !== null ? (float) bcdiv($liqWei, bcpow('10', '18'), 6) : 0.0;
                     if ($liqTlkm + 1e-6 < $total) {
                         $paylaterBtn['reason'] = 'Likuiditas pool Paylater belum cukup.';
