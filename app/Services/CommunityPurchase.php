@@ -116,10 +116,10 @@ class CommunityPurchase
 
         // 1) Allowance TLKM untuk gateway (approve bila kurang), lalu bayar cart.
         $this->ensureAllowance($signer, $priv, $gateway, $totalWei);
-        $hash = $signer->sendContractCall($priv, $gateway, self::GATEWAY_ABI, 'payCart', [
-            $m['sellers'], $amountsWei, $m['product_ids'], $m['order_id'],
-        ]);
-        $signer->waitReceipt($hash);
+        // Encoder manual: encoder bawaan web3.php salah meng-encode string[] (lihat AbiEncoder).
+        $data = \App\Support\AbiEncoder::payCart($m['sellers'], $amountsWei, $m['product_ids'], $m['order_id']);
+        $hash = $signer->sendRaw($priv, $gateway, '0x0', $data);
+        $this->requireSuccess($signer, $hash, 'Pembayaran escrow gagal di blockchain (transaksi revert) — dana komunitas tidak berkurang.');
 
         // 2) Catat order (pembeli = pengusul; dana dari dompet komunitas).
         DB::transaction(function () use ($m, $wallet, $hash) {
@@ -179,6 +179,15 @@ class CommunityPurchase
             return;
         }
         $hash = $s->sendContractCall($priv, $token, self::ERC20_ABI, 'approve', [$spender, $amountWei]);
-        $s->waitReceipt($hash);
+        $this->requireSuccess($s, $hash, 'Persetujuan (approve) TLKM gagal di blockchain.');
+    }
+
+    /** Tunggu receipt dan PASTIKAN sukses. Tx yang revert TIDAK boleh dianggap berhasil. */
+    private function requireSuccess(ChainSigner $s, string $hash, string $message): void
+    {
+        $r = $s->waitReceipt($hash);
+        abort_if(!$r, 422, 'Transaksi belum terkonfirmasi di blockchain. Coba lagi sebentar. (tx: ' . $hash . ')');
+        $status = strtolower((string) ($r['status'] ?? ''));
+        abort_if(!in_array($status, ['0x1', '1'], true), 422, $message . ' (tx: ' . $hash . ')');
     }
 }
