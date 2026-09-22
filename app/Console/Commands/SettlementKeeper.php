@@ -290,9 +290,15 @@ class SettlementKeeper extends Command
                 return; // tetap 'active' untuk dicoba besok
             }
 
-            $buyer = strtolower((string) $order->user?->wallet_address);
+            // Kompensasi harus kembali ke PIHAK YANG MEMBAYAR. Untuk order yang dibayar
+            // dana komunitas, ongkirnya juga dari kas komunitas — bukan wallet pribadi
+            // pengusul — jadi payout dikirim ke kas, konsisten dengan refund escrow.
+            $toCommunity = (bool) $order->community_wallet_id;
+            $buyer = $toCommunity
+                ? strtolower((string) optional(\App\Models\CommunityWallet::find($order->community_wallet_id))->address)
+                : strtolower((string) $order->user?->wallet_address);
             if (!preg_match('/^0x[a-f0-9]{40}$/', $buyer)) {
-                Log::warning("Klaim {$order->order_id}: wallet pembeli tak valid.");
+                Log::warning("Klaim {$order->order_id}: wallet penerima payout tak valid.");
                 return;
             }
             try {
@@ -304,7 +310,7 @@ class SettlementKeeper extends Command
                 $order->ai_reason   = 'Klaim garansi dibayar: telat karena penjual/kurir. ' . $decision['reason'];
                 $order->save();
                 Notify::send($order->user_id, 'order', 'Klaim Garansi Tepat Waktu dibayar',
-                    "Kompensasi ongkir {$payout} TLKM sudah dikirim ke walletmu.", '/orders', '🛡️');
+                    "Kompensasi ongkir {$payout} TLKM sudah dikirim ke " . ($toCommunity ? 'kas komunitas.' : 'walletmu.'), '/orders', '🛡️');
             } catch (\Throwable $e) {
                 Log::error("Payout klaim {$order->order_id}: " . $e->getMessage());
             }
