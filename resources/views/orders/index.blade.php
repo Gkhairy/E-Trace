@@ -149,11 +149,12 @@
                                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border {{ $b[1] }} whitespace-nowrap shrink-0">{{ $b[0] }}</span>
                                         <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
                                             @if($item->status === 'paid')
-                                                <button onclick="doConfirmItem('{{ $order->order_id }}', {{ $item->item_index }}, this)"
+                                                @php $isComm = $order->community_wallet_id ? 'true' : 'false'; @endphp
+                                                <button onclick="doConfirmItem('{{ $order->order_id }}', {{ $item->item_index }}, this, {{ $isComm }})"
                                                     class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition whitespace-nowrap">Konfirmasi Terima</button>
-                                                <button onclick="doRefundItem('{{ $order->order_id }}', {{ $item->item_index }}, this)"
+                                                <button onclick="doRefundItem('{{ $order->order_id }}', {{ $item->item_index }}, this, {{ $isComm }})"
                                                     class="bg-white hover:bg-amber-50 border border-slate-300 hover:border-amber-400 text-slate-700 hover:text-amber-700 px-3 py-1.5 rounded-lg text-xs font-medium transition">Refund</button>
-                                                <button onclick="doDisputeItem('{{ $order->order_id }}', {{ $item->item_index }}, this)"
+                                                <button onclick="doDisputeItem('{{ $order->order_id }}', {{ $item->item_index }}, this, {{ $isComm }})"
                                                     class="bg-white hover:bg-red-50 border border-slate-300 hover:border-red-400 text-slate-700 hover:text-red-700 px-3 py-1.5 rounded-lg text-xs font-medium transition">Sengketa</button>
                                             @elseif($item->status === 'completed')
                                                 @if($item->review)
@@ -243,13 +244,46 @@ async function markItemStatus(orderId, itemIndex, status) {
     } catch (_) { /* tidak fatal: status on-chain tetap sumber kebenaran */ }
 }
 
-async function doConfirmItem(orderId, index, btn) {
+// Order yang dibayar DANA KOMUNITAS: pembeli on-chain = dompet komunitas, sehingga
+// konfirmasi/refund/sengketa ditandatangani backend memakai kunci komunitas (+PIN).
+async function communityOrderAction(orderId, index, action, btn, labels) {
+    const pin = await askPin(labels.pin);
+    if (!pin) return;
+    btn.disabled = true;
+    txProgress.open(labels.title, ['Menandatangani dengan dompet komunitas']);
+    try {
+        txProgress.active(0);
+        const res = await fetch('/community/order-action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' },
+            body: JSON.stringify({ order_id: orderId, item_index: index, action, pin }),
+        });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok || !d.success) throw new Error(d.message || 'Gagal memproses.');
+        txProgress.done(0);
+        setTimeout(() => {
+            txProgress.close();
+            uiAlert({ title: labels.ok, message: `Selesai.<br><a href="${EXPLORER_URL}/tx/${d.tx_hash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`, type: 'success' })
+                .then(() => location.reload());
+        }, 400);
+    } catch (e) {
+        txProgress.close();
+        uiAlert({ title: 'Gagal', message: niceError(e), type: 'error' });
+        btn.disabled = false;
+    }
+}
+
+async function doConfirmItem(orderId, index, btn, isCommunity = false) {
     const ok = await uiConfirm({
         title: 'Konfirmasi Item Ini',
-        message: 'Barang ini sudah diterima? Dana <b class="text-slate-900">item ini saja</b> dilepas ke penjualnya. Item lain tidak terpengaruh.',
+        message: isCommunity
+            ? 'Barang ini sudah diterima? Dana <b class="text-slate-900">item ini</b> dilepas ke penjual dari <b>kas komunitas</b>.'
+            : 'Barang ini sudah diterima? Dana <b class="text-slate-900">item ini saja</b> dilepas ke penjualnya. Item lain tidak terpengaruh.',
         confirmText: 'Konfirmasi & lepas dana'
     });
     if (!ok) return;
+    if (isCommunity) return communityOrderAction(orderId, index, 'confirm', btn,
+        { pin: 'Konfirmasi Terima', title: 'Melepas Dana Item', ok: 'Item Dikonfirmasi' });
     btn.disabled = true;
     txProgress.open('Melepas Dana Item', ['Memeriksa jaringan', 'Mengonfirmasi item di blockchain']);
     try {
@@ -266,13 +300,17 @@ async function doConfirmItem(orderId, index, btn) {
     }
 }
 
-async function doRefundItem(orderId, index, btn) {
+async function doRefundItem(orderId, index, btn, isCommunity = false) {
     const ok = await uiConfirm({
         title: 'Refund Item Ini',
-        message: 'Refund item ini hanya bisa <b class="text-slate-900">setelah lewat 3 hari</b> dan belum kamu konfirmasi. Lanjutkan?',
+        message: isCommunity
+            ? 'Refund hanya bisa <b class="text-slate-900">setelah lewat 3 hari</b>. Dana akan kembali ke <b>kas komunitas</b>. Lanjutkan?'
+            : 'Refund item ini hanya bisa <b class="text-slate-900">setelah lewat 3 hari</b> dan belum kamu konfirmasi. Lanjutkan?',
         confirmText: 'Ajukan refund', danger: true
     });
     if (!ok) return;
+    if (isCommunity) return communityOrderAction(orderId, index, 'refund', btn,
+        { pin: 'Ajukan Refund', title: 'Mengembalikan Dana', ok: 'Refund Diajukan' });
     btn.disabled = true;
     txProgress.open('Memproses Refund Item', ['Memeriksa jaringan', 'Mengajukan refund item']);
     try {
@@ -290,13 +328,15 @@ async function doRefundItem(orderId, index, btn) {
 }
 
 // ===== SENGKETA (pembeli) =====
-async function doDisputeItem(orderId, index, btn) {
+async function doDisputeItem(orderId, index, btn, isCommunity = false) {
     const ok = await uiConfirm({
         title: 'Ajukan Sengketa',
         message: 'Ada masalah dengan item ini? Dana <b class="text-slate-900">tetap ditahan escrow</b> sampai <b>pengawas</b> memutus (lepas ke penjual / refund). Lanjutkan?',
         confirmText: 'Ajukan sengketa', danger: true
     });
     if (!ok) return;
+    if (isCommunity) return communityOrderAction(orderId, index, 'dispute', btn,
+        { pin: 'Ajukan Sengketa', title: 'Mencatat Sengketa', ok: 'Sengketa Diajukan' });
     btn.disabled = true;
     txProgress.open('Mengajukan Sengketa', ['Memeriksa jaringan', 'Mencatat sengketa di blockchain']);
     try {

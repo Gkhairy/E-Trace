@@ -81,9 +81,33 @@ class CheckoutController extends Controller
             }
         }
 
+        // Dana Komunitas: dompet MULTISIG (Mode B) yang user ini jadi anggotanya.
+        // Hanya ditampilkan bila ada; kalau lebih dari satu, user memilih mau minta
+        // persetujuan ke dompet yang mana. Saldo di-cache singkat (hemat panggilan RPC).
+        $communityWallets = collect();
+        $cwIds = \App\Models\CommunityMember::where('user_id', auth()->id())->pluck('community_wallet_id');
+        if ($cwIds->isNotEmpty()) {
+            $verifier = new \App\Services\ChainVerifier();
+            $communityWallets = \App\Models\CommunityWallet::whereIn('id', $cwIds)
+                ->where('mode', 'B')->orderBy('name')->get()
+                ->map(function ($w) use ($verifier, $total) {
+                    $bal = \Illuminate\Support\Facades\Cache::remember(
+                        "cw:bal:{$w->address}", 60, fn () => $verifier->tlkmBalance($w->address)
+                    );
+                    $bal = $bal !== null ? (float) $bal : null;
+                    return [
+                        'id'      => $w->id,
+                        'name'    => $w->name,
+                        'balance' => $bal,
+                        'enough'  => $bal === null ? true : $bal + 1e-6 >= $total,
+                        'signers' => $w->members()->where('is_signer', true)->count(),
+                    ];
+                })->values();
+        }
+
         return view('checkout.index', compact(
             'items', 'groups', 'total', 'addresses', 'lastAddress',
-            'shipEstimates', 'shipTotalTlkm', 'buyerCity', 'insurance', 'paylaterBtn'
+            'shipEstimates', 'shipTotalTlkm', 'buyerCity', 'insurance', 'paylaterBtn', 'communityWallets'
         ));
     }
 }

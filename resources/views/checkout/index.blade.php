@@ -211,6 +211,35 @@
                     <p class="text-[11px] text-amber-600 text-center mt-1">{{ $paylaterBtn['reason'] ?? 'Paylater tidak tersedia untuk order ini.' }}</p>
                 @endif
             @endif
+
+            {{-- Dana Komunitas (multisig Mode B) — hanya tampil bila user anggota minimal satu. --}}
+            @if($communityWallets->isNotEmpty())
+                @php $fmtBal = fn ($b) => $b === null ? '—' : rtrim(rtrim(number_format($b, 2), '0'), '.'); @endphp
+                <div class="mt-3 pt-3 border-t border-slate-200">
+                    <p class="text-xs font-semibold text-slate-600 mb-1.5">Bayar dari Dana Komunitas</p>
+                    @if($communityWallets->count() === 1)
+                        @php $cw = $communityWallets[0]; @endphp
+                        <input type="hidden" id="commWallet" value="{{ $cw['id'] }}">
+                        <p class="text-[11px] text-slate-500 mb-2">
+                            <b class="text-slate-700">{{ $cw['name'] }}</b> · saldo {{ $fmtBal($cw['balance']) }} TLKM · {{ $cw['signers'] }} penanda tangan
+                            @unless($cw['enough'])<span class="text-amber-600 font-semibold">· saldo kurang</span>@endunless
+                        </p>
+                    @else
+                        {{-- Anggota di beberapa komunitas → pilih mau minta persetujuan ke yang mana. --}}
+                        <select id="commWallet" class="w-full px-3 py-2 mb-2 rounded-xl bg-white border border-slate-300 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 outline-none text-sm">
+                            @foreach($communityWallets as $cw)
+                                <option value="{{ $cw['id'] }}">{{ $cw['name'] }} — {{ $fmtBal($cw['balance']) }} TLKM ({{ $cw['signers'] }} signer){{ $cw['enough'] ? '' : ' · saldo kurang' }}</option>
+                            @endforeach
+                        </select>
+                    @endif
+                    <button id="commBtn" onclick="checkoutPayWithCommunity()"
+                        class="w-full bg-white hover:bg-violet-50 border border-violet-200 text-violet-700 py-3 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 disabled:opacity-50">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20h5v-2a3 3 0 00-5.36-1.86M17 20H7m10 0v-2c0-.66-.13-1.3-.36-1.86m0 0a5 5 0 00-9.28 0M7 20H2v-2a3 3 0 015.36-1.86M7 20v-2c0-.66.13-1.3.36-1.86m0 0a5 5 0 019.28 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        Minta Persetujuan Komunitas
+                    </button>
+                    <p class="text-[11px] text-slate-400 text-center mt-1">Dana diambil dari kas komunitas setelah <b>semua penanda tangan</b> menyetujui. Tetap ditahan escrow seperti biasa.</p>
+                </div>
+            @endif
         </div>
     </div>
 </div>
@@ -400,6 +429,70 @@ async function checkoutPayWithPaylater() {
         await checkoutPay();
     } catch (e) {
         txProgress.close();
+        uiAlert({ title: 'Gagal', message: niceError(e), type: 'error' });
+    }
+}
+
+// ===== Bayar dari DANA KOMUNITAS (multisig Mode B) =====
+// Tidak langsung membayar: membuat USULAN yang dikunci snapshot-nya di server.
+// Pembayaran escrow dijalankan dompet komunitas setelah semua penanda tangan setuju.
+async function checkoutPayWithCommunity() {
+    const sel = selectedAddr();
+    let shipping = null, shippingAddressId = null, addressLabel = null;
+    if (sel === 'new') {
+        shipping = {
+            recipient_name: val('recipient_name'), phone: val('phone'), address: val('address'),
+            city: val('city'), postal_code: val('postal_code'), notes: val('notes'),
+        };
+        for (const k of ['recipient_name', 'phone', 'address', 'city', 'postal_code']) {
+            if (!shipping[k].trim()) {
+                showToast('Lengkapi alamat pengiriman dulu.', 'warn');
+                document.getElementById(k)?.focus();
+                return;
+            }
+        }
+        addressLabel = val('addr_label');
+    } else {
+        shippingAddressId = sel;
+    }
+
+    const walletId = document.getElementById('commWallet')?.value;
+    if (!walletId) return;
+
+    const ok = await uiConfirm({
+        title: 'Minta Persetujuan Komunitas',
+        message: `Ajukan pembelian <b class="text-violet-600">${TOTAL_FMT} TLKM</b> memakai dana komunitas?<br><span class="text-xs text-slate-400">Pembayaran baru dijalankan setelah semua penanda tangan menyetujui.</span>`,
+        confirmText: 'Ya, ajukan',
+    });
+    if (!ok) return;
+
+    const pin = await askPin('Ajukan Belanja Komunitas');
+    if (!pin) return;
+
+    const btn = document.getElementById('commBtn');
+    btn.disabled = true;
+    try {
+        const res = await fetch('/community/purchase-propose', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' },
+            body: JSON.stringify({
+                id: walletId, pin,
+                shipping_address_id: shippingAddressId, shipping, address_label: addressLabel,
+                is_insured: (INSURANCE_ENABLED && document.getElementById('insToggle')?.checked) ? 1 : 0,
+            }),
+        });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok || !d.success) throw new Error(d.message || 'Gagal mengajukan usulan.');
+
+        if (d.executed) {
+            uiAlert({ title: 'Disetujui & dibayar', message: 'Semua penanda tangan sudah setuju — pesanan dibayar dari dana komunitas dan ditahan escrow.', type: 'success' });
+            setTimeout(() => location.href = '/orders', 1300);
+        } else {
+            uiAlert({ title: 'Usulan terkirim', message: 'Menunggu persetujuan penanda tangan komunitas. Kamu akan diberi tahu saat disetujui.', type: 'success' });
+            setTimeout(() => location.href = '/community/' + d.wallet_id, 1300);
+        }
+    } catch (e) {
+        btn.disabled = false;
         uiAlert({ title: 'Gagal', message: niceError(e), type: 'error' });
     }
 }

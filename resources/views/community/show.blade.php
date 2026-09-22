@@ -120,6 +120,7 @@
                         'add_member'         => '👥 Undang <b>'.e($p['target_name'] ?: $p['to_name']).'</b>'.($p['as_signer'] ? ' (sebagai penanda tangan)' : ' (anggota biasa)'),
                         'remove_member'      => '👋 Keluarkan <b>'.e($p['target_name'] ?: $p['to_name']).'</b>',
                         'transfer_ownership' => '🔑 Transfer kepemilikan ke <b>'.e($p['target_name'] ?: $p['to_name']).'</b>',
+                        'purchase'           => '🛒 Belanja <b>'.$fmt($p['amount']).' TLKM</b>'.(($p['items'] ?? 0) ? ' ('.$p['items'].' barang)' : '').' → ditahan <b>escrow</b>',
                         default              => $fmt($p['amount']).' TLKM → <b>'.e($p['to_name'] ?: (substr($p['to_wallet'],0,8).'…'.substr($p['to_wallet'],-4))).'</b>',
                     };
                 @endphp
