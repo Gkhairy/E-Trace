@@ -212,13 +212,9 @@ class ExplorerController extends Controller
         ], fn ($name, $addr) => $name && $addr && $addr !== $zero, ARRAY_FILTER_USE_BOTH);
         $known[$zero] = 'Mint / Burn';
 
-        // Dompet komunitas ikut dikenali supaya arus kas bersama terbaca jelas.
-        foreach (\App\Models\CommunityWallet::query()->get(['name', 'address']) as $w) {
-            $a = strtolower((string) $w->address);
-            if ($a && !isset($known[$a])) {
-                $known[$a] = 'Kas: ' . $w->name;
-            }
-        }
+        // CATATAN PRIVASI: nama dompet komunitas TIDAK dipakai di sini. Explorer bersifat
+        // publik, sedangkan nama kas hanya urusan anggotanya — alamatnya tetap tampil
+        // (dipendekkan) seperti alamat lain, jadi arus dana tetap bisa ditelusuri.
 
         return function (string $addr) use ($known) {
             $a = strtolower($addr);
