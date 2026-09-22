@@ -70,31 +70,21 @@ class ExplorerController extends Controller
             ->map(fn ($r) => ['status' => $r->status, 'count' => (int) $r->c, 'amount' => (float) $r->amt])
             ->values());
 
-        // Transfer TLKM terbaru (event Transfer via eth_getLogs). Aman-nonaktif bila TLKM belum diset.
+        // Transfer TLKM terbaru — dibaca dari INDEKS di DB (instan, riwayat penuh),
+        // diisi command `transfers:index` yang berjalan tiap menit.
         $transfersEnabled = \App\Services\TransferFeed::enabled();
-        $transfersRaw = $transfersEnabled
-            ? Cache::remember('explorer:transfers', 60, fn () => app(\App\Services\TransferFeed::class)->recent(25))
-            : [];
+        $transfersRaw = \App\Models\TokenTransfer::query()
+            ->orderByDesc('block_number')->orderByDesc('log_index')->limit(25)->get()
+            ->map(fn ($t) => [
+                'from'  => $t->from_address,
+                'to'    => $t->to_address,
+                'tlkm'  => (float) $t->amount,
+                'tx'    => $t->tx_hash,
+                'block' => $t->block_number,
+                'time'  => $t->block_time?->getTimestamp(),
+            ])->all();
 
-        // Beri label alamat: kontrak sistem + entitas terverifikasi, sisanya alamat pendek.
-        $zero  = '0x0000000000000000000000000000000000000000';
-        $known = array_filter([
-            strtolower((string) config('chain.gateway'))               => 'Escrow',
-            strtolower((string) config('chain.paylater_address'))      => 'Pool Paylater',
-            strtolower((string) config('chain.donation_pool'))         => 'Donasi',
-            strtolower((string) config('chain.insurance.pool_wallet')) => 'Pool Asuransi',
-        ], fn ($name, $addr) => $name && $addr && $addr !== $zero, ARRAY_FILTER_USE_BOTH);
-        $known[$zero] = 'Mint / Burn';
-
-        $labelAddr = function (string $addr) use ($known) {
-            $a = strtolower($addr);
-            if (!empty($known[$a])) {
-                return ['name' => $known[$a], 'system' => true, 'addr' => $a, 'verified' => true];
-            }
-            $id   = Identity::resolve($a);
-            $name = ($id['name'] ?? '—') !== '—' ? $id['name'] : substr($a, 0, 8) . '…' . substr($a, -4);
-            return ['name' => $name, 'system' => false, 'addr' => $a, 'verified' => (bool) ($id['verified'] ?? false)];
-        };
+        $labelAddr = $this->addrLabeler();
 
         $transfers = collect($transfersRaw)->map(fn ($t) => $t + [
             'fromL' => $labelAddr($t['from']),
@@ -179,6 +169,65 @@ class ExplorerController extends Controller
             'escrow_out'   => (float) $buyerOrders->flatMap->items->where('status', 'paid')->sum('amount'), // ditahan dari dia (pembeli)
         ];
 
-        return view('explorer.show', compact('addr', 'identity', 'balance', 'buyerOrders', 'sellerItems', 'stats', 'joined', 'isPseudonym'));
+        // Riwayat transfer TLKM alamat ini (masuk & keluar) dari INDEKS di DB.
+        // Inilah "TLKM scan": dari siapa dana masuk, ke siapa keluar.
+        $label = $this->addrLabeler();
+        $transfers = \App\Models\TokenTransfer::forAddress($addr)->limit(100)->get()
+            ->map(function ($t) use ($addr, $label) {
+                $from = strtolower($t->from_address);
+                $to   = strtolower($t->to_address);
+                $dir  = ($from === $addr && $to === $addr) ? 'self' : ($from === $addr ? 'out' : 'in');
+                return [
+                    'direction' => $dir,
+                    'counter'   => $label($dir === 'out' ? $to : $from),
+                    'tlkm'      => (float) $t->amount,
+                    'tx'        => $t->tx_hash,
+                    'time'      => $t->block_time,
+                    'block'     => $t->block_number,
+                ];
+            })->all();
+
+        // Ringkasan arus TLKM (dari indeks) untuk kartu di atas daftar.
+        $flow = [
+            'in'      => collect($transfers)->where('direction', 'in')->sum('tlkm'),
+            'out'     => collect($transfers)->where('direction', 'out')->sum('tlkm'),
+            'count'   => count($transfers),
+            'indexed' => (int) (\App\Models\IndexerCursor::find('tlkm_transfers')->block_number ?? 0),
+        ];
+
+        return view('explorer.show', compact('addr', 'identity', 'balance', 'buyerOrders', 'sellerItems', 'stats', 'joined', 'isPseudonym', 'transfers', 'flow'));
+    }
+    /**
+     * Pelabel alamat: kontrak sistem (escrow, pool) & entitas terverifikasi diberi nama,
+     * sisanya dipendekkan. Dipakai feed global maupun riwayat per alamat.
+     */
+    private function addrLabeler(): callable
+    {
+        $zero  = '0x0000000000000000000000000000000000000000';
+        $known = array_filter([
+            strtolower((string) config('chain.gateway'))               => 'Escrow',
+            strtolower((string) config('chain.paylater_address'))      => 'Pool Paylater',
+            strtolower((string) config('chain.donation_pool'))         => 'Donasi',
+            strtolower((string) config('chain.insurance.pool_wallet')) => 'Pool Asuransi',
+        ], fn ($name, $addr) => $name && $addr && $addr !== $zero, ARRAY_FILTER_USE_BOTH);
+        $known[$zero] = 'Mint / Burn';
+
+        // Dompet komunitas ikut dikenali supaya arus kas bersama terbaca jelas.
+        foreach (\App\Models\CommunityWallet::query()->get(['name', 'address']) as $w) {
+            $a = strtolower((string) $w->address);
+            if ($a && !isset($known[$a])) {
+                $known[$a] = 'Kas: ' . $w->name;
+            }
+        }
+
+        return function (string $addr) use ($known) {
+            $a = strtolower($addr);
+            if (!empty($known[$a])) {
+                return ['name' => $known[$a], 'system' => true, 'addr' => $a, 'verified' => true];
+            }
+            $id   = Identity::resolve($a);
+            $name = ($id['name'] ?? '—') !== '—' ? $id['name'] : substr($a, 0, 8) . '…' . substr($a, -4);
+            return ['name' => $name, 'system' => false, 'addr' => $a, 'verified' => (bool) ($id['verified'] ?? false)];
+        };
     }
 }

@@ -12,7 +12,12 @@ return [
     // Feed "Transfer TLKM" di Explorer — baca event Transfer via eth_getLogs.
     // RPC utama (data-seed) memblokir getLogs, jadi pakai RPC khusus yang mengizinkannya
     // (publicnode). Tanpa API key. Lookback dibatasi karena getLogs peka rentang.
+    // RPC ARSIP (opsional): hanya node arsip yang menyimpan log lama, dipakai
+    // indexer untuk menarik riwayat transfer sejak token lahir.
+    'archive_rpc_url'           => env('ARCHIVE_RPC_URL'),
     'logs_rpc_url'              => env('CHAIN_LOGS_RPC_URL', 'https://bsc-testnet-rpc.publicnode.com'),
+    // Jangkauan awal indexer saat pertama jalan tanpa RPC arsip (~19 jam @0,45 dt/blok).
+    'transfers_initial_lookback_blocks' => (int) env('TRANSFERS_INITIAL_LOOKBACK', 150000),
     'transfers_lookback_blocks' => (int) env('EXPLORER_TRANSFERS_LOOKBACK', 5000),
 
     // Alamat kontrak — HARUS sama dengan yang dipakai frontend (layouts/app.blade.php).

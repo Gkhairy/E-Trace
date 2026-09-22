@@ -17,3 +17,8 @@ Schedule::command('chain:index')->everyMinute()->withoutOverlapping();
 // biaya token LLM (tak memanggil AI berulang untuk order yang sama). Pengawas bisa memicu
 // manual kapan saja lewat tombol di /orders. Aman-nonaktif bila belum dikonfigurasi.
 Schedule::command('settlement:keep')->daily()->withoutOverlapping();
+
+// Indeks transfer TLKM on-chain ke DB supaya Explorer bisa menampilkan riwayat
+// penuh per alamat (masuk dari siapa, keluar ke mana) tanpa membebani RPC saat
+// halaman dibuka. Resumable lewat `indexer_cursors`.
+Schedule::command('transfers:index')->everyMinute()->withoutOverlapping();

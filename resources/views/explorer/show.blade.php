@@ -130,4 +130,74 @@
     <div class="bg-white border border-dashed border-slate-300 rounded-2xl p-10 text-center text-slate-500">Belum ada aktivitas marketplace untuk wallet ini.</div>
 @endif
 
+
+{{-- ===== RIWAYAT TRANSFER TLKM (indeks on-chain) ===== --}}
+<div class="flex items-center gap-2 mt-8 mb-3">
+    <h2 class="text-lg font-bold text-slate-900">Riwayat Transfer TLKM</h2>
+    <span class="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200" title="Dari indeks event Transfer on-chain: masuk dari siapa, keluar ke mana.">on-chain</span>
+</div>
+
+@if($flow['count'] > 0)
+    <div class="grid grid-cols-3 gap-3 mb-3">
+        <div class="bg-white border border-slate-200 rounded-2xl p-4">
+            <p class="text-xs text-slate-500">Masuk</p>
+            <p class="text-lg font-extrabold text-green-600">+{{ $fmt($flow['in']) }} <span class="text-xs font-semibold text-slate-400">TLKM</span></p>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-2xl p-4">
+            <p class="text-xs text-slate-500">Keluar</p>
+            <p class="text-lg font-extrabold text-red-600">-{{ $fmt($flow['out']) }} <span class="text-xs font-semibold text-slate-400">TLKM</span></p>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-2xl p-4">
+            <p class="text-xs text-slate-500">Jumlah transfer</p>
+            <p class="text-lg font-extrabold text-slate-900">{{ $flow['count'] }}</p>
+        </div>
+    </div>
+@endif
+
+<div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
+                <tr>
+                    <th class="px-4 py-3 font-medium">Arah</th>
+                    <th class="px-4 py-3 font-medium">Pihak lawan</th>
+                    <th class="px-4 py-3 font-medium">Jumlah</th>
+                    <th class="px-4 py-3 font-medium">Waktu</th>
+                    <th class="px-4 py-3 font-medium">Tx</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($transfers as $t)
+                    @php $isIn = $t['direction'] === 'in'; $c = $t['counter']; @endphp
+                    <tr class="border-t border-slate-100 hover:bg-slate-50 transition">
+                        <td class="px-4 py-3">
+                            @if($t['direction'] === 'self')
+                                <span class="inline-flex px-2 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">SENDIRI</span>
+                            @else
+                                <span class="inline-flex px-2 py-0.5 rounded-md text-xs font-semibold {{ $isIn ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200' }}">{{ $isIn ? 'MASUK' : 'KELUAR' }}</span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="text-[11px] text-slate-400">{{ $isIn ? 'dari' : 'ke' }}</span>
+                            @if($c['system'])
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">{{ $c['name'] }}</span>
+                            @else
+                                <a href="/explorer/{{ $c['addr'] }}" class="text-blue-600 hover:underline font-medium">{{ $c['name'] }}</a>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 font-semibold whitespace-nowrap {{ $t['direction'] === 'self' ? 'text-slate-600' : ($isIn ? 'text-green-600' : 'text-red-600') }}">
+                            {{ $t['direction'] === 'self' ? '' : ($isIn ? '+' : '-') }}{{ $fmt($t['tlkm']) }} TLKM
+                        </td>
+                        <td class="px-4 py-3 text-slate-500 whitespace-nowrap">{{ $t['time'] ? $t['time']->diffForHumans() : '—' }}</td>
+                        <td class="px-4 py-3"><a href="{{ config('chain.explorer_url') }}/tx/{{ $t['tx'] }}" target="_blank" rel="noopener" class="text-green-600 hover:underline font-mono text-xs">{{ substr($t['tx'],0,8) }}… ↗</a></td>
+                    </tr>
+                @empty
+                    <tr><td colspan="5" class="px-4 py-10 text-center text-slate-400">Belum ada transfer TLKM terindeks untuk alamat ini.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+<p class="text-[11px] text-slate-400 mt-2">Dari indeks event <code class="bg-slate-100 px-1 rounded">Transfer</code> TLKM on-chain (diperbarui tiap menit). Node publik hanya menyimpan riwayat singkat, jadi indeks tumbuh maju sejak diaktifkan — isi <code class="bg-slate-100 px-1 rounded">ARCHIVE_RPC_URL</code> untuk menarik riwayat sejak token lahir.</p>
+
 @endsection
