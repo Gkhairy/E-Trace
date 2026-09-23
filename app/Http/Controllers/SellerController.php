@@ -19,39 +19,123 @@ class SellerController extends Controller
         return $store;
     }
 
+    /** Semua item order milik toko ini (dicocokkan lewat wallet payout). */
+    private function itemsOf($store)
+    {
+        return OrderItem::where('seller_wallet', $store->payout_wallet);
+    }
+
+    /** Item yang sudah dibayar tapi belum dikirim: pekerjaan utama penjual hari ini. */
+    private function toShipQuery($store)
+    {
+        return $this->itemsOf($store)->where('status', 'paid')
+            ->whereIn('fulfillment_status', ['pending', 'processing']);
+    }
+
     public function dashboard()
     {
-        $store = $this->store();
-
-        $products = $store->products()->latest()->get();
-
-        // Order masuk = item yang penjualnya toko ini (per wallet payout).
-        $items = OrderItem::with(['order.shippingAddress', 'product'])
-            ->where('seller_wallet', $store->payout_wallet)
-            ->latest()
-            ->get();
-
-        // Biaya & pajak sisi PENJUAL (H8/H9) — TIDAK ditampilkan ke pembeli.
+        $store  = $this->store();
         $feeBps = (int) config('chain.platform_fee_bps'); // 100 = 1%
         $vatBps = (int) config('chain.vat_bps');          // 1100 = 11% (atas fee)
-        $grossCompleted = (float) $items->where('status', 'completed')->sum('amount');
-        $feeTotal = $grossCompleted * $feeBps / 10000;
-        $vatTotal = $feeTotal * $vatBps / 10000;          // PPN dihitung atas fee jasa platform
 
-        $stats = [
-            'products'      => $products->count(),
-            'orders'        => $items->count(),
-            'escrow_active' => $items->where('status', 'paid')->sum('amount'),                       // ditahan escrow
-            'gross'         => $grossCompleted,                                                       // penjualan bruto (selesai)
-            'fee'           => $feeTotal,                                                             // fee platform
-            'vat'           => $vatTotal,                                                             // PPN atas fee
-            'released_net'  => $grossCompleted - $feeTotal,                                           // diterima on-chain (bruto - fee)
-            'refunded'      => $items->where('status', 'refunded')->sum('amount'),
-            'fee_pct'       => $feeBps / 100,
-            'vat_pct'       => $vatBps / 100,
+        // Deret harian 180 hari: tampilan memotong 7/30/90 hari dan membandingkan
+        // dengan periode sebelumnya yang sama panjang. Refund tidak dihitung penjualan.
+        $start = now()->subDays(179)->startOfDay();
+        $rows = $this->itemsOf($store)->where('status', '!=', 'refunded')
+            ->where('created_at', '>=', $start)
+            ->selectRaw('DATE(created_at) d, SUM(amount) amt, COUNT(*) orders, SUM(COALESCE(quantity,1)) qty')
+            ->groupBy('d')->get()->keyBy('d');
+        $daily = [];
+        for ($i = 179; $i >= 0; $i--) {
+            $day = now()->subDays($i);
+            $r = $rows[$day->toDateString()] ?? null;
+            $daily[] = [
+                'date'   => $day->translatedFormat('d M'),
+                'sales'  => round((float) ($r->amt ?? 0), 4),
+                'orders' => (int) ($r->orders ?? 0),
+                'qty'    => (int) ($r->qty ?? 0),
+            ];
+        }
+
+        $byStatus = $this->itemsOf($store)->selectRaw('status, SUM(amount) amt, COUNT(*) c')
+            ->groupBy('status')->get()->keyBy('status');
+        $amt = fn ($k) => (float) ($byStatus[$k]->amt ?? 0);
+
+        $gross = $amt('completed');
+        $fee   = $gross * $feeBps / 10000;
+        $money = [
+            'released_net' => $gross - $fee,              // sudah cair ke wallet (bruto - fee)
+            'escrow'       => $amt('paid') + $amt('disputed'),
+            'disputed'     => $amt('disputed'),
+            'gross'        => $gross,
+            'fee'          => $fee,
+            'vat'          => $fee * $vatBps / 10000,     // PPN dihitung atas fee jasa platform
+            'refunded'     => $amt('refunded'),
+            'fee_pct'      => $feeBps / 100,
+            'vat_pct'      => $vatBps / 100,
         ];
 
-        return view('seller.dashboard', compact('store', 'products', 'items', 'stats'));
+        $toShip = $this->toShipQuery($store)->count();
+
+        $recent = $this->itemsOf($store)->with(['order.shippingAddress', 'product'])
+            ->latest()->limit(6)->get();
+
+        // Terlaris: jumlah unit terjual (tanpa refund), lalu pendapatannya.
+        $top = $this->itemsOf($store)->where('status', '!=', 'refunded')->whereNotNull('product_id')
+            ->selectRaw('product_id, SUM(COALESCE(quantity,1)) sold, SUM(amount) revenue')
+            ->groupBy('product_id')->orderByDesc('sold')->limit(6)->get();
+        $topProducts = \App\Models\Product::whereIn('id', $top->pluck('product_id'))->get()->keyBy('id');
+        $best = $top->map(fn ($t) => ['product' => $topProducts[$t->product_id] ?? null, 'sold' => (int) $t->sold, 'revenue' => (float) $t->revenue])
+            ->filter(fn ($b) => $b['product'])->values();
+
+        $lowStock = $store->products()->whereNotNull('stock')->where('stock', '<=', 3)->orderBy('stock')->limit(5)->get();
+        $productCount = $store->products()->count();
+
+        return view('seller.dashboard', compact('store', 'daily', 'money', 'toShip', 'recent', 'best', 'lowStock', 'productCount'));
+    }
+
+    /** Pesanan: dikelompokkan menurut apa yang harus dilakukan penjual. */
+    public function orders(Request $req)
+    {
+        $store = $this->store();
+        $filters = [
+            'kirim'   => fn ($q) => $q->where('status', 'paid')->whereIn('fulfillment_status', ['pending', 'processing']),
+            'jalan'   => fn ($q) => $q->where('status', 'paid')->where('fulfillment_status', 'shipped'),
+            'selesai' => fn ($q) => $q->where('status', 'completed'),
+            'masalah' => fn ($q) => $q->whereIn('status', ['disputed', 'refunded']),
+            'semua'   => fn ($q) => $q,
+        ];
+        $counts = collect($filters)->map(fn ($f) => $f($this->itemsOf($store))->count());
+        $tab = $req->query('tab');
+        if (!isset($filters[$tab])) {
+            $tab = $counts['kirim'] > 0 ? 'kirim' : 'semua';
+        }
+
+        $items = $filters[$tab]($this->itemsOf($store))
+            ->with(['order.shippingAddress', 'product'])
+            ->latest()->paginate(15)->withQueryString();
+
+        $feePct = (int) config('chain.platform_fee_bps') / 100;
+
+        return view('seller.orders', compact('store', 'items', 'counts', 'tab', 'feePct'));
+    }
+
+    /** Produk: daftar dengan unit terjual & status stok, bisa dicari. */
+    public function products(Request $req)
+    {
+        $store = $this->store();
+        $q = trim((string) $req->query('q', ''));
+
+        $products = $store->products()->with('category')
+            ->when($q !== '', fn ($b) => $b->where('name', 'like', '%' . addcslashes($q, '\%_') . '%'))
+            ->latest()->paginate(24)->withQueryString();
+
+        $sold = $this->itemsOf($store)->where('status', '!=', 'refunded')
+            ->whereIn('product_id', $products->pluck('id'))
+            ->selectRaw('product_id, SUM(COALESCE(quantity,1)) sold')->groupBy('product_id')
+            ->pluck('sold', 'product_id');
+
+        return view('seller.products', compact('store', 'products', 'sold', 'q'));
     }
 
     public function editStore()
@@ -88,7 +172,7 @@ class SellerController extends Controller
 
         $store->save();
 
-        return redirect('/seller')->with('success', 'Profil toko diperbarui.');
+        return redirect('/seller/store')->with('success', 'Pengaturan toko disimpan.');
     }
 
     /**

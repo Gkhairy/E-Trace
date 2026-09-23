@@ -6,13 +6,13 @@ set -e
 export PORT
 envsubst '${PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
-UPLOAD_DIRS="product_images banner_images campaign_images"
+UPLOAD_DIRS="product_images banner_images campaign_images store_images"
 VOLUME=/app/public/uploads
 
 # Foto unggahan ditulis ke public_path() oleh controller, sedangkan filesystem
 # container bersifat sementara — tanpa volume, semua foto hilang tiap deploy.
 # Railway hanya mengizinkan satu volume per service, jadi volume di-mount di
-# satu titik lalu ketiga folder itu di-symlink ke dalamnya.
+# satu titik lalu folder-folder itu di-symlink ke dalamnya.
 if [ -d "$VOLUME" ]; then
     for d in $UPLOAD_DIRS; do
         # Pengisian awal: berkas bawaan repo disalin SEKALI, saat folder di

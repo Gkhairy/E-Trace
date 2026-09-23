@@ -24,7 +24,7 @@
         </div>
     </div>
 
-    <nav class="mt-5 border-b border-slate-200 -mx-4 px-4 md:mx-0 md:px-0 overflow-x-auto overflow-y-hidden" aria-label="Menu pengawas">
+    <nav class="mt-5 border-b border-slate-200 -mx-4 px-4 md:mx-0 md:px-0 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Menu pengawas">
         <ul class="flex gap-1 min-w-max">
             @foreach($tabs as [$href, $label, $badge, $icon])
                 @php $on = $current === $href; @endphp

@@ -160,8 +160,8 @@
 <h2 class="text-lg font-bold text-slate-900 mb-3">Kesehatan platform</h2>
 
 {{-- ================= ESCROW & VOLUME ================= --}}
-<div class="grid lg:grid-cols-3 gap-4 mb-4">
-    <section class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-sm p-5" aria-labelledby="vol-title">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+    <section class="lg:col-span-2 min-w-0 bg-white border border-slate-200 rounded-2xl shadow-sm p-5" aria-labelledby="vol-title">
         <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
             <div>
                 <h3 id="vol-title" class="font-semibold text-slate-900">Volume transaksi</h3>
@@ -180,7 +180,7 @@
                 <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>Order</span>
             </p>
         </div>
-        <div class="h-60"><canvas id="chartVolume" aria-label="Grafik volume harian" role="img"></canvas></div>
+        <div class="relative h-60"><canvas id="chartVolume" aria-label="Grafik volume harian" role="img"></canvas></div>
     </section>
 
     <section class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 flex flex-col" aria-labelledby="esc-title">
@@ -212,7 +212,7 @@
 </div>
 
 {{-- ================= KEEPER AI & GARANSI ================= --}}
-<div class="grid lg:grid-cols-2 gap-4 mb-4">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
     <section class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5" aria-labelledby="ai-title">
         <div class="flex items-start justify-between gap-3">
             <div>
@@ -252,7 +252,7 @@
                 @endif
             </div>
             @if($confTotal)
-                <div class="h-36 mt-2"><canvas id="chartConfidence" role="img" aria-label="Sebaran tingkat keyakinan AI"></canvas></div>
+                <div class="relative h-36 mt-2"><canvas id="chartConfidence" role="img" aria-label="Sebaran tingkat keyakinan AI"></canvas></div>
                 <p class="text-[11px] text-slate-500 mt-2 flex flex-wrap gap-x-4 gap-y-1">
                     <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-amber-400"></span>Di bawah ambang → ditahan untukmu</span>
                     <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span>Cukup yakin → dieksekusi otomatis (maks {{ $fmt($cfg['max_auto']) }} TLKM)</span>
@@ -312,7 +312,7 @@
 </div>
 
 {{-- ================= DOMPET OPERASIONAL & AKTIVITAS ================= --}}
-<div class="grid lg:grid-cols-2 gap-4">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
     <section class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5" aria-labelledby="ops-title">
         <h3 id="ops-title" class="font-semibold text-slate-900">Dompet operasional</h3>
         <p class="text-xs text-slate-500">Wallet milik platform yang menandatangani transaksi otomatis. Bila salah satu bermasalah, fitur terkait berhenti.</p>

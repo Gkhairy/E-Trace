@@ -38,6 +38,7 @@ class ProductController extends Controller
     public function create()
     {
         abort_unless(auth()->user()->isSeller(), 403, 'Hanya penjual yang bisa menambah produk.');
+        abort_unless(auth()->user()->store, 403, 'Toko belum tersedia untuk akun ini.');
         return view('products.create', ['categories' => Category::orderBy('sort')->get()]);
     }
 
@@ -73,7 +74,7 @@ class ProductController extends Controller
             'gallery'       => $gallery ?: null,
         ]);
 
-        return redirect('/products')->with('success', 'Produk berhasil ditambahkan!');
+        return redirect('/seller/products')->with('success', 'Produk berhasil ditambahkan.');
     }
 
     /** Ambil produk milik toko user (otorisasi), atau 403/404. */
@@ -125,7 +126,7 @@ class ProductController extends Controller
         }
         $product->save();
 
-        return redirect('/seller')->with('success', 'Produk diperbarui.');
+        return redirect('/seller/products')->with('success', 'Produk diperbarui.');
     }
 
     public function destroy($id)
@@ -136,7 +137,7 @@ class ProductController extends Controller
         $this->deleteLocalImages($product);
         $product->delete();
 
-        return redirect('/seller')->with('success', 'Produk dihapus.');
+        return redirect('/seller/products')->with('success', 'Produk dihapus.');
     }
 
     /**

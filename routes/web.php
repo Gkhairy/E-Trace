@@ -199,6 +199,8 @@ Route::middleware('auth')->group(function () {
 
     // DASHBOARD SELLER
     Route::get('/seller', [SellerController::class, 'dashboard']);
+    Route::get('/seller/orders', [SellerController::class, 'orders']);
+    Route::get('/seller/products', [SellerController::class, 'products']);
     Route::get('/seller/store', [SellerController::class, 'editStore']);
     Route::post('/seller/store', [SellerController::class, 'updateStore']);
     Route::post('/seller/fulfill', [SellerController::class, 'fulfill']);
