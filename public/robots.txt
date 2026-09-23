@@ -1,5 +1,14 @@
 # E-Trace berjalan di testnet dengan katalog demo — tidak untuk diindeks.
 # Setiap halaman yang dirayapi bot adalah CPU yang ditagih Railway; GPTBot sempat
 # menyisir ribuan halaman produk ~2 per detik. Hapus baris Disallow untuk membuka lagi.
+
+# Pengecualian: agen yang dipicu MANUSIA, bukan crawler massal.
+# - WhatsApp: pratinjau link saat URL dibagikan di chat.
+# - ChatGPT-User / Perplexity-User: saat seseorang meminta asisten AI membuka link.
+User-agent: WhatsApp
+User-agent: ChatGPT-User
+User-agent: Perplexity-User
+Allow: /
+
 User-agent: *
 Disallow: /

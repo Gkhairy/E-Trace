@@ -19,12 +19,15 @@ http {
     gzip_types text/css application/javascript application/json image/svg+xml;
     gzip_min_length 1024;
 
+    # Hanya CRAWLER massal yang diblokir. Agen yang dipicu manusia (ChatGPT-User,
+    # Perplexity-User — mis. juri menempelkan link ke ChatGPT) sengaja tidak ada di
+    # daftar ini; "PerplexityBot" di bawah tidak cocok dengan "Perplexity-User".
     # Crawler AI/scraper yang dikenal. Mereka ditolak di nginx (403) SEBELUM PHP jalan,
     # jadi nyaris tanpa CPU. robots.txt saja tidak cukup: bot membacanya berkala (GPTBot
     # sempat menyisir ribuan halaman produk ~2/detik) dan sebagian mengabaikannya.
     map $http_user_agent $blocked_bot {
         default 0;
-        "~*(GPTBot|ChatGPT-User|OAI-SearchBot|CCBot|ClaudeBot|Claude-Web|anthropic-ai|Bytespider|PerplexityBot|Amazonbot|Google-Extended|meta-externalagent|Applebot-Extended|Diffbot|ImagesiftBot|YouBot|omgili)" 1;
+        "~*(GPTBot|OAI-SearchBot|CCBot|ClaudeBot|Claude-Web|anthropic-ai|Bytespider|PerplexityBot|Amazonbot|Google-Extended|meta-externalagent|Applebot-Extended|Diffbot|ImagesiftBot|YouBot|omgili)" 1;
     }
 
     server {
