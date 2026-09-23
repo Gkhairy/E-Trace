@@ -48,4 +48,9 @@ return [
         'secret'   => env('TURNSTILE_SECRET_KEY'),
     ],
 
+    // CoinMarketCap (ticker harga). Dibaca via config, bukan env() di controller.
+    'cmc' => [
+        'key' => env('CMC_API_KEY'),
+    ],
+
 ];

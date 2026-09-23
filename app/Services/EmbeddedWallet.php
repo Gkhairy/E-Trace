@@ -22,10 +22,56 @@ use kornrunner\Keccak;
  */
 class EmbeddedWallet
 {
+    /**
+     * Kunci turunan untuk ENKRIPSI baru.
+     *
+     * Dibaca dari config (bukan env()): setelah config:cache, env() di luar folder
+     * config selalu NULL, sehingga dulu produksi diam-diam jatuh ke APP_KEY dan
+     * web/worker memakai kunci yang berbeda.
+     */
     private function serverSecret(): string
     {
-        // WALLET_ENC_SECRET wajib di produksi; fallback ke APP_KEY agar dev tetap jalan.
-        return (string) (env('WALLET_ENC_SECRET') ?: config('app.key'));
+        $secret = (string) config('wallet.enc_secret');
+        if ($secret !== '') {
+            return $secret;
+        }
+        // Di produksi lebih baik gagal keras daripada mengenkripsi dengan kunci yang
+        // salah — wallet yang terlanjur terenkripsi begitu tak bisa dibuka lagi.
+        if (app()->isProduction()) {
+            throw new \RuntimeException('WALLET_ENC_SECRET belum di-set di environment produksi.');
+        }
+        return (string) config('app.key'); // dev lokal tanpa secret
+    }
+
+    /**
+     * Kandidat kunci untuk DEKRIPSI: kunci utama, lalu APP_KEY sebagai kunci lama.
+     *
+     * APP_KEY ikut dicoba karena sebelum perbaikan config, wallet yang dibuat di
+     * produksi terenkripsi dengan APP_KEY (fallback dari env() yang NULL). Aman
+     * dicoba berurutan: AES-GCM memverifikasi tag, jadi kunci yang salah ditolak,
+     * bukan menghasilkan private key palsu.
+     */
+    private function decryptionSecrets(): array
+    {
+        $primary = (string) config('wallet.enc_secret');
+        $legacy  = (string) config('app.key');
+        return array_values(array_unique(array_filter([$primary, $legacy], fn ($s) => $s !== '')));
+    }
+
+    /** Coba dekripsi dengan tiap kandidat kunci; kembalikan hex atau null. */
+    private function decryptWithSecrets(string $prefix, string $enc, string $salt, string $iv, string $tag): ?string
+    {
+        foreach ($this->decryptionSecrets() as $secret) {
+            $dkey = hash_pbkdf2('sha256', $prefix . $secret, base64_decode($salt), 100000, 32, true);
+            $priv = openssl_decrypt(
+                base64_decode($enc), 'aes-256-gcm', $dkey, OPENSSL_RAW_DATA,
+                base64_decode($iv), base64_decode($tag)
+            );
+            if ($priv !== false) {
+                return $priv;
+            }
+        }
+        return null;
     }
 
     /** Buat keypair secp256k1 baru. Return ['address'=>0x.., 'private'=>hex(64)]. */
@@ -76,12 +122,7 @@ class EmbeddedWallet
     /** Dekripsi private key yang dienkripsi server-only. Return hex atau null. */
     public function decryptServer(array $cols): ?string
     {
-        $dkey = hash_pbkdf2('sha256', '' . $this->serverSecret(), base64_decode($cols['wallet_salt']), 100000, 32, true);
-        $priv = openssl_decrypt(
-            base64_decode($cols['wallet_enc']), 'aes-256-gcm', $dkey, OPENSSL_RAW_DATA,
-            base64_decode($cols['wallet_iv']), base64_decode($cols['wallet_tag'])
-        );
-        return $priv === false ? null : $priv;
+        return $this->decryptWithSecrets('', $cols['wallet_enc'], $cols['wallet_salt'], $cols['wallet_iv'], $cols['wallet_tag']);
     }
 
     /** Inti enkripsi: kunci = PBKDF2(prefix + serverSecret + salt). */
@@ -106,11 +147,6 @@ class EmbeddedWallet
         if (!$user->wallet_enc || !$user->wallet_salt || !$user->wallet_iv || !$user->wallet_tag) {
             return null;
         }
-        $dkey = hash_pbkdf2('sha256', $pin . $this->serverSecret(), base64_decode($user->wallet_salt), 100000, 32, true);
-        $priv = openssl_decrypt(
-            base64_decode($user->wallet_enc), 'aes-256-gcm', $dkey, OPENSSL_RAW_DATA,
-            base64_decode($user->wallet_iv), base64_decode($user->wallet_tag)
-        );
-        return $priv === false ? null : $priv;
+        return $this->decryptWithSecrets($pin, $user->wallet_enc, $user->wallet_salt, $user->wallet_iv, $user->wallet_tag);
     }
 }

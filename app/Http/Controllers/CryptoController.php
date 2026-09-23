@@ -40,7 +40,7 @@ class CryptoController extends Controller
     {
         try {
             $response = Http::timeout(8)->withHeaders([
-                'X-CMC_PRO_API_KEY' => env('CMC_API_KEY'),
+                'X-CMC_PRO_API_KEY' => config('services.cmc.key'),
             ])->get('https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest', [
                 'limit'   => 10,
                 'convert' => 'USD',

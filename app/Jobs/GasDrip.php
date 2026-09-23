@@ -26,7 +26,7 @@ class GasDrip implements ShouldQueue
             return;
         }
 
-        $priv = (string) env('PLATFORM_GAS_PRIVATE_KEY', '');
+        $priv = (string) config('wallet.gas_private_key', '');
         if ($priv === '') {
             Log::warning('GasDrip: PLATFORM_GAS_PRIVATE_KEY belum diset — lewati.');
             return;
@@ -35,7 +35,7 @@ class GasDrip implements ShouldQueue
             $priv = substr($priv, 2);
         }
 
-        $amount = (string) env('GAS_DRIP_AMOUNT', '0.01');
+        $amount = (string) config('wallet.gas_drip_amount', '0.01');
         try {
             $signer->sendRaw($priv, $user->wallet_address, $signer->toWeiHex($amount)); // ETH 18 desimal
             $user->forceFill(['gas_dripped_at' => now()])->save();

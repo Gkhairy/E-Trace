@@ -22,7 +22,7 @@ class FundCommunityGas extends Command
 
     public function handle(): int
     {
-        $priv = (string) env('PLATFORM_GAS_PRIVATE_KEY', '');
+        $priv = (string) config('wallet.gas_private_key', '');
         if ($priv === '') {
             $this->error('PLATFORM_GAS_PRIVATE_KEY belum diisi di .env.');
             $this->line('Buat 1 wallet, ambil tBNB testnet gratis di https://testnet.bnbchain.org/faucet-smart,');
