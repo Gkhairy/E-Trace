@@ -969,7 +969,30 @@
             <button onclick="toggleChat()" class="text-white/80 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
         </div>
         <div id="chatBody" class="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-50 text-sm">
-            <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-3 py-2 max-w-[85%] text-slate-700">Halo! Aku EVA. Tanya soal cara belanja, TLKM, escrow, PIN, donasi, cari produk (mis. "cari sepatu"), atau transparansi Explorer (mis. "berapa pengeluaran KPK bulan ini?").</div>
+            {{-- Sapaan pembuka. Tiap contoh pertanyaan adalah tombol yang langsung mengirimnya. --}}
+            <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-3.5 py-3 max-w-[92%] text-slate-700 leading-relaxed">
+                <p class="font-semibold text-slate-900">Halo! 👋 Aku EVA, asisten belanjamu di E-Trace.</p>
+                <p class="mt-1">Aku siap bantu kamu menemukan produk, memahami cara belanja, atau menjawab pertanyaan seputar transaksi dan transparansi.</p>
+                <p class="mt-2.5 text-slate-600">Coba tanyakan apa saja, misalnya:</p>
+                <ul class="mt-1.5 space-y-1.5">
+                    @foreach([
+                        ['🛍️', 'Cari sepatu'],
+                        ['💳', 'Gimana cara kerja escrow?'],
+                        ['🔐', 'Apa itu PIN?'],
+                        ['🎁', 'Aku mau donasi'],
+                        ['🔎', 'Apa itu Explorer?'],
+                        ['📊', 'Berapa pengeluaran KPK bulan ini?'],
+                    ] as [$ico, $q])
+                        <li>
+                            <button type="button" onclick="askEva(this.dataset.q)" data-q="{{ $q }}"
+                                    class="w-full text-left flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-slate-700 hover:text-blue-800 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                <span aria-hidden="true">{{ $ico }}</span><span>“{{ $q }}”</span>
+                            </button>
+                        </li>
+                    @endforeach
+                </ul>
+                <p class="mt-2.5 font-semibold text-slate-900">Yuk, mulai belanja dengan lebih mudah dan transparan bersama E-Trace.</p>
+            </div>
         </div>
         <div class="p-2.5 border-t border-slate-100 flex items-center gap-2">
             <input id="chatInput" onkeydown="if(event.key==='Enter')sendChat()" placeholder="Tulis pesan…" class="flex-1 px-3 py-2 rounded-xl bg-slate-100 border border-slate-200 focus:bg-white focus:border-blue-500 outline-none text-sm">
@@ -978,10 +1001,26 @@
     </div>
     <script>
         const chatHistory = [];
+        // Panel EVA dan panel chat teman menempati pojok yang sama, jadi hanya satu yang
+        // boleh terbuka: membuka EVA menutup chat teman dan menyembunyikan tombolnya.
         function toggleChat() {
-            document.getElementById('chatPanel').classList.toggle('hidden');
-            document.getElementById('chatFab').classList.toggle('hidden');
-            const i = document.getElementById('chatInput'); if (i && !document.getElementById('chatPanel').classList.contains('hidden')) i.focus();
+            const panel = document.getElementById('chatPanel');
+            const open = panel.classList.contains('hidden');
+            if (open) {
+                const friend = document.getElementById('chatPanelWrap');
+                if (friend && !friend.classList.contains('hidden') && window.chatToggle) window.chatToggle();
+            }
+            panel.classList.toggle('hidden', !open);
+            document.getElementById('chatFab').classList.toggle('hidden', open);
+            const launcher = document.getElementById('chatLauncher');
+            if (launcher) launcher.classList.toggle('hidden', open);
+            const i = document.getElementById('chatInput'); if (i && open) i.focus();
+        }
+        function askEva(q) {
+            const i = document.getElementById('chatInput');
+            if (!i) return;
+            i.value = q;
+            sendChat();
         }
         function chatBubble(text, who) {
             const body = document.getElementById('chatBody');

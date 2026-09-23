@@ -139,30 +139,30 @@
 @php $visible = 6; @endphp
 <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-8">
     <div class="flex items-center justify-between mb-4">
-        <h2 class="text-sm font-bold text-slate-900">{{ __('catalog.categories') }}</h2>
+        <h2 class="text-base font-bold text-slate-900">{{ __('catalog.categories') }}</h2>
         @if($activeCategory)
-            <a href="/products" class="text-xs text-blue-600 hover:underline">{{ __('catalog.show_all') }}</a>
+            <a href="/products" class="text-sm font-semibold text-blue-700 hover:underline">{{ __('catalog.show_all') }}</a>
         @endif
     </div>
-    <div id="catGrid" class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-7 gap-3">
-        <a href="/products" class="group flex flex-col items-center gap-1.5 text-center">
-            <span class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition {{ !$activeCategory ? 'bg-blue-600 text-white' : 'bg-slate-100 group-hover:bg-blue-50' }}">🛍️</span>
-            <span class="text-[10px] leading-tight {{ !$activeCategory ? 'text-blue-600 font-semibold' : 'text-slate-600' }}">{{ __('catalog.all') }}</span>
+    <div id="catGrid" class="grid grid-cols-3 min-[420px]:grid-cols-4 sm:grid-cols-6 lg:grid-cols-7 gap-x-3 gap-y-5">
+        <a href="/products" class="group flex flex-col items-center gap-2 text-center rounded-xl p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+            <span class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl transition {{ !$activeCategory ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'bg-slate-100 group-hover:bg-blue-50 group-hover:scale-105' }}">🛍️</span>
+            <span class="text-[13px] sm:text-sm font-medium leading-snug {{ !$activeCategory ? 'text-blue-700 font-semibold' : 'text-slate-700 group-hover:text-slate-900' }}">{{ __('catalog.all') }}</span>
         </a>
         @foreach($categories as $i => $cat)
             @php $on = $activeCategory && $activeCategory->id === $cat->id; @endphp
             {{-- Kategori ke-7 dst disembunyikan sampai "lihat lebih banyak" (kecuali yang sedang aktif) --}}
             <a href="/products?category={{ $cat->slug }}"
-               class="cat-item group flex flex-col items-center gap-1.5 text-center {{ ($i >= $visible && !$on) ? 'cat-extra hidden' : '' }}">
-                <span class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition {{ $on ? 'bg-blue-600' : 'bg-slate-100 group-hover:bg-blue-50' }}">{{ $cat->icon }}</span>
-                <span class="text-[10px] leading-tight {{ $on ? 'text-blue-600 font-semibold' : 'text-slate-600' }}">{{ $cat->name }}</span>
+               class="cat-item group flex flex-col items-center gap-2 text-center rounded-xl p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 {{ ($i >= $visible && !$on) ? 'cat-extra hidden' : '' }}">
+                <span class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl transition {{ $on ? 'bg-blue-600 shadow-md shadow-blue-600/30' : 'bg-slate-100 group-hover:bg-blue-50 group-hover:scale-105' }}">{{ $cat->icon }}</span>
+                <span class="text-[13px] sm:text-sm font-medium leading-snug line-clamp-2 {{ $on ? 'text-blue-700 font-semibold' : 'text-slate-700 group-hover:text-slate-900' }}">{{ $cat->name }}</span>
             </a>
         @endforeach
     </div>
     @if($categories->count() > $visible)
         <div class="text-center mt-4">
             <button type="button" id="catToggle" onclick="toggleCats()"
-                class="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition">
+                class="inline-flex items-center gap-1 text-sm font-semibold text-blue-700 hover:text-blue-800 transition">
                 <span id="catToggleLabel">{{ __('catalog.more') }}</span>
                 <svg id="catToggleIcon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>

@@ -40,6 +40,13 @@
     window.chatToggle = function () {
         const wrap = document.getElementById('chatPanelWrap');
         const show = wrap.classList.contains('hidden');
+        // Hanya satu panel di pojok kanan bawah: tutup EVA bila terbuka, lalu
+        // sembunyikan kedua tombol bulat selama panel chat ini terbuka.
+        const eva = document.getElementById('chatPanel');
+        if (show && eva && !eva.classList.contains('hidden')) eva.classList.add('hidden');
+        document.getElementById('chatLauncher').classList.toggle('hidden', show);
+        const evaFab = document.getElementById('chatFab');
+        if (evaFab) evaFab.classList.toggle('hidden', show);
         wrap.classList.toggle('hidden', !show);
         if (show) { chatShowList(); chatLoadConversations(); }
         else if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
@@ -135,7 +142,7 @@
     window.startChat = function (partnerId, name) {
         if (!partnerId) return;
         const wrap = document.getElementById('chatPanelWrap');
-        wrap.classList.remove('hidden');
+        if (wrap.classList.contains('hidden')) chatToggle(); // tutup EVA & sembunyikan tombol bulat
         chatOpen(partnerId, name);
     };
 
