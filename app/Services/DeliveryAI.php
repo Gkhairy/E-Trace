@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * DeliveryAI — mengklasifikasi status pengiriman sebuah order dari riwayat tracking
- * mentah (lintas kurir, tidak terstruktur) memakai LLM (gpt-4o-mini) dan MEMUTUSKAN
+ * mentah (lintas kurir, tidak terstruktur) memakai LLM (gpt-4.1-nano) dan MEMUTUSKAN
  * penyelesaian escrow: release / refund / hold. Untuk order berasuransi juga menilai
  * tepat waktu vs telat + PENYEBAB telat.
  *
@@ -74,7 +74,7 @@ SYS;
 
         try {
             $res = Http::withToken($key)->timeout(30)->post('https://api.openai.com/v1/chat/completions', [
-                'model'           => config('services.openai.model', 'gpt-4o-mini'),
+                'model'           => config('services.openai.model', 'gpt-4.1-nano'),
                 'messages'        => [
                     ['role' => 'system', 'content' => $system],
                     ['role' => 'user',   'content' => $user],

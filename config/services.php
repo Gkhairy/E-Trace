@@ -38,7 +38,7 @@ return [
     // Chatbot AI — API key WAJIB di backend (.env), jangan di frontend.
     'openai' => [
         'key'   => env('OPENAI_API_KEY'),
-        'model' => env('OPENAI_MODEL', 'gpt-4o-mini'), // paling ringan & murah
+        'model' => env('OPENAI_MODEL', 'gpt-4.1-nano'), // paling ringan & murah
     ],
 
     // Cloudflare Turnstile (anti-bot di login/daftar). Aman-nonaktif bila kosong.

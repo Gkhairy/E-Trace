@@ -29,7 +29,15 @@ class ChatbotController extends Controller
                 'properties' => [
                     'query' => [
                         'type'        => 'string',
-                        'description' => 'Kata kunci barang, 1-4 kata, memakai kata yang mungkin muncul di NAMA produk. Banyak nama produk berbahasa Inggris, jadi pakai istilah Inggris bila lebih umum (mis. "tv 55" atau "running shoes", bukan "tv 55 inci").',
+                        'description' => 'Kata kunci JENIS barang, 1-3 kata, memakai kata yang mungkin muncul di NAMA produk. Banyak nama produk berbahasa Inggris, jadi pakai istilah Inggris bila lebih umum (mis. "tv 55" atau "running shoes", bukan "tv 55 inci"). Jangan masukkan kata seperti "murah" atau "buat kuliah" ke sini.',
+                    ],
+                    'max_price_tlkm' => [
+                        'type'        => 'number',
+                        'description' => 'Batas harga tertinggi dalam TLKM, hanya bila pengguna menyebut anggaran.',
+                    ],
+                    'cheapest_first' => [
+                        'type'        => 'boolean',
+                        'description' => 'true bila pengguna minta yang murah/termurah/hemat.',
                     ],
                 ],
                 'required'   => ['query'],
@@ -120,12 +128,16 @@ Donasi & dompet komunitas gratis (0%).
 - Kamu punya alat `search_products`. Pakai HANYA bila pengguna jelas ingin mencari, melihat,
   membandingkan, atau menanyakan harga/ketersediaan barang di katalog. JANGAN dipakai untuk sapaan,
   basa-basi, atau pertanyaan tentang cara kerja E-Trace/blockchain.
-- Kalau kebutuhannya belum jelas (mis. "aku butuh hadiah"), tanya balik dulu satu pertanyaan singkat
-  (untuk siapa, kisaran harga, atau jenis barang) sebelum mencari.
+- Kalau pengguna MENYEBUT jenis barang (laptop, sepatu, tv, kopi, ...), LANGSUNG panggil alat pencarian,
+  meski ada keterangan tambahan seperti "buat kuliah". Baru tanya balik satu pertanyaan singkat bila jenis
+  barangnya TIDAK disebut sama sekali (mis. "aku butuh hadiah", "cari sesuatu yang bagus").
+- Jangan pernah bilang kamu tidak bisa mencari produk — kamu bisa, lewat alat itu.
 - Setelah mencari, sebut nama & harga produk yang memang relevan saja. Kalau hasilnya kosong atau tidak
   cocok, katakan terus terang dan sarankan kata kunci lain — jangan mengarang produk, dan jangan
   menawarkan barang lain yang tidak diminta.
 - Jangan menulis URL atau tautan di jawaban: kartu produk otomatis tampil di bawah jawabanmu.
+- Harga SELALU dalam TLKM, persis seperti di data (mis. "278 TLKM"). JANGAN mengubahnya ke Rupiah
+  atau mata uang lain.
 - Untuk pertanyaan pengeluaran/pemasukan/transaksi sebuah toko atau entitas terverifikasi, sebutkan nama
   entitas & rentang waktunya lalu arahkan ke halaman Explorer wallet tersebut. Jangan mengarang angka.
 SYS;
@@ -155,7 +167,11 @@ SYS;
                 foreach ($calls as $call) {
                     $args = json_decode($call['function']['arguments'] ?? '{}', true) ?: [];
                     $found = ($call['function']['name'] ?? '') === 'search_products'
-                        ? $this->searchProducts((string) ($args['query'] ?? ''))
+                        ? $this->searchProducts(
+                            (string) ($args['query'] ?? ''),
+                            isset($args['max_price_tlkm']) && is_numeric($args['max_price_tlkm']) ? (float) $args['max_price_tlkm'] : null,
+                            (bool) ($args['cheapest_first'] ?? false)
+                        )
                         : collect();
                     $products = $products->merge($found);
                     $messages[] = [
@@ -164,7 +180,9 @@ SYS;
                         // Tanpa URL: kartu produk sudah tampil di bawah jawaban, jadi model
                         // tak perlu (dan tak boleh) menyisipkan tautan mentah ke teksnya.
                         'content'      => json_encode(
-                            $found->map(fn ($p) => ['id' => $p['id'], 'name' => $p['name'], 'price_tlkm' => $p['price'], 'store' => $p['store']])->values(),
+                            // Satuan ditulis di nilainya: gpt-4.1-nano sempat mengubah
+                            // "278" menjadi "Rp278.000" sendiri.
+                            $found->map(fn ($p) => ['id' => $p['id'], 'name' => $p['name'], 'price' => $p['price'] . ' TLKM', 'store' => $p['store']])->values(),
                             JSON_UNESCAPED_UNICODE
                         ),
                     ];
@@ -209,7 +227,7 @@ SYS;
     private function complete(string $key, array $messages, bool $allowTools, bool $json = false)
     {
         return Http::withToken($key)->timeout(30)->post('https://api.openai.com/v1/chat/completions', array_filter([
-            'model'           => config('services.openai.model', 'gpt-4o-mini'),
+            'model'           => config('services.openai.model', 'gpt-4.1-nano'),
             'messages'        => $messages,
             'temperature'     => 0.3,
             'max_tokens'      => 550,
@@ -369,7 +387,11 @@ SYS;
     }
 
     /** Cari produk berdasar kata kunci bermakna (>3 huruf), maks 5. */
-    private function searchProducts(string $query)
+    /**
+     * Kandidat produk untuk dipilih model (maks 12). Model yang memutuskan mana yang
+     * relevan; kartu yang tampil dibatasi 5 dari pilihannya.
+     */
+    private function searchProducts(string $query, ?float $maxPrice = null, bool $cheapestFirst = false)
     {
         $words = collect(preg_split('/\s+/', mb_strtolower(trim($query))))
             ->filter(fn ($w) => mb_strlen($w) >= 2)
@@ -391,8 +413,14 @@ SYS;
             ->select('products.*')
             ->selectRaw("($score) AS match_score", $bind)
             ->whereRaw("($score) >= ?", [...$bind, $need])
+            ->when($maxPrice !== null, fn ($q) => $q->where('price_usdc', '<=', $maxPrice))
             ->orderByDesc('match_score')
-            ->limit(5)
+            // Pemecah seri: "laptop" cocok dengan 424 produk berskor sama. Tanpa urutan
+            // kedua, yang terambil hanya baris pertama di DB (mainan anak, kipas pendingin).
+            // Harga tertinggi dulu mengangkat barang utama di atas aksesorinya; kecuali
+            // pengguna minta yang murah.
+            ->orderBy('price_usdc', $cheapestFirst ? 'asc' : 'desc')
+            ->limit(12)
             ->get();
 
         return $rows->map(fn ($p) => [
