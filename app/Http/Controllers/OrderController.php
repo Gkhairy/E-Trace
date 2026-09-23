@@ -98,6 +98,7 @@ class OrderController extends Controller
                 'seller_wallet'   => strtolower($product->seller_wallet),
                 'db_product_id'   => $product->id,
                 'price'           => (float) $product->price_usdc,
+                'price_wei'       => $this->priceWei($product),
             ];
         }
 
@@ -126,6 +127,7 @@ class OrderController extends Controller
                     'seller_wallet'   => strtolower($product->seller_wallet),
                     'db_product_id'   => $product->id,
                     'price'           => (float) $product->price_usdc,
+                    'price_wei'       => $this->priceWei($product),
                 ];
             }
             ksort($expected);
@@ -189,8 +191,9 @@ class OrderController extends Controller
             // 3) Item — amount & seller dari chain/produk (bukan dari browser).
             foreach ($expected as $index => $exp) {
                 $amt = $vr['items'][$index]['amount_tlkm'];
-                // Quantity diturunkan dari nominal on-chain ÷ harga produk.
-                $qty = $exp['price'] > 0 ? max(1, (int) round((float) $amt / $exp['price'])) : 1;
+                // Quantity dari verifyCart, yang sudah memastikan nominal menutup harga x qty.
+                // (Rumus lama max(1, round(...)) memberi qty 1 untuk pembayaran 1 wei.)
+                $qty = $vr['items'][$index]['quantity'];
 
                 OrderItem::create([
                     'order_ref_id' => $order->id,
@@ -423,5 +426,11 @@ class OrderController extends Controller
             $msg .= ' · ' . __('insurance.status.' . $order->insurance_status);
         }
         return response()->json(['success' => true, 'message' => $msg, 'reason' => $order->ai_reason]);
+    }
+
+    /** Harga produk dalam wei, dari nilai DECIMAL mentah (bukan float) agar presisi. */
+    private function priceWei(\App\Models\Product $product): string
+    {
+        return bcmul((string) $product->getRawOriginal('price_usdc'), '1000000000000000000', 0);
     }
 }

@@ -327,8 +327,9 @@ class ChainVerifier
 
     /**
      * Verifikasi hybrid sebuah pembayaran cart.
-     * $expected: array[ item_index => ['product_id_uuid'=>..,'seller_wallet'=>..] ]
-     * Return ['ok'=>bool, 'reason'=>?, 'block_number'=>?, 'confirmations'=>?, 'items'=>[index=>['amount_tlkm'=>..]]]
+     * $expected: array[ item_index => ['product_id_uuid'=>.., 'seller_wallet'=>.., 'price_wei'=>..] ]
+     * Return ['ok'=>bool, 'reason'=>?, 'block_number'=>?, 'confirmations'=>?,
+     *         'items'=>[index=>['amount_tlkm'=>.., 'amount_wei'=>.., 'quantity'=>int]]]
      */
     public function verifyCart(string $orderId, string $txHash, string $buyerWallet, array $expected): array
     {
@@ -367,10 +368,25 @@ class ChainVerifier
             if ($it['seller'] !== strtolower($exp['seller_wallet'])) {
                 return ['ok' => false, 'reason' => "Penjual item #$index tidak cocok."];
             }
-            if (!empty($exp['product_id_uuid']) && $it['productId'] !== '' && $it['productId'] !== $exp['product_id_uuid']) {
+            // ID produk WAJIB cocok persis. Dulu productId kosong di on-chain melewati cek
+            // ini, sehingga pembeli bisa membayar penjual lalu mengklaim produk apa pun
+            // milik penjual itu.
+            if (($exp['product_id_uuid'] ?? '') === '' || $it['productId'] !== $exp['product_id_uuid']) {
                 return ['ok' => false, 'reason' => "Produk item #$index tidak cocok."];
             }
-            $items[$index] = ['amount_tlkm' => $it['amount_tlkm'], 'amount_wei' => $it['amount_wei']];
+
+            // Nominal WAJIB menutup harga x qty. Kontrak menerima nominal berapa pun > 0,
+            // jadi tanpa cek ini pembeli bisa membayar 1 wei untuk barang apa pun.
+            $priceWei = (string) ($exp['price_wei'] ?? '0');
+            if (bccomp($priceWei, '0') <= 0) {
+                return ['ok' => false, 'reason' => "Harga produk item #$index tidak valid."];
+            }
+            $qty = self::paidQuantity($it['amount_wei'], $priceWei);
+            if ($qty === null) {
+                return ['ok' => false, 'reason' => "Nominal item #$index kurang dari harga produk."];
+            }
+
+            $items[$index] = ['amount_tlkm' => $it['amount_tlkm'], 'amount_wei' => $it['amount_wei'], 'quantity' => $qty];
         }
 
         return [
@@ -379,5 +395,30 @@ class ChainVerifier
             'confirmations' => $confirmations,
             'items' => $items,
         ];
+    }
+
+    /**
+     * Toleransi pembulatan: 1e-9 TLKM. Cukup menyerap debu desimal dari browser,
+     * jauh terlalu kecil untuk dimanfaatkan sebagai potongan harga.
+     */
+    private const AMOUNT_DUST_WEI = '1000000000';
+
+    /**
+     * Jumlah unit yang benar-benar dibayar, atau null bila nominal tak menutup harga.
+     *
+     * Satu sumber aturan untuk verifikasi order (verifyCart) dan jalur PIN sebelum
+     * menandatangani: qty = pembulatan nominal/harga, dan nominal harus >= harga x qty
+     * (dikurangi debu pembulatan). Nominal < 0,5x harga -> qty 0 -> ditolak.
+     */
+    public static function paidQuantity(string $amountWei, string $priceWei): ?int
+    {
+        if (bccomp($priceWei, '0') <= 0) {
+            return null;
+        }
+        $qty = (int) bcdiv(bcadd($amountWei, bcdiv($priceWei, '2', 0)), $priceWei, 0);
+        if ($qty < 1 || bccomp(bcadd($amountWei, self::AMOUNT_DUST_WEI), bcmul($priceWei, (string) $qty)) < 0) {
+            return null;
+        }
+        return $qty;
     }
 }

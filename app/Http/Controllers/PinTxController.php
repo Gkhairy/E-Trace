@@ -110,12 +110,36 @@ class PinTxController extends Controller
             'sellers'     => 'required|array|min:1',
             'sellers.*'   => ['regex:/^0x[a-fA-F0-9]{40}$/'],
             'amounts'     => 'required|array|min:1',
+            'amounts.*'   => 'required|numeric|gt:0',
             'productIds'  => 'required|array',
+            'productIds.*'=> 'required|string|max:80',
         ]);
+        // Indeks dinormalisasi: array dengan kunci tak berurutan (amounts[5]) tak boleh
+        // membuat baris-baris keranjang saling tertukar.
+        foreach (['sellers', 'amounts', 'productIds'] as $k) {
+            $data[$k] = array_values($data[$k]);
+        }
+        $n = count($data['sellers']);
+        abort_unless($n === count($data['amounts']) && $n === count($data['productIds']), 422, 'Data keranjang tidak lengkap.');
+
+        $amountsWei = array_map(fn ($a) => $signer->toWei($a), $data['amounts']);
+
+        // Tolak SEBELUM menandatangani: tiap baris harus produk sungguhan milik penjual
+        // itu, dengan nominal yang menutup harga x qty. /order/store juga memeriksa ini,
+        // tapi tanpa cek di sini pembeli bisa kehilangan dana ke escrow untuk order yang
+        // lalu ditolak (mis. harga berubah sejak halaman checkout dimuat).
+        foreach ($data['productIds'] as $i => $pid) {
+            $product = \App\Models\Product::where('product_id', $pid)->first();
+            abort_unless($product && strtolower($product->seller_wallet) === strtolower($data['sellers'][$i]), 422,
+                'Produk di keranjang tidak valid. Muat ulang halaman checkout.');
+            $priceWei = bcmul((string) $product->getRawOriginal('price_usdc'), '1000000000000000000', 0);
+            abort_if(\App\Services\ChainVerifier::paidQuantity($amountsWei[$i], $priceWei) === null, 422,
+                'Harga "' . $product->name . '" berubah. Muat ulang halaman checkout.');
+        }
+
         $gateway = config('chain.gateway');
         $priv = $this->unlock($data['pin']);
 
-        $amountsWei = array_map(fn ($a) => $signer->toWei($a), $data['amounts']);
         $totalWei = array_reduce($amountsWei, fn ($c, $v) => bcadd($c, $v), '0');
 
         $this->ensureAllowance($signer, $priv, $gateway, $totalWei);
