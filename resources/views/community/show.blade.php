@@ -147,6 +147,10 @@
                             @endif
                         @elseif($p['status'] === 'rejected')
                             <span class="text-xs text-red-500 font-medium">Ditolak ✕</span>
+                        @elseif($p['status'] === 'executing')
+                            <span class="text-xs text-amber-600 font-medium">Sedang diproses…</span>
+                        @elseif($p['status'] === 'failed')
+                            <span class="text-xs text-red-500 font-medium" title="Cek saldo dompet di Explorer sebelum mengusulkan ulang.">Gagal dieksekusi</span>
                         @elseif($p['approved_by_me'])
                             <span class="text-xs text-slate-400">Kamu sudah setuju</span>
                         @elseif($iAmSigner)

@@ -15,6 +15,7 @@ use App\Services\ChainSigner;
 use App\Services\ChainVerifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
@@ -228,17 +229,42 @@ class CommunityWalletController extends Controller
         $member = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
         $this->requirePin($data['pin']);
 
-        // Reset periode bila lewat 30 hari.
-        if (!$member->period_start || now()->greaterThanOrEqualTo($member->period_start->copy()->addDays(30))) {
-            $member->period_start = now(); $member->spent = 0;
-        }
-        if (bccomp(bcadd((string) $member->spent, (string) $data['amount'], 6), (string) ($member->monthly_limit ?? 0), 6) > 0) {
+        $amount = (string) $data['amount'];
+
+        // RESERVASI jatah di dalam transaksi dengan kunci baris, SEBELUM tx dikirim.
+        // Dulu jatah dicek -> tx dikirim (beberapa detik) -> baru spent ditambah, jadi
+        // dua permintaan bersamaan sama-sama membaca spent lama dan keduanya lolos.
+        $reserved = DB::transaction(function () use ($member, $amount) {
+            $m = CommunityMember::whereKey($member->id)->lockForUpdate()->first();
+            // Reset periode bila lewat 30 hari.
+            if (!$m->period_start || now()->greaterThanOrEqualTo($m->period_start->copy()->addDays(30))) {
+                $m->period_start = now();
+                $m->spent = 0;
+            }
+            if (bccomp(bcadd((string) $m->spent, $amount, 6), (string) ($m->monthly_limit ?? 0), 6) > 0) {
+                return false;
+            }
+            $m->spent = bcadd((string) $m->spent, $amount, 6);
+            $m->save();
+            return true;
+        });
+        if (!$reserved) {
             return response()->json(['success' => false, 'message' => 'Melebihi jatah bulan ini.'], 422);
         }
 
-        $hash = $this->communitySign($wallet, $signer, auth()->user()->wallet_address, $data['amount']);
-        $member->spent = bcadd((string) $member->spent, (string) $data['amount'], 6);
-        $member->save();
+        try {
+            $hash = $this->communitySign($wallet, $signer, auth()->user()->wallet_address, $amount);
+        } catch (\Throwable $e) {
+            // Kembalikan reservasi agar kegagalan (mis. gas/kunci) tak memakan jatah.
+            // Kalau tx ternyata sempat terkirim sebelum error, kelebihannya dibatasi satu
+            // nominal ini saja — jauh lebih kecil dari celah race sebelumnya.
+            DB::transaction(function () use ($member, $amount) {
+                $m = CommunityMember::whereKey($member->id)->lockForUpdate()->first();
+                $m->spent = bccomp((string) $m->spent, $amount, 6) >= 0 ? bcsub((string) $m->spent, $amount, 6) : '0';
+                $m->save();
+            });
+            throw $e;
+        }
 
         return response()->json(['success' => true, 'tx_hash' => $hash]);
     }
@@ -506,7 +532,11 @@ class CommunityWalletController extends Controller
         abort_unless($member->is_signer, 403, 'Kamu bukan penanda tangan yang ditunjuk untuk dompet ini.');
         $this->requirePin($data['pin']);
 
-        $p->update(['status' => 'rejected']);
+        // Atomik, sama seperti eksekusi: bila usulan sudah diklaim untuk dieksekusi di
+        // antara pengecekan di atas dan baris ini, jangan timpa statusnya jadi "ditolak"
+        // sementara dana sebenarnya sedang dikirim.
+        $rejected = CommunityProposal::where('id', $p->id)->where('status', 'open')->update(['status' => 'rejected']);
+        abort_unless($rejected === 1, 422, 'Usulan sudah diproses.');
         $this->notifyAllMembers($wallet, 'Usulan ditolak', $this->meName() . " menolak sebuah usulan di \"{$wallet->name}\".", '❌');
         return response()->json(['success' => true, 'rejected' => true]);
     }
@@ -568,7 +598,25 @@ class CommunityWalletController extends Controller
         if ($count < $wallet->requiredApprovals()) {
             return ['executed' => false, 'approvals' => $count, 'required' => $wallet->requiredApprovals()];
         }
-        return $this->executeProposal($p, $wallet, $signer);
+
+        // Klaim ATOMIK: hanya satu request yang bisa memindahkan open -> executing.
+        // Tanpa ini, dua klik "Setujui" yang hampir bersamaan sama-sama melihat status
+        // open (yang dibaca sebelum tx dikirim) dan dana komunitas terkirim dua kali.
+        $claimed = CommunityProposal::where('id', $p->id)->where('status', 'open')
+            ->update(['status' => 'executing']);
+        if ($claimed !== 1) {
+            return ['executed' => false];
+        }
+
+        try {
+            return $this->executeProposal($p, $wallet, $signer);
+        } catch (\Throwable $e) {
+            // SENGAJA tidak dikembalikan ke open: bila tx sempat terkirim sebelum error
+            // (mis. RPC timeout), membuka ulang usulan = membuka jalan kirim ganda.
+            // Anggota mengecek saldo di Explorer lalu mengusulkan ulang bila perlu.
+            CommunityProposal::where('id', $p->id)->where('status', 'executing')->update(['status' => 'failed']);
+            throw $e;
+        }
     }
 
     /** Jalankan aksi sesuai jenis usulan setelah persetujuan bulat tercapai. */
