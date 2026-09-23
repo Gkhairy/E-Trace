@@ -48,4 +48,9 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
+# Laporkan ke log apakah rahasia yang di-seal terisi & cocok (tanpa mencetak nilainya).
+# Variabel sealed tak bisa dilihat siapa pun; ini satu-satunya cara memastikannya.
+# `|| true`: pemeriksaan ini tak boleh menggagalkan boot.
+php artisan config:check || true
+
 exec "$@"
