@@ -18,6 +18,25 @@ class ChatbotController extends Controller
     /** Pesan untuk pengunjung saat asisten tak bisa menjawab, apa pun penyebabnya. */
     private const UNAVAILABLE = 'Maaf, asisten sedang mengalami kendala. Coba lagi nanti ya.';
 
+    /** Alat yang boleh dipanggil model; hanya untuk niat mencari barang. */
+    private const SEARCH_TOOL = [
+        'type'     => 'function',
+        'function' => [
+            'name'        => 'search_products',
+            'description' => 'Cari produk di katalog E-Trace. Panggil HANYA bila pengguna ingin mencari, melihat, membeli, atau menanyakan harga/ketersediaan barang.',
+            'parameters'  => [
+                'type'       => 'object',
+                'properties' => [
+                    'query' => [
+                        'type'        => 'string',
+                        'description' => 'Kata kunci barang, 1-4 kata, memakai kata yang mungkin muncul di NAMA produk. Banyak nama produk berbahasa Inggris, jadi pakai istilah Inggris bila lebih umum (mis. "tv 55" atau "running shoes", bukan "tv 55 inci").',
+                    ],
+                ],
+                'required'   => ['query'],
+            ],
+        ],
+    ];
+
     public function chat(Request $request)
     {
         $data = $request->validate([
@@ -41,14 +60,6 @@ class ChatbotController extends Controller
                 'reply' => self::UNAVAILABLE,
                 'products' => [],
             ], 200);
-        }
-
-        // ===== Cari produk dari kata kunci (LIKE, maks 5) untuk konteks faktual =====
-        $products = $this->searchProducts($data['message']);
-        $productContext = '';
-        if ($products->isNotEmpty()) {
-            $productContext = "\n\nProduk relevan di E-Trace saat ini (pakai ini untuk jawaban faktual, sertakan nama & harga):\n"
-                . $products->map(fn ($p) => "- {$p['name']} — {$p['price']} TLKM ({$p['url']})")->implode("\n");
         }
 
         $system = <<<'SYS'
@@ -106,12 +117,20 @@ Donasi & dompet komunitas gratis (0%).
 - Jawab ringkas, ramah, Bahasa Indonesia; pakai langkah bernomor saat menjelaskan alur. JANGAN mengarang
   fitur atau angka yang tidak ada.
 - Ini testnet & smart contract-nya belum diaudit — ingatkan bila relevan (mis. ditanya soal keamanan dana asli).
-- Kalau ada daftar produk di konteks, sebutkan nama & harganya.
+- Kamu punya alat `search_products`. Pakai HANYA bila pengguna jelas ingin mencari, melihat,
+  membandingkan, atau menanyakan harga/ketersediaan barang di katalog. JANGAN dipakai untuk sapaan,
+  basa-basi, atau pertanyaan tentang cara kerja E-Trace/blockchain.
+- Kalau kebutuhannya belum jelas (mis. "aku butuh hadiah"), tanya balik dulu satu pertanyaan singkat
+  (untuk siapa, kisaran harga, atau jenis barang) sebelum mencari.
+- Setelah mencari, sebut nama & harga produk yang memang relevan saja. Kalau hasilnya kosong atau tidak
+  cocok, katakan terus terang dan sarankan kata kunci lain — jangan mengarang produk, dan jangan
+  menawarkan barang lain yang tidak diminta.
+- Jangan menulis URL atau tautan di jawaban: kartu produk otomatis tampil di bawah jawabanmu.
 - Untuk pertanyaan pengeluaran/pemasukan/transaksi sebuah toko atau entitas terverifikasi, sebutkan nama
   entitas & rentang waktunya lalu arahkan ke halaman Explorer wallet tersebut. Jangan mengarang angka.
 SYS;
 
-        $messages = [['role' => 'system', 'content' => $system . $productContext]];
+        $messages = [['role' => 'system', 'content' => $system]];
         foreach (($data['history'] ?? []) as $h) {
             if (in_array(($h['role'] ?? ''), ['user', 'assistant'], true) && !empty($h['content'])) {
                 $messages[] = ['role' => $h['role'], 'content' => mb_substr((string) $h['content'], 0, 800)];
@@ -119,26 +138,92 @@ SYS;
         }
         $messages[] = ['role' => 'user', 'content' => $data['message']];
 
+        $products = collect();
         try {
-            $res = Http::withToken($key)->timeout(30)->post('https://api.openai.com/v1/chat/completions', [
-                'model'       => config('services.openai.model', 'gpt-4o-mini'),
-                'messages'    => $messages,
-                'temperature' => 0.3,
-                'max_tokens'  => 550,
-            ]);
+            $res = $this->complete($key, $messages, true);
             if (!$res->ok()) {
-                // 401 = kunci salah/dicabut, 429 = kuota/limit habis — dua-duanya perlu
-                // ditangani admin, jadi status & potongan respons dicatat.
-                Log::warning('Chatbot: OpenAI membalas HTTP ' . $res->status() . ': ' . mb_substr($res->body(), 0, 200));
-                return response()->json(['reply' => 'Maaf, asisten sedang sibuk. Coba lagi sebentar.', 'products' => $products], 200);
+                return $this->openAiFailed($res);
             }
-            $reply = $res->json('choices.0.message.content') ?: 'Maaf, aku belum bisa menjawab itu.';
+            $msg = $res->json('choices.0.message') ?? [];
+            $calls = $msg['tool_calls'] ?? [];
+
+            // Modellah yang menilai konteks: alat pencarian hanya dipanggil bila pengguna
+            // memang mencari barang. Dulu setiap kata > 3 huruf dicocokkan ke katalog, jadi
+            // "halo" memunculkan TV bermerek "Halo Control System".
+            if ($calls) {
+                $messages[] = ['role' => 'assistant', 'content' => $msg['content'] ?? null, 'tool_calls' => $calls];
+                foreach ($calls as $call) {
+                    $args = json_decode($call['function']['arguments'] ?? '{}', true) ?: [];
+                    $found = ($call['function']['name'] ?? '') === 'search_products'
+                        ? $this->searchProducts((string) ($args['query'] ?? ''))
+                        : collect();
+                    $products = $products->merge($found);
+                    $messages[] = [
+                        'role'         => 'tool',
+                        'tool_call_id' => $call['id'] ?? '',
+                        // Tanpa URL: kartu produk sudah tampil di bawah jawaban, jadi model
+                        // tak perlu (dan tak boleh) menyisipkan tautan mentah ke teksnya.
+                        'content'      => json_encode(
+                            $found->map(fn ($p) => ['id' => $p['id'], 'name' => $p['name'], 'price_tlkm' => $p['price'], 'store' => $p['store']])->values(),
+                            JSON_UNESCAPED_UNICODE
+                        ),
+                    ];
+                }
+                $products = $products->unique('id')->values();
+
+                // Jawaban akhir dalam JSON: model sendiri yang memilih kartu mana yang
+                // tampil. Pencarian teks pasti menyisakan kecocokan liar ("jet" di "DeskJet"),
+                // dan kartu tak boleh membantah jawabannya ("tidak ada" + 5 printer).
+                $messages[] = ['role' => 'system', 'content' =>
+                    'Balas dalam JSON: {"reply": string, "show": [id produk]}. "show" hanya berisi id produk '
+                    . 'yang BENAR-BENAR sesuai permintaan pengguna dan kamu sebut di "reply"; kosongkan bila tak ada yang cocok.'];
+                $res = $this->complete($key, $messages, false, true);
+                if (!$res->ok()) {
+                    return $this->openAiFailed($res);
+                }
+                $raw = (string) $res->json('choices.0.message.content');
+                $out = json_decode($raw, true);
+                if (is_array($out)) {
+                    $show = array_map('intval', (array) ($out['show'] ?? []));
+                    $products = $products->whereIn('id', $show)->take(5)->values();
+                    $msg = ['content' => $out['reply'] ?? null];
+                } else {
+                    // JSON rusak: tampilkan teksnya apa adanya, tanpa kartu yang tak terverifikasi.
+                    $products = collect();
+                    $msg = ['content' => $raw];
+                }
+            }
+            $reply = ($msg['content'] ?? null) ?: 'Maaf, aku belum bisa menjawab itu.';
         } catch (\Throwable $e) {
             Log::warning('Chatbot: gagal menghubungi OpenAI: ' . $e->getMessage());
-            return response()->json(['reply' => self::UNAVAILABLE, 'products' => $products], 200);
+            return response()->json(['reply' => self::UNAVAILABLE, 'products' => []], 200);
         }
 
         return response()->json(['reply' => $reply, 'products' => $products], 200);
+    }
+
+    /**
+     * Satu panggilan chat completion. $allowTools=false untuk menyusun jawaban akhir;
+     * $json=true memaksa keluaran JSON (dipakai setelah pencarian produk).
+     */
+    private function complete(string $key, array $messages, bool $allowTools, bool $json = false)
+    {
+        return Http::withToken($key)->timeout(30)->post('https://api.openai.com/v1/chat/completions', array_filter([
+            'model'           => config('services.openai.model', 'gpt-4o-mini'),
+            'messages'        => $messages,
+            'temperature'     => 0.3,
+            'max_tokens'      => 550,
+            'tools'           => [self::SEARCH_TOOL],
+            'tool_choice'     => $allowTools ? 'auto' : 'none',
+            'response_format' => $json ? ['type' => 'json_object'] : null,
+        ], fn ($v) => $v !== null));
+    }
+
+    /** Catat kegagalan OpenAI (401 = kunci salah, 429 = kuota habis) lalu balas sopan. */
+    private function openAiFailed($res)
+    {
+        Log::warning('Chatbot: OpenAI membalas HTTP ' . $res->status() . ': ' . mb_substr($res->body(), 0, 200));
+        return response()->json(['reply' => 'Maaf, asisten sedang sibuk. Coba lagi sebentar.', 'products' => []], 200);
     }
 
     /**
@@ -284,24 +369,34 @@ SYS;
     }
 
     /** Cari produk berdasar kata kunci bermakna (>3 huruf), maks 5. */
-    private function searchProducts(string $message)
+    private function searchProducts(string $query)
     {
-        $words = collect(preg_split('/\s+/', mb_strtolower($message)))
-            ->filter(fn ($w) => mb_strlen($w) > 3)
-            ->take(5);
-
+        $words = collect(preg_split('/\s+/', mb_strtolower(trim($query))))
+            ->filter(fn ($w) => mb_strlen($w) >= 2)
+            ->take(4)
+            ->values();
         if ($words->isEmpty()) {
             return collect();
         }
+        $like = fn ($w) => '%' . addcslashes($w, '\\%_') . '%';
 
-        $q = Product::query()->with('store');
-        $q->where(function ($sub) use ($words) {
-            foreach ($words as $w) {
-                $sub->orWhere('name', 'like', "%{$w}%")->orWhere('description', 'like', "%{$w}%");
-            }
-        });
+        // Skor = jumlah kata yang muncul di NAMA, dihitung di SQL agar seluruh katalog
+        // dinilai (bukan 60 baris pertama), dan minimal setengah kata harus cocok. Tanpa
+        // ambang ini "tv 55" cocok ke "Acer Nitro 5 AN515-55" hanya karena angka 55.
+        // Deskripsi tak dicari — terlalu banyak kecocokan liar.
+        $need = max(1, (int) ceil($words->count() / 2));
+        $score = $words->map(fn () => '(name LIKE ?)')->implode(' + ');
+        $bind = $words->map($like)->all();
+        $rows = Product::query()->with('store')
+            ->select('products.*')
+            ->selectRaw("($score) AS match_score", $bind)
+            ->whereRaw("($score) >= ?", [...$bind, $need])
+            ->orderByDesc('match_score')
+            ->limit(5)
+            ->get();
 
-        return $q->limit(5)->get()->map(fn ($p) => [
+        return $rows->map(fn ($p) => [
+            'id'    => $p->id,
             'name'  => $p->name,
             'price' => rtrim(rtrim(number_format($p->price_usdc, 2), '0'), '.'),
             'url'   => url('/products/' . $p->id),
