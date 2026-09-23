@@ -459,6 +459,24 @@
         });
     }
 
+    // Escape teks untuk modal: uiConfirm menyisipkan title/message sebagai HTML, jadi teks
+    // yang berasal dari pengguna (mis. nama produk) wajib di-escape agar tak jadi celah XSS.
+    function uiEsc(s) {
+        return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    // Pengganti onsubmit="return confirm(...)": tahan submit, tampilkan modal aplikasi,
+    // lalu kirim form bila disetujui. title/message diperlakukan sebagai teks biasa.
+    // prototype.submit dipakai agar tak memicu onsubmit lagi (dan tetap jalan meski form
+    // punya input bernama "submit").
+    function confirmSubmit(event, opts = {}) {
+        event.preventDefault();
+        const form = event.currentTarget || event.target;
+        uiConfirm({ ...opts, title: uiEsc(opts.title ?? 'Konfirmasi'), message: uiEsc(opts.message ?? '') })
+            .then(ok => { if (ok) HTMLFormElement.prototype.submit.call(form); });
+        return false;
+    }
+
     // Konfirmasi logout via modal (bukan submit langsung).
     let __logoutOK = false;
     async function confirmLogout(e) {

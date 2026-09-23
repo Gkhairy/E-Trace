@@ -81,7 +81,7 @@
         </div>
     </form>
 
-    <form action="/donate/{{ $campaign->slug }}/delete" method="POST" class="mt-4" onsubmit="return confirm('Hapus campaign ini? Catatan donasi tetap tersimpan tapi tak lagi tertaut ke campaign.')">
+    <form action="/donate/{{ $campaign->slug }}/delete" method="POST" class="mt-4" onsubmit="return confirmSubmit(event, {title: 'Hapus campaign?', message: 'Catatan donasi tetap tersimpan, tapi tak lagi tertaut ke campaign ini.', confirmText: 'Hapus campaign', danger: true})">
         @csrf
         <button class="text-sm text-red-600 hover:underline">Hapus campaign ini</button>
     </form>

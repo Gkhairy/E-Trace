@@ -61,7 +61,7 @@
                             </div>
                             <a href="/explorer/{{ $l->address }}" class="text-xs text-blue-600 hover:underline font-mono">{{ substr($l->address,0,12) }}…{{ substr($l->address,-6) }}</a>
                         </div>
-                        <form action="/supervisor/labels/delete" method="POST" onsubmit="return confirm('Hapus label ini?')">
+                        <form action="/supervisor/labels/delete" method="POST" onsubmit="return confirmSubmit(event, {title: 'Hapus label?', message: 'Label identitas wallet ini akan hilang dari Explorer.', confirmText: 'Hapus', danger: true})">
                             @csrf<input type="hidden" name="id" value="{{ $l->id }}">
                             <button class="text-xs text-slate-400 hover:text-red-600">Hapus</button>
                         </form>

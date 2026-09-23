@@ -53,7 +53,7 @@
         </div>
 
         @if($user->hasTwoFactor())
-            <form action="/two-factor/disable" method="POST" class="mt-4 flex flex-wrap items-end gap-3" onsubmit="return confirm('Matikan 2FA?')">
+            <form action="/two-factor/disable" method="POST" class="mt-4 flex flex-wrap items-end gap-3" onsubmit="return confirmSubmit(event, {title: 'Matikan 2FA?', message: 'Login tidak lagi meminta kode dari aplikasi autentikator.', confirmText: 'Matikan 2FA', danger: true})">
                 @csrf
                 <div class="flex-1 min-w-[200px]">
                     <label class="block text-xs font-medium text-slate-600 mb-1">Konfirmasi password untuk mematikan</label>

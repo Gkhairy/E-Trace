@@ -83,8 +83,25 @@
 @section('scripts')
 <script>
 async function settle(orderId, action, btn) {
-    const labels = { release:'Release ke penjual', refund:'Refund ke pembeli', approve_claim:'Setujui & bayar klaim', reject_claim:'Tolak klaim' };
-    if (!confirm(`Yakin: ${labels[action]} untuk order ${orderId}? Aksi on-chain tak bisa dibatalkan.`)) return;
+    // Aksi ini memindahkan dana escrow on-chain dan tak bisa dibatalkan, jadi modal
+    // menyebut ke mana dananya pergi — bukan sekadar "Yakin?".
+    const id = uiEsc(orderId);
+    const copy = {
+        release:       { title: 'Lepas dana ke penjual?',  confirmText: 'Ya, lepas ke penjual', danger: false,
+                         message: `Dana escrow order <b>${id}</b> akan dikirim ke penjual.` },
+        refund:        { title: 'Kembalikan dana ke pembeli?', confirmText: 'Ya, refund', danger: true,
+                         message: `Dana escrow order <b>${id}</b> akan dikembalikan ke pembeli.` },
+        approve_claim: { title: 'Setujui klaim garansi?',  confirmText: 'Ya, bayar klaim', danger: false,
+                         message: `Ongkir order <b>${id}</b> akan dibayar dari pool asuransi ke pembeli.` },
+        reject_claim:  { title: 'Tolak klaim garansi?',    confirmText: 'Ya, tolak klaim', danger: true,
+                         message: `Klaim order <b>${id}</b> ditolak; pembeli tidak mendapat penggantian ongkir.` },
+    }[action];
+    const ok = await uiConfirm({
+        ...copy,
+        message: copy.message + '<br><span class="text-xs text-slate-400">Transaksi on-chain ini tidak bisa dibatalkan.</span>',
+        cancelText: 'Batal',
+    });
+    if (!ok) return;
     if (btn) { btn.disabled = true; const t = btn.textContent; btn.dataset.t = t; btn.textContent = '⏳ Memproses…'; }
     try {
         const res = await fetch('/supervisor/settle', {

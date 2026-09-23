@@ -36,7 +36,7 @@
                             <button class="text-xs text-blue-600 hover:underline">Jadikan utama</button>
                         </form>
                     @endunless
-                    <form action="/addresses/delete" method="POST" onsubmit="return confirm('Hapus alamat ini?')">
+                    <form action="/addresses/delete" method="POST" onsubmit="return confirmSubmit(event, {title: 'Hapus alamat?', message: 'Alamat ini akan dihapus dari daftar alamat pengirimanmu.', confirmText: 'Hapus', danger: true})">
                         @csrf<input type="hidden" name="id" value="{{ $a->id }}">
                         <button class="text-xs text-slate-400 hover:text-red-600">Hapus</button>
                     </form>

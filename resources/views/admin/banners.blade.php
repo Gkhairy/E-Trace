@@ -72,7 +72,7 @@
                         <form action="/admin/banners/toggle" method="POST">@csrf<input type="hidden" name="id" value="{{ $b->id }}">
                             <button class="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700">{{ $b->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button>
                         </form>
-                        <form action="/admin/banners/delete" method="POST" onsubmit="return confirm('Hapus iklan ini?')">@csrf<input type="hidden" name="id" value="{{ $b->id }}">
+                        <form action="/admin/banners/delete" method="POST" onsubmit="return confirmSubmit(event, {title: 'Hapus iklan?', message: 'Iklan ini akan hilang dari carousel di beranda.', confirmText: 'Hapus', danger: true})">@csrf<input type="hidden" name="id" value="{{ $b->id }}">
                             <button class="text-xs font-medium px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:border-red-300 hover:text-red-600">Hapus</button>
                         </form>
                     </div>

@@ -242,7 +242,7 @@
                 </a>
                 <div class="flex border-t border-slate-100 divide-x divide-slate-100">
                     <a href="/products/{{ $p->id }}/edit" class="flex-1 text-center py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition">Edit</a>
-                    <form action="/products/{{ $p->id }}/delete" method="POST" class="flex-1" onsubmit="return confirm('Hapus produk &quot;{{ addslashes($p->name) }}&quot;? Tindakan ini tidak bisa dibatalkan.')">
+                    <form action="/products/{{ $p->id }}/delete" method="POST" class="flex-1" onsubmit="return confirmSubmit(event, {title: 'Hapus produk?', message: @js('"' . $p->name . '" akan dihapus. Tindakan ini tidak bisa dibatalkan.'), confirmText: 'Hapus produk', danger: true})">
                         @csrf
                         <button class="w-full py-2 text-xs font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 transition">Hapus</button>
                     </form>
