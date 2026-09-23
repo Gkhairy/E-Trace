@@ -6,25 +6,44 @@ set -e
 export PORT
 envsubst '${PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
-# Folder unggahan. Bila Railway Volume di-mount ke salah satu path ini, folder
-# sudah ada tetapi pemiliknya root — www-data harus bisa menulis ke situ,
-# kalau tidak unggah foto produk gagal dengan 500.
-for d in public/product_images public/banner_images public/campaign_images \
-         storage/framework/cache storage/framework/sessions storage/framework/views \
-         storage/logs; do
-    mkdir -p "/app/$d"
-done
-chown -R www-data:www-data /app/storage /app/bootstrap/cache \
-    /app/public/product_images /app/public/banner_images /app/public/campaign_images
+UPLOAD_DIRS="product_images banner_images campaign_images"
+VOLUME=/app/public/uploads
 
-# Migrasi hanya dari SATU service (set RUN_MIGRATIONS=true di service web saja),
-# supaya web dan worker tidak bertabrakan menjalankannya bersamaan.
+# Foto unggahan ditulis ke public_path() oleh controller, sedangkan filesystem
+# container bersifat sementara — tanpa volume, semua foto hilang tiap deploy.
+# Railway hanya mengizinkan satu volume per service, jadi volume di-mount di
+# satu titik lalu ketiga folder itu di-symlink ke dalamnya.
+if [ -d "$VOLUME" ]; then
+    for d in $UPLOAD_DIRS; do
+        # Pengisian awal: berkas bawaan repo disalin SEKALI, saat folder di
+        # volume belum ada. Sesudah itu volume yang jadi sumber kebenaran dan
+        # isi dari image tidak pernah menimpanya.
+        if [ ! -d "$VOLUME/$d" ]; then
+            mkdir -p "$VOLUME/$d"
+            [ -d "/app/public/$d" ] && cp -a "/app/public/$d/." "$VOLUME/$d/" 2>/dev/null || true
+        fi
+        rm -rf "/app/public/$d"
+        ln -sfn "$VOLUME/$d" "/app/public/$d"
+    done
+    chown -R www-data:www-data "$VOLUME"
+else
+    # Tanpa volume (mis. service worker) folder biasa sudah cukup.
+    for d in $UPLOAD_DIRS; do mkdir -p "/app/public/$d"; done
+    chown -R www-data:www-data $(for d in $UPLOAD_DIRS; do echo "/app/public/$d"; done)
+fi
+
+mkdir -p /app/storage/framework/cache /app/storage/framework/sessions \
+         /app/storage/framework/views /app/storage/logs
+chown -R www-data:www-data /app/storage /app/bootstrap/cache
+
+# Migrasi hanya dari SATU service (RUN_MIGRATIONS=true di service web saja),
+# supaya web dan worker tidak menjalankannya bersamaan saat boot.
 if [ "${RUN_MIGRATIONS}" = "true" ]; then
     php artisan migrate --force --no-interaction
 fi
 
-# Cache konfigurasi: wajib untuk produksi, dan dibangun ulang tiap boot supaya
-# perubahan env var di Railway langsung terpakai.
+# Cache konfigurasi dibangun ulang tiap boot supaya perubahan env var di
+# Railway langsung terpakai tanpa perlu ubah kode.
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
