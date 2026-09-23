@@ -7,8 +7,10 @@ use App\Models\OrderItem;
 use App\Models\WalletLabel;
 use App\Services\ChainSigner;
 use App\Services\ChainVerifier;
+use App\Services\OpsWallets;
 use App\Support\Notify;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class SupervisorController extends Controller
@@ -25,6 +27,142 @@ class SupervisorController extends Controller
     private function ensure()
     {
         abort_unless(auth()->user()->isSupervisor(), 403, 'Khusus pengawas platform.');
+    }
+
+    /**
+     * Ringkasan pengawas: antrian yang menunggu putusan di atas, lalu kesehatan platform
+     * (escrow, keeper AI, garansi, wallet operasional). Antrian dibaca langsung dari DB;
+     * agregat di-cache 2 menit dan bacaan on-chain 5 menit supaya halaman tetap ringan.
+     */
+    public function dashboard(OpsWallets $ops)
+    {
+        $this->ensure();
+
+        // ---- Antrian: tiap jenis menampilkan jumlah, dana yang dipertaruhkan, dan 3 terlama.
+        $disputeQ = OrderItem::with('order:id,order_id', 'product:id,name')->where('status', 'disputed');
+        $heldQ    = Order::where('settlement_status', 'held');
+        $claimQ   = Order::where('is_insured', true)->where('insurance_status', 'active');
+        $payoutCap = (float) config('chain.insurance.payout_cap_tlkm');
+
+        $queue = [
+            'disputes' => [
+                'count'  => (clone $disputeQ)->count(),
+                'amount' => (float) (clone $disputeQ)->sum('amount'),
+                'oldest' => (clone $disputeQ)->oldest('updated_at')->limit(3)->get()->map(fn ($i) => [
+                    'ref'   => $i->order?->order_id,
+                    'label' => $i->product?->name ?? 'Item #' . $i->item_index,
+                    'tlkm'  => (float) $i->amount,
+                    'since' => $i->updated_at,
+                ]),
+            ],
+            'held' => [
+                'count'  => (clone $heldQ)->count(),
+                'amount' => (float) (clone $heldQ)->sum('total'),
+                'oldest' => (clone $heldQ)->oldest('updated_at')->limit(3)->get()->map(fn ($o) => [
+                    'ref'   => $o->order_id,
+                    'label' => $o->ai_reason,
+                    'tlkm'  => (float) ($o->total ?? $o->amount),
+                    'since' => $o->updated_at,
+                ]),
+            ],
+            'claims' => [
+                'count'  => (clone $claimQ)->count(),
+                // Yang dipertaruhkan = payout yang akan keluar dari pool bila semua disetujui.
+                'amount' => (float) (clone $claimQ)->get(['shipping_tlkm'])
+                    ->sum(fn ($o) => min((float) $o->shipping_tlkm, $payoutCap)),
+                'oldest' => (clone $claimQ)->oldest('updated_at')->limit(3)->get()->map(fn ($o) => [
+                    'ref'   => $o->order_id,
+                    'label' => $o->promised_date ? 'Dijanjikan ' . $o->promised_date->translatedFormat('d M') : null,
+                    'tlkm'  => min((float) $o->shipping_tlkm, $payoutCap),
+                    'since' => $o->updated_at,
+                ]),
+            ],
+        ];
+
+        $stats = Cache::remember('supervisor:stats', 120, function () use ($payoutCap) {
+            // Deret 30 hari; tampilan bisa memotong ke 14.
+            $start = now()->subDays(29)->startOfDay();
+            $rows = Order::selectRaw('DATE(created_at) d, SUM(total) vol, COUNT(*) c')
+                ->where('created_at', '>=', $start)->groupBy('d')->get()->keyBy('d');
+            $daily = [];
+            for ($i = 29; $i >= 0; $i--) {
+                $day = now()->subDays($i);
+                $r = $rows[$day->toDateString()] ?? null;
+                $daily[] = ['date' => $day->translatedFormat('d M'), 'volume' => (float) ($r->vol ?? 0), 'count' => (int) ($r->c ?? 0)];
+            }
+
+            $items = OrderItem::selectRaw('status, COUNT(*) c, SUM(amount) amt')->groupBy('status')->get()
+                ->mapWithKeys(fn ($r) => [$r->status => ['count' => (int) $r->c, 'amount' => (float) $r->amt]]);
+
+            // Hasil keeper: putusan manual dikenali dari ai_reason yang ditulis settle().
+            $byOutcome = Order::selectRaw(
+                "CASE WHEN ai_reason LIKE 'Diputus manual%' THEN 'manual' ELSE settlement_status END k, COUNT(*) c"
+            )->groupBy('k')->pluck('c', 'k');
+            $outcomes = [
+                'auto_release' => (int) ($byOutcome['released'] ?? 0),
+                'auto_refund'  => (int) ($byOutcome['refunded'] ?? 0),
+                'manual'       => (int) ($byOutcome['manual'] ?? 0),
+                'held'         => (int) ($byOutcome['held'] ?? 0),
+                'pending'      => (int) ($byOutcome['pending'] ?? 0),
+            ];
+
+            // Sebaran keyakinan AI dalam 10 kelompok (0–0,1 … 0,9–1).
+            $confidence = array_fill(0, 10, 0);
+            Order::whereNotNull('ai_decision')->latest('updated_at')->limit(1000)->pluck('ai_decision')
+                ->each(function ($d) use (&$confidence) {
+                    if (is_array($d) && isset($d['confidence'])) {
+                        $confidence[min(9, max(0, (int) floor((float) $d['confidence'] * 10)))]++;
+                    }
+                });
+
+            $claims = Order::where('is_insured', true)->selectRaw('insurance_status s, COUNT(*) c')
+                ->groupBy('s')->pluck('c', 's');
+
+            return [
+                'daily'      => $daily,
+                'items'      => $items,
+                'outcomes'   => $outcomes,
+                'confidence' => $confidence,
+                'claims'     => ['active' => (int) ($claims['active'] ?? 0), 'paid' => (int) ($claims['paid'] ?? 0), 'rejected' => (int) ($claims['rejected'] ?? 0)],
+                'paid_total' => (float) Order::where('insurance_status', 'paid')->sum('payout_tlkm'),
+                // Rumus yang sama dengan circuit breaker di SettlementKeeper.
+                'paid_today' => (float) Order::whereDate('updated_at', today())->where('insurance_status', 'paid')->sum('payout_tlkm'),
+            ];
+        });
+
+        $wallets = Cache::remember('supervisor:wallets', 300, function () use ($ops) {
+            $arbiterKey = $ops->addressOf(config('chain.arbiter_key'));
+            $arbiterOn  = $ops->arbiterOnChain();
+            $poolAddr   = strtolower((string) config('chain.insurance.pool_wallet'));
+            $poolKey    = $ops->addressOf(config('chain.insurance.pool_key'));
+            $gasAddr    = $ops->addressOf(config('wallet.gas_private_key'));
+
+            return [
+                'arbiter' => ['key' => $arbiterKey, 'onchain' => $arbiterOn],
+                'pool'    => ['address' => $poolAddr ?: null, 'key' => $poolKey,
+                              'tlkm' => $poolAddr ? $ops->tlkmBalance($poolAddr) : null],
+                'gas'     => ['address' => $gasAddr, 'bnb' => $gasAddr ? $ops->nativeBalance($gasAddr) : null],
+                'read_at' => now(),
+            ];
+        });
+
+        $recent = Order::whereNotNull('ai_reason')->latest('updated_at')->limit(8)
+            ->get(['order_id', 'settlement_status', 'insurance_status', 'is_insured', 'ai_reason', 'updated_at']);
+
+        return view('supervisor.dashboard', [
+            'queue'   => $queue,
+            'stats'   => $stats,
+            'wallets' => $wallets,
+            'recent'  => $recent,
+            'cfg'     => [
+                'min_conf'   => (float) config('chain.ai.min_confidence'),
+                'max_auto'   => (float) config('chain.ai.max_auto_amount_tlkm'),
+                'daily_cap'  => (float) config('chain.insurance.daily_payout_cap_tlkm'),
+                'claim_cap'  => $payoutCap,
+                'insurance'  => (bool) config('chain.insurance.enabled'),
+                'drip'       => (float) config('wallet.gas_drip_amount'),
+            ],
+        ]);
     }
 
     /** Daftar order 'held' (AI belum yakin / di atas batas otomatis) untuk ditinjau manual. */

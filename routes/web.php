@@ -217,6 +217,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/admin/banners/delete', [\App\Http\Controllers\BannerController::class, 'destroy']);
 
     // PANEL PENGAWAS (dispute/arbiter)
+    Route::get('/supervisor', [SupervisorController::class, 'dashboard']);
     Route::get('/supervisor/disputes', [SupervisorController::class, 'disputes']);
     Route::post('/supervisor/resolve', [SupervisorController::class, 'resolve']);
     Route::get('/supervisor/labels', [SupervisorController::class, 'labels']);

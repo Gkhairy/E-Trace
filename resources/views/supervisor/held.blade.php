@@ -4,13 +4,9 @@
 
 @php $fmt = fn($n) => rtrim(rtrim(number_format((float)$n, 2), '0'), '.'); @endphp
 
-<div class="flex items-center gap-3 mb-2">
-    <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/></svg>
-    </div>
-    <h1 class="text-2xl font-bold text-slate-900">Panel Pengawas — Ditahan AI</h1>
-    <a href="/supervisor/disputes" class="ml-auto text-sm text-blue-600 hover:underline">Sengketa →</a>
-</div>
+@include('supervisor._nav')
+
+<h2 class="text-lg font-bold text-slate-900 mb-1">Ditahan AI &amp; klaim garansi</h2>
 <p class="text-sm text-slate-500 mb-6 max-w-3xl">
     Order yang <b class="text-slate-700">ditahan</b> keeper AI (keyakinan rendah / di atas batas otomatis) atau
     <b class="text-slate-700">klaim garansi aktif</b> yang perlu ditinjau. Putusanmu dieksekusi on-chain sebagai arbiter.

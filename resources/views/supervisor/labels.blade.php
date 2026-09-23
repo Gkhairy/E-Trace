@@ -2,10 +2,9 @@
 
 @section('content')
 
-<div class="flex items-center justify-between mb-2">
-    <h1 class="text-2xl font-bold text-slate-900">Label Entitas Terverifikasi</h1>
-    <a href="/supervisor/disputes" class="text-sm text-blue-600 hover:underline">← Sengketa</a>
-</div>
+@include('supervisor._nav')
+
+<h2 class="text-lg font-bold text-slate-900 mb-1">Label entitas terverifikasi</h2>
 <p class="text-sm text-slate-500 mb-6 max-w-3xl">Beri label resmi pada wallet (mis. <b>US GOV</b>, <b>Bank Indonesia</b>) agar tampil <b>terverifikasi</b> di Explorer. Hanya pengawas yang bisa memberi label — mencegah klaim identitas palsu.</p>
 
 @if(session('success'))

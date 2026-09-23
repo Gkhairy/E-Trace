@@ -168,6 +168,7 @@
                 <a href="/products" class="hover:text-blue-600 transition">{{ __('nav.products') }}</a>
                 <a href="/explorer" class="hover:text-blue-600 transition">{{ __('nav.explorer') }}</a>
                 @auth<a href="/orders" class="hover:text-blue-600 transition">{{ __('nav.orders') }}</a>@endauth
+                @if(auth()->user()?->isSupervisor())<a href="/supervisor" class="hover:text-blue-600 transition">{{ __('nav.supervisor') }}</a>@endif
             </nav>
 
             @auth
@@ -222,6 +223,7 @@
                 <a href="/products" class="hover:text-blue-600 whitespace-nowrap font-medium">{{ __('nav.products') }}</a>
                 <a href="/orders" class="hover:text-blue-600 whitespace-nowrap">{{ __('nav.orders') }}</a>
                 <a href="/explorer" class="hover:text-blue-600 whitespace-nowrap">{{ __('nav.explorer') }}</a>
+                @if(auth()->user()->isSupervisor())<a href="/supervisor" class="hover:text-blue-600 whitespace-nowrap">{{ __('nav.supervisor') }}</a>@endif
             </div>
         </div>
         @endauth

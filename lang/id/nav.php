@@ -18,5 +18,6 @@ return [
     'notifications' => 'Notifikasi',
     'search_placeholder' => 'Cari produk, toko, atau orang…',
     'address'    => 'Alamat',
+    'supervisor' => 'Pengawas',
     'dashboard'  => 'Dashboard',
 ];

@@ -18,5 +18,6 @@ return [
     'notifications' => 'Notifications',
     'search_placeholder' => 'Search products, stores, or people…',
     'address'    => 'Addresses',
+    'supervisor' => 'Supervisor',
     'dashboard'  => 'Dashboard',
 ];

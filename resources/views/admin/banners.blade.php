@@ -2,14 +2,10 @@
 
 @section('content')
 
-<nav class="flex items-center gap-2 text-xs text-slate-500 mb-4">
-    <a href="/products" class="hover:text-blue-600 transition">Beranda</a>
-    <span class="text-slate-300">/</span>
-    <span class="text-slate-700">Kelola Iklan</span>
-</nav>
+@include('supervisor._nav')
 
 <div class="max-w-4xl">
-    <h1 class="text-2xl font-bold text-slate-900 mb-1">Kelola Iklan (Banner Carousel)</h1>
+    <h2 class="text-lg font-bold text-slate-900 mb-1">Kelola iklan (banner carousel)</h2>
     <p class="text-sm text-slate-500 mb-6">Banner aktif tampil di carousel halaman produk. Urutan diatur lewat kolom <b>Urutan</b> (kecil tampil dulu).</p>
 
     @if(session('success'))<div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-5 text-sm">{{ session('success') }}</div>@endif
