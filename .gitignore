@@ -34,3 +34,6 @@ Thumbs.db
 # Remix-generated Solidity build outputs (not source)
 /contracts/.deps/
 /contracts/artifacts/
+
+# Catatan deploy pribadi — tidak untuk repo
+DEPLOY-RAILWAY.md
