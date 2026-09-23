@@ -1,2 +1,5 @@
+# E-Trace berjalan di testnet dengan katalog demo — tidak untuk diindeks.
+# Setiap halaman yang dirayapi bot adalah CPU yang ditagih Railway; GPTBot sempat
+# menyisir ribuan halaman produk ~2 per detik. Hapus baris Disallow untuk membuka lagi.
 User-agent: *
-Disallow:
+Disallow: /
