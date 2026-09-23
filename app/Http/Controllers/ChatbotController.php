@@ -11,9 +11,13 @@ use App\Models\WalletLabel;
 use App\Support\Identity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class ChatbotController extends Controller
 {
+    /** Pesan untuk pengunjung saat asisten tak bisa menjawab, apa pun penyebabnya. */
+    private const UNAVAILABLE = 'Maaf, asisten sedang mengalami kendala. Coba lagi nanti ya.';
+
     public function chat(Request $request)
     {
         $data = $request->validate([
@@ -30,8 +34,11 @@ class ChatbotController extends Controller
 
         $key = config('services.openai.key');
         if (!$key) {
+            // Pengunjung cukup tahu asistennya sedang bermasalah; detail konfigurasi
+            // (nama variabel, .env) tidak untuk publik. Penyebabnya dicatat ke log.
+            Log::warning('Chatbot: OPENAI_API_KEY belum di-set, pertanyaan tak bisa dijawab.');
             return response()->json([
-                'reply' => 'Chatbot belum dikonfigurasi. Set OPENAI_API_KEY di .env dulu ya.',
+                'reply' => self::UNAVAILABLE,
                 'products' => [],
             ], 200);
         }
@@ -120,11 +127,15 @@ SYS;
                 'max_tokens'  => 550,
             ]);
             if (!$res->ok()) {
+                // 401 = kunci salah/dicabut, 429 = kuota/limit habis — dua-duanya perlu
+                // ditangani admin, jadi status & potongan respons dicatat.
+                Log::warning('Chatbot: OpenAI membalas HTTP ' . $res->status() . ': ' . mb_substr($res->body(), 0, 200));
                 return response()->json(['reply' => 'Maaf, asisten sedang sibuk. Coba lagi sebentar.', 'products' => $products], 200);
             }
             $reply = $res->json('choices.0.message.content') ?: 'Maaf, aku belum bisa menjawab itu.';
         } catch (\Throwable $e) {
-            return response()->json(['reply' => 'Maaf, terjadi kendala menghubungi asisten.', 'products' => $products], 200);
+            Log::warning('Chatbot: gagal menghubungi OpenAI: ' . $e->getMessage());
+            return response()->json(['reply' => self::UNAVAILABLE, 'products' => $products], 200);
         }
 
         return response()->json(['reply' => $reply, 'products' => $products], 200);
