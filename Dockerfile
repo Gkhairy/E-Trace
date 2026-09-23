@@ -54,6 +54,7 @@ RUN { \
 WORKDIR /app
 COPY --from=vendor /app /app
 COPY docker/nginx.conf.template /etc/nginx/nginx.conf.template
+COPY docker/php-fpm-pool.conf /usr/local/etc/php-fpm.d/zz-etrace.conf
 COPY docker/supervisord.web.conf /etc/supervisor/web.conf
 COPY docker/supervisord.worker.conf /etc/supervisor/worker.conf
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint
