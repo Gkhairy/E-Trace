@@ -19,6 +19,14 @@ http {
     gzip_types text/css application/javascript application/json image/svg+xml;
     gzip_min_length 1024;
 
+    # Crawler AI/scraper yang dikenal. Mereka ditolak di nginx (403) SEBELUM PHP jalan,
+    # jadi nyaris tanpa CPU. robots.txt saja tidak cukup: bot membacanya berkala (GPTBot
+    # sempat menyisir ribuan halaman produk ~2/detik) dan sebagian mengabaikannya.
+    map $http_user_agent $blocked_bot {
+        default 0;
+        "~*(GPTBot|ChatGPT-User|OAI-SearchBot|CCBot|ClaudeBot|Claude-Web|anthropic-ai|Bytespider|PerplexityBot|Amazonbot|Google-Extended|meta-externalagent|Applebot-Extended|Diffbot|ImagesiftBot|YouBot|omgili)" 1;
+    }
+
     server {
         listen ${PORT};
         server_name _;
@@ -30,17 +38,22 @@ http {
         set_real_ip_from 0.0.0.0/0;
 
         # Aset statis (termasuk foto unggahan yang di-mount dari Volume).
+        location = /robots.txt { try_files $uri =404; }
+
         location ~* \.(jpg|jpeg|png|gif|webp|svg|ico|css|js|woff2?|glb|mp4)$ {
+            if ($blocked_bot) { return 403; }
             expires 7d;
             add_header Cache-Control "public, immutable";
             try_files $uri =404;
         }
 
         location / {
+            if ($blocked_bot) { return 403; }
             try_files $uri $uri/ /index.php?$query_string;
         }
 
         location ~ \.php$ {
+            if ($blocked_bot) { return 403; }
             include fastcgi_params;
             fastcgi_pass 127.0.0.1:9000;
             fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
