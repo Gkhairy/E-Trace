@@ -352,7 +352,10 @@ class OrderController extends Controller
      */
     public function simulateTracking(Request $req)
     {
-        abort_unless(auth()->user()->isSupervisor() || config('app.debug'), 403, 'Khusus dev/pengawas.');
+        // Terikat ke environment "local", BUKAN APP_DEBUG: menyalakan debug sebentar di
+        // produksi untuk mencari error dulu membuat pembeli mana pun bisa memalsukan
+        // "penjual telat kirim" lalu memicu refund otomatis atas barang yang sudah diterima.
+        abort_unless(auth()->user()->isSupervisor() || app()->isLocal(), 403, 'Khusus dev/pengawas.');
         $data = $req->validate([
             'order_id' => 'required|string',
             'preset'   => 'required|in:on_time,late_courier,failed_address,not_shipped_late,delivered_unconfirmed',
@@ -411,7 +414,10 @@ class OrderController extends Controller
     /** DEMO (dev/pengawas): jalankan keeper sekali untuk satu order & tampilkan hasilnya. */
     public function runKeeper(Request $req)
     {
-        abort_unless(auth()->user()->isSupervisor() || config('app.debug'), 403, 'Khusus dev/pengawas.');
+        // Terikat ke environment "local", BUKAN APP_DEBUG: menyalakan debug sebentar di
+        // produksi untuk mencari error dulu membuat pembeli mana pun bisa memalsukan
+        // "penjual telat kirim" lalu memicu refund otomatis atas barang yang sudah diterima.
+        abort_unless(auth()->user()->isSupervisor() || app()->isLocal(), 403, 'Khusus dev/pengawas.');
         $data = $req->validate(['order_id' => 'required|string']);
 
         $order = Order::where('order_id', $data['order_id'])

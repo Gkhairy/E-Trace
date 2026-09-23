@@ -20,7 +20,7 @@ class SearchController extends Controller
         $people = collect();
 
         if ($q !== '') {
-            $like = '%' . $q . '%';
+            $like = '%' . $this->escapeLike($q) . '%';
 
             $products = Product::with(['store', 'category'])
                 ->where('name', 'like', $like)
@@ -31,11 +31,18 @@ class SearchController extends Controller
 
             // Orang: cocokkan wallet (siapa saja) ATAU nama publik (hanya yang publik).
             // JANGAN pernah cari/paparkan nama asli, email, atau telepon.
-            $people = User::where(function ($w) use ($like) {
-                    $w->where('wallet_address', 'like', $like)
-                      ->orWhere(function ($x) use ($like) {
-                          $x->where('explorer_public', true)->where('public_name', 'like', $like);
-                      });
+            //
+            // Wallet hanya dicocokkan bila kueri memang berbentuk potongan alamat
+            // (0x + minimal 6 hex). Dulu "%" atau "0" saja sudah mendaftar SEMUA user
+            // terdaftar, termasuk yang memilih tidak tampil publik.
+            $walletPrefix = preg_match('/^0x[a-fA-F0-9]{6,40}$/', $q) ? strtolower($q) . '%' : null;
+            $people = User::where(function ($w) use ($like, $walletPrefix) {
+                    if ($walletPrefix) {
+                        $w->where('wallet_address', 'like', $walletPrefix);
+                    }
+                    $w->orWhere(function ($x) use ($like) {
+                        $x->where('explorer_public', true)->where('public_name', 'like', $like);
+                    });
                 })
                 ->whereNotNull('wallet_address')
                 ->limit(12)->get()
@@ -61,7 +68,7 @@ class SearchController extends Controller
         }
 
         $products = Product::with('store')
-            ->where('name', 'like', '%' . $q . '%')
+            ->where('name', 'like', '%' . $this->escapeLike($q) . '%')
             ->limit(6)->get()
             ->map(fn ($p) => [
                 'id'    => $p->id,
@@ -73,5 +80,11 @@ class SearchController extends Controller
             ]);
 
         return response()->json(['products' => $products, 'q' => $q]);
+    }
+
+    /** Perlakukan % dan _ dari pengguna sebagai teks biasa, bukan wildcard LIKE. */
+    private function escapeLike(string $v): string
+    {
+        return addcslashes($v, '\\%_');
     }
 }

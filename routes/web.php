@@ -30,52 +30,52 @@ Route::get('/welcome', fn() => auth()->check() ? redirect('/products') : view('w
 
 // REGISTER + LOGIN (endpoint sensitif -> rate limit cegah brute force/abuse)
 Route::get('/register', [AuthController::class, 'register']);
-Route::post('/register', [AuthController::class, 'registerStore'])->middleware('throttle:6,1');
+Route::post('/register', [AuthController::class, 'registerStore'])->middleware('throttle:6,1,post-register');
 
 Route::get('/login', [AuthController::class, 'login'])->name('login');
-Route::post('/login', [AuthController::class, 'loginStore'])->middleware('throttle:8,1');
+Route::post('/login', [AuthController::class, 'loginStore'])->middleware('throttle:8,1,post-login');
 
 // LOGIN METAMASK
-Route::get('/api/get-nonce', [AuthController::class, 'getNonce'])->middleware('throttle:20,1');
-Route::post('/login-wallet', [AuthController::class, 'loginWithWallet'])->middleware('throttle:12,1');
+Route::get('/api/get-nonce', [AuthController::class, 'getNonce'])->middleware('throttle:20,1,get-api-get-nonce');
+Route::post('/login-wallet', [AuthController::class, 'loginWithWallet'])->middleware('throttle:12,1,post-login-wallet');
 
 // PIN GATE (setelah password/MetaMask; berbasis sesi, sebelum login penuh)
 Route::get('/pin-challenge', [AuthController::class, 'pinChallengeForm']);
-Route::post('/pin-challenge', [AuthController::class, 'pinChallenge'])->middleware('throttle:10,1');
-Route::post('/pin-create', [AuthController::class, 'pinCreate'])->middleware('throttle:10,1');
+Route::post('/pin-challenge', [AuthController::class, 'pinChallenge'])->middleware('throttle:10,1,post-pin-challenge');
+Route::post('/pin-create', [AuthController::class, 'pinCreate'])->middleware('throttle:10,1,post-pin-create');
 
 // OTP VERIFIKASI EMAIL (berbasis sesi, sebelum login penuh)
 Route::get('/verify-otp', [AuthController::class, 'verifyOtpForm']);
-Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->middleware('throttle:10,1');
-Route::post('/resend-otp', [AuthController::class, 'resendOtp'])->middleware('throttle:5,1');
+Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->middleware('throttle:10,1,post-verify-otp');
+Route::post('/resend-otp', [AuthController::class, 'resendOtp'])->middleware('throttle:5,1,post-resend-otp');
 
 // LUPA / RESET PASSWORD (via OTP email)
 Route::get('/forgot-password', [AuthController::class, 'forgotForm'])->name('password.request');
-Route::post('/forgot-password', [AuthController::class, 'forgotSend'])->middleware('throttle:5,1');
+Route::post('/forgot-password', [AuthController::class, 'forgotSend'])->middleware('throttle:5,1,post-forgot-password');
 Route::get('/reset-password', [AuthController::class, 'resetForm']);
-Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:10,1');
-Route::post('/reset-password/resend', [AuthController::class, 'resendReset'])->middleware('throttle:5,1');
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:10,1,post-reset-password');
+Route::post('/reset-password/resend', [AuthController::class, 'resendReset'])->middleware('throttle:5,1,post-reset-password-resend');
 
 // 2FA — tantangan saat login (berbasis sesi)
 Route::get('/two-factor-challenge', [\App\Http\Controllers\TwoFactorController::class, 'challenge']);
-Route::post('/two-factor-challenge', [\App\Http\Controllers\TwoFactorController::class, 'verify'])->middleware('throttle:10,1');
+Route::post('/two-factor-challenge', [\App\Http\Controllers\TwoFactorController::class, 'verify'])->middleware('throttle:10,1,post-two-factor-challenge');
 
 // LOGOUT
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth');
 
 // TICKER HARGA CRYPTO (PUBLIK) — strip marquee di welcome & katalog.
-Route::get('/api/ticker', [CryptoController::class, 'ticker']);
+Route::get('/api/ticker', [CryptoController::class, 'ticker'])->middleware('throttle:60,1,get-api-ticker');
 
 // CHATBOT AI (PUBLIK, rate-limited). API key OpenAI di backend (.env).
-Route::post('/chatbot', [\App\Http\Controllers\ChatbotController::class, 'chat'])->middleware('throttle:15,1');
+Route::post('/chatbot', [\App\Http\Controllers\ChatbotController::class, 'chat'])->middleware('throttle:15,1,post-chatbot');
 
 // PENCARIAN (produk, toko, orang) — publik
-Route::get('/search', [\App\Http\Controllers\SearchController::class, 'index'])->name('search');
-Route::get('/search/suggest', [\App\Http\Controllers\SearchController::class, 'suggest'])->middleware('throttle:60,1')->name('search.suggest');
+Route::get('/search', [\App\Http\Controllers\SearchController::class, 'index'])->middleware('throttle:60,1,get-search')->name('search');
+Route::get('/search/suggest', [\App\Http\Controllers\SearchController::class, 'suggest'])->middleware('throttle:60,1,get-search-suggest')->name('search.suggest');
 
 // EXPLORER TRANSPARANSI (PUBLIK)
-Route::get('/explorer', [ExplorerController::class, 'index'])->name('explorer.index');
-Route::get('/explorer/{address}', [ExplorerController::class, 'show'])->where('address', '0x[a-fA-F0-9]{40}')->name('explorer.show');
+Route::get('/explorer', [ExplorerController::class, 'index'])->middleware('throttle:60,1,get-explorer')->name('explorer.index');
+Route::get('/explorer/{address}', [ExplorerController::class, 'show'])->where('address', '0x[a-fA-F0-9]{40}')->middleware('throttle:30,1,get-explorer-address')->name('explorer.show');
 
 // DONASI berbasis campaign. Daftar & detail = publik; buat campaign & salurkan = pengawas.
 Route::get('/donate', [DonationController::class, 'index']);
@@ -85,7 +85,7 @@ Route::get('/donate/{slug}/edit', [DonationController::class, 'edit'])->where('s
 Route::post('/donate/{slug}/update', [DonationController::class, 'update'])->where('slug', '[a-z0-9\-]+')->middleware('auth');
 Route::post('/donate/{slug}/delete', [DonationController::class, 'destroy'])->where('slug', '[a-z0-9\-]+')->middleware('auth');
 Route::get('/donate/{slug}', [DonationController::class, 'show'])->where('slug', '[a-z0-9\-]+');
-Route::post('/donation/donate', [DonationController::class, 'donate'])->middleware('throttle:20,1');
+Route::post('/donation/donate', [DonationController::class, 'donate'])->middleware('throttle:20,1,post-donation-donate');
 Route::post('/donation/disburse', [DonationController::class, 'disburse'])->middleware('auth');
 
 // BAYAR PERMINTAAN UANG (publik — siapa saja bisa membayar via link/QR).
@@ -114,14 +114,14 @@ Route::middleware('auth')->group(function () {
 
     // CHECKOUT
     Route::get('/checkout', [CheckoutController::class, 'index']);
-    Route::post('/shipping/quote', [\App\Http\Controllers\ShippingController::class, 'quote'])->middleware('throttle:60,1');
+    Route::post('/shipping/quote', [\App\Http\Controllers\ShippingController::class, 'quote'])->middleware('throttle:60,1,post-shipping-quote');
 
     // PROFIL PUBLIK (semua user)
     Route::get('/profile', [ProfileController::class, 'edit']);
     Route::post('/profile', [ProfileController::class, 'update']);
 
     // SET PIN (user lama yang belum punya PIN)
-    Route::post('/pin/setup', [AuthController::class, 'setupPin'])->middleware('throttle:8,1');
+    Route::post('/pin/setup', [AuthController::class, 'setupPin'])->middleware('throttle:8,1,post-pin-setup');
 
     // 2FA (opsional) — kelola dari profil
     Route::get('/two-factor/setup', [\App\Http\Controllers\TwoFactorController::class, 'setup']);
@@ -135,36 +135,36 @@ Route::middleware('auth')->group(function () {
 
     // DOMPET (kirim TLKM & minta uang)
     Route::get('/wallet', [WalletController::class, 'index']);
-    Route::post('/wallet/send', [WalletController::class, 'send'])->middleware('throttle:20,1');
-    Route::post('/wallet/lookup', [WalletController::class, 'lookup'])->middleware('throttle:30,1');
+    Route::post('/wallet/send', [WalletController::class, 'send'])->middleware('throttle:20,1,post-wallet-send');
+    Route::post('/wallet/lookup', [WalletController::class, 'lookup'])->middleware('throttle:30,1,post-wallet-lookup');
     Route::post('/wallet/requests', [WalletController::class, 'createRequest']);
 
     // PEMBAYARAN PAKAI PIN (embedded wallet) — tanda tangan tx di backend
-    Route::post('/pin/transfer', [\App\Http\Controllers\PinTxController::class, 'transfer'])->middleware('throttle:15,1');
-    Route::post('/pin/donate',   [\App\Http\Controllers\PinTxController::class, 'donate'])->middleware('throttle:15,1');
-    Route::post('/pin/checkout', [\App\Http\Controllers\PinTxController::class, 'checkout'])->middleware('throttle:15,1');
-    Route::post('/pin/community',[\App\Http\Controllers\PinTxController::class, 'community'])->middleware('throttle:15,1');
-    Route::post('/pin/paylater-deposit',  [\App\Http\Controllers\PinTxController::class, 'paylaterDeposit'])->middleware('throttle:15,1');
-    Route::post('/pin/paylater-borrow',   [\App\Http\Controllers\PinTxController::class, 'paylaterBorrow'])->middleware('throttle:15,1');
-    Route::post('/pin/paylater-repay',    [\App\Http\Controllers\PinTxController::class, 'paylaterRepay'])->middleware('throttle:15,1');
-    Route::post('/pin/paylater-withdraw', [\App\Http\Controllers\PinTxController::class, 'paylaterWithdraw'])->middleware('throttle:15,1');
-    Route::post('/pin/paylater-supply',   [\App\Http\Controllers\PinTxController::class, 'paylaterSupply'])->middleware('throttle:15,1');
-    Route::post('/pin/paylater-withdraw-supply', [\App\Http\Controllers\PinTxController::class, 'paylaterWithdrawSupply'])->middleware('throttle:15,1');
+    Route::post('/pin/transfer', [\App\Http\Controllers\PinTxController::class, 'transfer'])->middleware('throttle:15,1,post-pin-transfer');
+    Route::post('/pin/donate',   [\App\Http\Controllers\PinTxController::class, 'donate'])->middleware('throttle:15,1,post-pin-donate');
+    Route::post('/pin/checkout', [\App\Http\Controllers\PinTxController::class, 'checkout'])->middleware('throttle:15,1,post-pin-checkout');
+    Route::post('/pin/community',[\App\Http\Controllers\PinTxController::class, 'community'])->middleware('throttle:15,1,post-pin-community');
+    Route::post('/pin/paylater-deposit',  [\App\Http\Controllers\PinTxController::class, 'paylaterDeposit'])->middleware('throttle:15,1,post-pin-paylater-deposit');
+    Route::post('/pin/paylater-borrow',   [\App\Http\Controllers\PinTxController::class, 'paylaterBorrow'])->middleware('throttle:15,1,post-pin-paylater-borrow');
+    Route::post('/pin/paylater-repay',    [\App\Http\Controllers\PinTxController::class, 'paylaterRepay'])->middleware('throttle:15,1,post-pin-paylater-repay');
+    Route::post('/pin/paylater-withdraw', [\App\Http\Controllers\PinTxController::class, 'paylaterWithdraw'])->middleware('throttle:15,1,post-pin-paylater-withdraw');
+    Route::post('/pin/paylater-supply',   [\App\Http\Controllers\PinTxController::class, 'paylaterSupply'])->middleware('throttle:15,1,post-pin-paylater-supply');
+    Route::post('/pin/paylater-withdraw-supply', [\App\Http\Controllers\PinTxController::class, 'paylaterWithdrawSupply'])->middleware('throttle:15,1,post-pin-paylater-withdraw-supply');
 
     // PAYLATER (kredit berjaminan on-chain DENGAN BUNGA, DEMO) — UI digabung ke halaman Wallet.
     Route::get('/paylater', fn () => redirect('/wallet')); // link lama/bookmark -> Dompet
-    Route::post('/paylater/record', [\App\Http\Controllers\PaylaterController::class, 'record'])->middleware('throttle:15,1');
+    Route::post('/paylater/record', [\App\Http\Controllers\PaylaterController::class, 'record'])->middleware('throttle:15,1,post-paylater-record');
 
     // BAYAR QRIS pakai stablecoin — PROTOTIPE (receipt simulasi, tanpa settlement nyata)
-    Route::post('/qris/pay', [\App\Http\Controllers\QrisController::class, 'pay'])->middleware('throttle:15,1');
+    Route::post('/qris/pay', [\App\Http\Controllers\QrisController::class, 'pay'])->middleware('throttle:15,1,post-qris-pay');
 
     // CHAT (penjual ↔ pembeli, termasuk tawar-menawar)
     Route::get('/chat/conversations', [\App\Http\Controllers\ChatController::class, 'conversations']);
     Route::get('/chat/thread', [\App\Http\Controllers\ChatController::class, 'thread']);
     Route::get('/chat/unread-count', [\App\Http\Controllers\ChatController::class, 'unreadCount']);
-    Route::post('/chat/send', [\App\Http\Controllers\ChatController::class, 'send'])->middleware('throttle:60,1');
-    Route::post('/chat/offer', [\App\Http\Controllers\ChatController::class, 'offer'])->middleware('throttle:30,1');
-    Route::post('/chat/respond', [\App\Http\Controllers\ChatController::class, 'respond'])->middleware('throttle:30,1');
+    Route::post('/chat/send', [\App\Http\Controllers\ChatController::class, 'send'])->middleware('throttle:60,1,post-chat-send');
+    Route::post('/chat/offer', [\App\Http\Controllers\ChatController::class, 'offer'])->middleware('throttle:30,1,post-chat-offer');
+    Route::post('/chat/respond', [\App\Http\Controllers\ChatController::class, 'respond'])->middleware('throttle:30,1,post-chat-respond');
 
     // NOTIFIKASI IN-APP
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
@@ -184,18 +184,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/community/create', [CommunityWalletController::class, 'create']);
     Route::post('/community', [CommunityWalletController::class, 'store']);
     Route::get('/community/{id}', [CommunityWalletController::class, 'show'])->whereNumber('id');
-    Route::post('/community/withdraw', [CommunityWalletController::class, 'withdraw'])->middleware('throttle:15,1');
-    Route::post('/community/propose', [CommunityWalletController::class, 'propose'])->middleware('throttle:15,1');
+    Route::post('/community/withdraw', [CommunityWalletController::class, 'withdraw'])->middleware('throttle:15,1,post-community-withdraw');
+    Route::post('/community/propose', [CommunityWalletController::class, 'propose'])->middleware('throttle:15,1,post-community-propose');
     // Checkout: usulkan belanja memakai dana komunitas (multisig Mode B).
-    Route::post('/community/purchase-propose', [CommunityWalletController::class, 'proposePurchase'])->middleware('throttle:10,1');
+    Route::post('/community/purchase-propose', [CommunityWalletController::class, 'proposePurchase'])->middleware('throttle:10,1,post-community-purchase-propose');
     // Konfirmasi terima / sengketa untuk order yang dibayar dana komunitas (ditandatangani kunci komunitas).
-    Route::post('/community/order-action', [CommunityWalletController::class, 'orderAction'])->middleware('throttle:15,1');
-    Route::post('/community/approve', [CommunityWalletController::class, 'approve'])->middleware('throttle:15,1');
-    Route::post('/community/member-propose', [CommunityWalletController::class, 'memberPropose'])->middleware('throttle:15,1');
-    Route::post('/community/owner-propose', [CommunityWalletController::class, 'ownerPropose'])->middleware('throttle:15,1');
-    Route::post('/community/deposit-record', [CommunityWalletController::class, 'recordDeposit'])->middleware('throttle:30,1');
-    Route::post('/community/reject', [CommunityWalletController::class, 'reject'])->middleware('throttle:15,1');
-    Route::post('/community/member-nickname', [CommunityWalletController::class, 'setMemberNickname'])->middleware('throttle:20,1');
+    Route::post('/community/order-action', [CommunityWalletController::class, 'orderAction'])->middleware('throttle:15,1,post-community-order-action');
+    Route::post('/community/approve', [CommunityWalletController::class, 'approve'])->middleware('throttle:15,1,post-community-approve');
+    Route::post('/community/member-propose', [CommunityWalletController::class, 'memberPropose'])->middleware('throttle:15,1,post-community-member-propose');
+    Route::post('/community/owner-propose', [CommunityWalletController::class, 'ownerPropose'])->middleware('throttle:15,1,post-community-owner-propose');
+    Route::post('/community/deposit-record', [CommunityWalletController::class, 'recordDeposit'])->middleware('throttle:30,1,post-community-deposit-record');
+    Route::post('/community/reject', [CommunityWalletController::class, 'reject'])->middleware('throttle:15,1,post-community-reject');
+    Route::post('/community/member-nickname', [CommunityWalletController::class, 'setMemberNickname'])->middleware('throttle:20,1,post-community-member-nickname');
 
     // DASHBOARD SELLER
     Route::get('/seller', [SellerController::class, 'dashboard']);
@@ -205,7 +205,7 @@ Route::middleware('auth')->group(function () {
 
     // LAPORAN PENJUALAN (Excel/PDF, harian & bulanan) — hanya pemilik toko.
     Route::get('/seller/reports/download', [\App\Http\Controllers\SellerReportController::class, 'download'])
-        ->middleware('throttle:20,1');
+        ->middleware('throttle:20,1,r-line208');
 
     // ULASAN (pembeli)
     Route::post('/review', [ReviewController::class, 'store']);
@@ -234,5 +234,5 @@ Route::get('/orders/updates', [OrderController::class, 'updates'])->middleware('
 Route::post('/order/store', [OrderController::class, 'store'])->middleware('auth');
 Route::post('/order/item-status', [OrderController::class, 'updateItemStatus'])->middleware('auth');
 // DEMO (dev/pengawas): simulasi tracking + jalankan keeper sekali.
-Route::post('/orders/simulate-tracking', [OrderController::class, 'simulateTracking'])->middleware(['auth', 'throttle:30,1']);
-Route::post('/orders/run-keeper', [OrderController::class, 'runKeeper'])->middleware(['auth', 'throttle:20,1']);
+Route::post('/orders/simulate-tracking', [OrderController::class, 'simulateTracking'])->middleware(['auth', 'throttle:30,1,post-orders-simulate-tracking']);
+Route::post('/orders/run-keeper', [OrderController::class, 'runKeeper'])->middleware(['auth', 'throttle:20,1,post-orders-run-keeper']);

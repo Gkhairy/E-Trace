@@ -48,6 +48,7 @@ RUN { \
       echo 'upload_max_filesize=12M'; \
       echo 'post_max_size=12M'; \
       echo 'memory_limit=256M'; \
+      echo 'expose_php=Off'; \
     } > /usr/local/etc/php/conf.d/app.ini
 
 WORKDIR /app
