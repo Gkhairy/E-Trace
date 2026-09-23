@@ -31,6 +31,7 @@ RUN apk add --no-cache nginx supervisor gettext \
         gmp libzip icu-libs freetype libjpeg-turbo libpng \
     && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
         gmp-dev libzip-dev icu-dev freetype-dev libjpeg-turbo-dev libpng-dev \
+        linux-headers \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" \
         gmp bcmath pdo_mysql zip exif pcntl opcache gd sockets \
