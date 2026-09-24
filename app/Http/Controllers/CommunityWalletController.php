@@ -364,7 +364,7 @@ class CommunityWalletController extends Controller
 
         $amt = $this->fmtAmt($snap['total']);
         $this->notifyOtherSigners($wallet, 'Usulan belanja butuh persetujuan',
-            $this->meName() . " ingin belanja {$count} barang senilai {$amt} TLKM memakai dana \"{$wallet->name}\". Butuh persetujuan semua penanda tangan.", '📝');
+            $this->meName() . " ingin belanja {$count} barang senilai {$amt} TLKM memakai dana \"{$wallet->name}\". Butuh persetujuan semua penanda tangan.", '🛒');
 
         return response()->json([
             'success'     => true,
@@ -658,7 +658,7 @@ class CommunityWalletController extends Controller
                 $p->update(['status' => 'executed', 'tx_hash' => $hash]);
                 $amt = $this->fmtAmt($p->amount);
                 $this->notifyAllMembers($wallet, 'Belanja komunitas dibayar',
-                    "Usulan disetujui — {$amt} TLKM dibayarkan ke escrow dari \"{$wallet->name}\".", '💸');
+                    "Usulan disetujui — {$amt} TLKM dibayarkan ke escrow dari \"{$wallet->name}\".", '🛒');
                 \App\Support\Notify::send((int) $p->proposer_id, 'order', 'Belanja komunitas disetujui',
                     'Pesananmu sudah dibayar dari dana komunitas dan ditahan escrow.', '/orders', '✅');
                 return ['executed' => true, 'tx_hash' => $hash];
