@@ -292,7 +292,9 @@
 
     // Helper: POST JSON ke endpoint PIN, kembalikan tx_hash (lempar pesan bila gagal).
     async function pinTx(url, body) {
-        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN }, body: JSON.stringify(body) });
+        // Accept JSON: tanpa ini Laravel membalas error sebagai halaman HTML, dan pesan
+        // aslinya (PIN salah, gas habis, dst.) hilang jadi "Transaksi PIN gagal."
+        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN }, body: JSON.stringify(body) });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.tx_hash) { throw new Error(data.message || 'Transaksi PIN gagal.'); }
         return data.tx_hash;

@@ -17,6 +17,7 @@ class ChainSigner
 {
     private string $rpc;
     private int $chainId;
+    private ?string $lastError = null; // pesan error RPC terakhir, untuk pesan gagal yang jelas
 
     public function __construct()
     {
@@ -30,9 +31,11 @@ class ChainSigner
             'jsonrpc' => '2.0', 'id' => 1, 'method' => $method, 'params' => $params,
         ]);
         if (!$res->ok()) {
+            $this->lastError = 'RPC HTTP ' . $res->status();
             return null;
         }
         $json = $res->json();
+        $this->lastError = $json['error']['message'] ?? null;
         return $json['result'] ?? null; // error → null (dilempar oleh pemanggil)
     }
 
@@ -119,7 +122,10 @@ class ChainSigner
         $signed = '0x' . $tx->sign($privHex);
         $hash = $this->rpc('eth_sendRawTransaction', [$signed]);
         if (!$hash) {
-            throw new \RuntimeException('Gagal menyiarkan transaksi (saldo gas kurang / RPC error).');
+            $err = (string) $this->lastError;
+            throw new \App\Exceptions\ChainTxException(str_contains(strtolower($err), 'insufficient funds')
+                ? 'Saldo tBNB untuk biaya gas tidak cukup. Coba lagi sebentar lagi.'
+                : 'Gagal mengirim transaksi ke blockchain' . ($err !== '' ? ': ' . $err : '.'));
         }
         return $hash;
     }

@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\EmbeddedWallet;
 use App\Services\ChainSigner;
 use App\Services\ChainVerifier;
+use App\Services\GasTopUp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -724,18 +725,11 @@ class CommunityWalletController extends Controller
         $user->forceFill(['pin_attempts' => 0])->save();
     }
 
-    /** Preflight: dompet komunitas butuh tBNB untuk biaya gas (auto-drip bila tersedia). */
+    /** Preflight: dompet komunitas butuh tBNB untuk biaya gas (diisi otomatis bila menipis). */
     private function ensureGas(CommunityWallet $wallet): void
     {
-        $signer = new ChainSigner();
-        $eth = $signer->ethBalance($wallet->address);
-        if ($eth !== null && $eth < 0.0003) {
-            // Coba isi otomatis bila funder gas tersedia; kalau tetap kosong, pesan jelas.
-            $this->gasDrip($wallet);
-            $eth = $signer->ethBalance($wallet->address);
-            abort_if($eth !== null && $eth < 0.0003, 422,
-                'Dompet komunitas belum punya gas (tBNB testnet — gratis, bukan uang nyata). Isi sedikit tBNB dari faucet BNB Testnet (https://testnet.bnbchain.org/faucet-smart) ke alamat dompet (' . $wallet->address . ') lalu coba lagi.');
-        }
+        (new GasTopUp(new ChainSigner()))->ensure($wallet->address,
+            'Dompet komunitas belum punya gas (tBNB testnet — gratis, bukan uang nyata). Isi sedikit tBNB dari faucet BNB Testnet (https://testnet.bnbchain.org/faucet-smart) ke alamat dompet (' . $wallet->address . ') lalu coba lagi.');
     }
 
     private function communitySign(CommunityWallet $wallet, ChainSigner $signer, string $to, string|float $amount): string
@@ -758,6 +752,7 @@ class CommunityWalletController extends Controller
         return $u && $u->wallet_address ? [strtolower($u->wallet_address), $u->public_name ?: $u->name] : [null, null];
     }
 
+    /** Isi gas awal saat dompet dibuat (best-effort, tidak menunggu ter-mine). */
     private function gasDrip(CommunityWallet $wallet): void
     {
         $priv = (string) config('wallet.gas_private_key', '');

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Campaign;
 use App\Services\ChainSigner;
 use App\Services\EmbeddedWallet;
+use App\Services\GasTopUp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -53,8 +54,12 @@ class PinTxController extends Controller
         }
 
         $user->forceFill(['pin_attempts' => 0])->save();
-        $priv = (new EmbeddedWallet())->decrypt($user, $pin);
+        $wallet = new EmbeddedWallet();
+        $priv = $wallet->decrypt($user, $pin);
         abort_unless($priv, 422, 'Gagal membuka wallet (PIN salah?).');
+
+        // Gas drip saat daftar cuma sekali; isi ulang tBNB bila sudah menipis.
+        app(GasTopUp::class)->ensure($wallet->addressFromPrivate($priv));
         return $priv;
     }
 
