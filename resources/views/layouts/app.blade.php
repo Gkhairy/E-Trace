@@ -872,16 +872,27 @@
         }
     }
 
-    // Provider read-only untuk baca saldo tanpa popup MetaMask.
-    // Embedded wallet (tanpa MetaMask) tetap bisa baca lewat RPC publik.
-    function readProvider() {
-        if (window.ethereum) return new ethers.BrowserProvider(window.ethereum);
-        return new ethers.JsonRpcProvider(TARGET_NETWORK.rpcUrls[0]);
+    // Provider read-only untuk baca saldo tanpa popup MetaMask. SELALU lewat RPC jaringan
+    // target, bukan window.ethereum: dompet bawaan browser (Brave Wallet, MetaMask) bisa
+    // sedang di jaringan lain, lalu balanceOf gagal dan saldo tidak tampil sama sekali.
+    const READ_RPCS = [TARGET_NETWORK.rpcUrls[0], 'https://bsc-testnet-rpc.publicnode.com'];
+    const _readProviders = [];
+    function readProvider(i = 0) {
+        if (!_readProviders[i]) {
+            const net = ethers.Network.from(Number(TARGET_NETWORK.chainIdNum));
+            _readProviders[i] = new ethers.JsonRpcProvider(READ_RPCS[i], net, { staticNetwork: net });
+        }
+        return _readProviders[i];
     }
     async function fetchTlkmBalance(address) {
-        const token = new ethers.Contract(TLKM_ADDRESS, ERC20_ABI, readProvider());
-        const bal = await token.balanceOf(address);
-        return ethers.formatUnits(bal, TOKEN_DECIMALS);
+        let lastErr;
+        for (let i = 0; i < READ_RPCS.length; i++) { // RPC cadangan bila yang utama gagal
+            try {
+                const token = new ethers.Contract(TLKM_ADDRESS, ERC20_ABI, readProvider(i));
+                return ethers.formatUnits(await token.balanceOf(address), TOKEN_DECIMALS);
+            } catch (e) { lastErr = e; }
+        }
+        throw lastErr;
     }
 
     // Tampilkan saldo TLKM di pill untuk sebuah alamat (best-effort).
