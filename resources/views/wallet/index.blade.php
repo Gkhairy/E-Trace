@@ -6,6 +6,43 @@
 <h1 class="text-2xl font-bold text-slate-900 mb-1">Dompet TLKM</h1>
 <p class="text-sm text-slate-500 mb-6">Kirim TLKM, minta uang (link &amp; QR), atau <b>bayar QRIS pakai stablecoin</b>.</p>
 
+{{-- ===== SALDO ===== --}}
+<div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 sm:p-6 mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-5">
+    <div class="min-w-0">
+        <p class="text-sm font-medium text-slate-500">Saldo TLKM</p>
+        @if($balance !== null)
+            <p class="mt-1 flex items-baseline gap-2">
+                <span class="text-4xl font-extrabold tracking-tight text-slate-900 tabular-nums">{{ $fmt($balance) }}</span>
+                <span class="text-base font-bold text-blue-600">TLKM</span>
+            </p>
+        @else
+            <p class="mt-1 text-4xl font-extrabold text-slate-300">—</p>
+            <p class="text-xs text-slate-500 mt-1">Saldo belum bisa dibaca dari blockchain. Muat ulang halaman sebentar lagi.</p>
+        @endif
+        @if($wallet)
+            <div class="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                <span class="font-mono text-slate-600 bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1">{{ substr($wallet, 0, 6) }}…{{ substr($wallet, -4) }}</span>
+                <button type="button" onclick="navigator.clipboard.writeText(@js($wallet)).then(() => showToast('Alamat wallet disalin', 'success'))" class="inline-flex items-center gap-1 text-slate-600 hover:text-blue-600 font-medium transition">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke-width="1.8"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Salin
+                </button>
+                <a href="/explorer/{{ $wallet }}" class="inline-flex items-center gap-1 text-slate-600 hover:text-blue-600 font-medium transition">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 3h6v6M10 14L21 3M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/></svg>Riwayat on-chain
+                </a>
+            </div>
+        @endif
+    </div>
+    <div class="grid grid-cols-2 gap-3 sm:w-80 shrink-0">
+        <div class="rounded-xl bg-green-50 border border-green-100 px-4 py-3">
+            <p class="text-[11px] font-medium text-green-700">Masuk · 30 hari</p>
+            <p class="text-lg font-bold text-green-700 tabular-nums mt-0.5">+{{ $fmt($flow['in']) }}</p>
+        </div>
+        <div class="rounded-xl bg-slate-50 border border-slate-200 px-4 py-3">
+            <p class="text-[11px] font-medium text-slate-500">Keluar · 30 hari</p>
+            <p class="text-lg font-bold text-slate-700 tabular-nums mt-0.5">−{{ $fmt($flow['out']) }}</p>
+        </div>
+    </div>
+</div>
+
 {{-- ===== BAYAR QRIS (PROTOTIPE) ===== --}}
 <div class="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl shadow-sm p-5 mb-6 flex items-center justify-between gap-4">
     <div class="min-w-0">
@@ -60,7 +97,7 @@
 
         @if($requests->isNotEmpty())
             <div class="mt-5 pt-4 border-t border-slate-100 space-y-2">
-                <p class="text-xs font-medium text-slate-500 mb-1">Permintaan kamu</p>
+                <p class="text-xs font-medium text-slate-500 mb-1">Link permintaan aktif</p>
                 @foreach($requests as $r)
                     <div class="flex items-center justify-between gap-3 text-sm">
                         <div class="min-w-0">

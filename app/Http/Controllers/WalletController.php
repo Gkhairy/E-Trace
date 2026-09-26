@@ -65,7 +65,16 @@ class WalletController extends Controller
                 ])
             : collect();
 
-        $requests = PaymentRequest::where('user_id', auth()->id())->latest()->get();
+        // Hanya permintaan terbaru yang ditampilkan (yang lama dihapus saat membuat yang baru).
+        $requests = PaymentRequest::where('user_id', auth()->id())->latest()->limit(1)->get();
+
+        // Saldo TLKM live dari kontrak token + ringkasan arus 30 hari dari transfer tercatat.
+        $balance = $wallet ? (new ChainVerifier())->tlkmBalance($wallet) : null;
+        $since   = now()->subDays(30);
+        $flow = [
+            'in'  => $wallet ? (float) Transfer::where('to_wallet', $wallet)->where('created_at', '>=', $since)->sum('amount') : 0,
+            'out' => $wallet ? (float) Transfer::where('from_wallet', $wallet)->where('created_at', '>=', $since)->sum('amount') : 0,
+        ];
 
         // ===== Paylater (kredit berjaminan on-chain, DEMO). Kebenaran posisi dari chain. =====
         // Aman-nonaktif bila PAYLATER_ADDRESS kosong.
@@ -126,7 +135,7 @@ class WalletController extends Controller
         }
         $paylaterHistory = PaylaterLoan::where('user_id', auth()->id())->latest()->limit(20)->get();
 
-        return view('wallet.index', compact('wallet', 'transfers', 'requests', 'paylater', 'paylaterHistory'));
+        return view('wallet.index', compact('wallet', 'balance', 'flow', 'transfers', 'requests', 'paylater', 'paylaterHistory'));
     }
 
     /** Catat transfer TLKM setelah verifikasi on-chain. */
@@ -180,6 +189,9 @@ class WalletController extends Controller
         do {
             $code = Str::upper(Str::random(8));
         } while (PaymentRequest::where('code', $code)->exists());
+
+        // Satu link aktif per user: link lama tidak berlaku lagi setelah membuat yang baru.
+        PaymentRequest::where('user_id', auth()->id())->delete();
 
         PaymentRequest::create([
             'code'    => $code,

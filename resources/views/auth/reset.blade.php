@@ -12,7 +12,7 @@
 <body class="bg-slate-100 min-h-screen flex items-center justify-center p-4 text-slate-900">
     <div class="w-full max-w-md">
         <div class="flex items-center justify-center gap-2 mb-6">
-            <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center font-extrabold text-white">E</div>
+            <img src="{{ asset('favicon.svg') }}" alt="" class="w-9 h-9 shrink-0">
             <span class="text-xl font-bold tracking-tight">E-<span class="text-blue-600">Trace</span></span>
         </div>
 

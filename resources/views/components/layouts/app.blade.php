@@ -30,7 +30,7 @@
 
         <!-- LOGO -->
         <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-extrabold text-sm text-white">E</div>
+            <img src="{{ asset('favicon.svg') }}" alt="" class="w-8 h-8 shrink-0">
             <span class="text-lg font-bold">E-<span class="text-blue-600">Trace</span></span>
         </div>
 

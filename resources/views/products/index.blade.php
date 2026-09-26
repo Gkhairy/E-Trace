@@ -82,7 +82,7 @@
 @php
     $u = auth()->user();
     $sc = [
-        ['/explorer', __('catalog.sc_explorer'), 'bg-indigo-50 text-indigo-600', 'M11 3a8 8 0 105.29 14.29l4.7 4.71 1.42-1.42-4.71-4.7A8 8 0 0011 3zm0 2a6 6 0 110 12 6 6 0 010-12z'],
+        ['/explorer', __('catalog.sc_explorer'), 'bg-indigo-50 text-indigo-600', 'M21 21l-4.35-4.35M19 11a8 8 0 11-16 0 8 8 0 0116 0z'],
         ['/donate', __('catalog.sc_donate'), 'bg-rose-50 text-rose-600', 'M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 10-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z'],
     ];
     if ($u) {

@@ -57,12 +57,7 @@
         /* ---------- Merek ---------- */
         .top { padding: 24px clamp(20px, 5vw, 48px); }
         .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; border-radius: 10px; }
-        .brand-tile {
-            width: 32px; height: 32px; border-radius: 8px;
-            display: grid; place-items: center;
-            background: var(--brand); color: #fff;
-            font-weight: 800; font-size: 14px;
-        }
+        .brand-tile { width: 32px; height: 32px; display: block; }
         .brand-word { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
         .brand-word b { color: var(--brand); font-weight: 700; }
 
@@ -185,7 +180,7 @@
 <body>
     <header class="top">
         <a href="{{ url('/') }}" class="brand" aria-label="E-Trace — {{ __('errors.home') }}">
-            <span class="brand-tile" aria-hidden="true">E</span>
+            <img class="brand-tile" src="{{ asset('favicon.svg') }}" alt="" aria-hidden="true">
             <span class="brand-word" aria-hidden="true">E-<b>Trace</b></span>
         </a>
     </header>
