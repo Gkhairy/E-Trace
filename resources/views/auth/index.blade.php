@@ -98,11 +98,6 @@
                 <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 rounded-xl mb-4 text-sm">{{ $errors->first() }}</div>
             @endif
 
-            {{-- Anti-bot untuk KEDUA cara login (wallet & password), jadi diletakkan di atas keduanya. --}}
-            @if(\App\Services\Turnstile::enabled())
-                <div id="loginTurnstile" class="cf-turnstile flex justify-center mb-4" data-sitekey="{{ \App\Services\Turnstile::siteKey() }}"></div>
-            @endif
-
             <button id="mmBtn" type="button" onclick="loginWithWallet()"
                 class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-semibold transition flex items-center justify-center gap-2 mb-4">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 10h18M7 15h.01M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
@@ -115,13 +110,17 @@
                 <div class="h-px bg-slate-200 flex-1"></div>
             </div>
 
-            <form method="POST" action="/login" id="loginPass" class="space-y-3" onsubmit="attachTurnstile(this)">
+            <form method="POST" action="/login" id="loginPass" class="space-y-3">
                 @csrf
                 <input name="email" type="email" value="{{ !$startRegister ? old('email') : '' }}" required placeholder="{{ __('auth.email') }}" class="in-field">
                 <input name="password" type="password" required placeholder="{{ __('auth.password') }}" class="in-field">
                 <div class="text-right -mt-1">
                     <a href="/forgot-password" class="text-xs text-blue-600 hover:underline">{{ __('auth.forgot_password') }}</a>
                 </div>
+                {{-- Widget ini juga dipakai tombol login wallet di atas (tokennya dibaca JS). --}}
+                @if(\App\Services\Turnstile::enabled())
+                    <div id="loginTurnstile" class="cf-turnstile flex justify-center" data-theme="light" data-sitekey="{{ \App\Services\Turnstile::siteKey() }}"></div>
+                @endif
                 <button class="w-full py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm mt-1">{{ __('auth.sign_in') }}</button>
             </form>
             <p class="text-[11px] text-slate-400 text-center mt-2">{{ __('auth.pin_after_pw') }}</p>
@@ -196,7 +195,7 @@
                 </div>
 
                 @if(\App\Services\Turnstile::enabled())
-                    <div class="cf-turnstile flex justify-center" data-sitekey="{{ \App\Services\Turnstile::siteKey() }}"></div>
+                    <div class="cf-turnstile flex justify-center" data-theme="light" data-sitekey="{{ \App\Services\Turnstile::siteKey() }}"></div>
                 @endif
                 <button type="button" onclick="openPinModal()" class="w-full py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm mt-1">{{ __('auth.create_account') }}</button>
                 <p class="text-[11px] text-slate-400 text-center">{{ __('auth.pin_after') }}</p>
@@ -431,7 +430,7 @@
         }
     }
 
-    // ===== Turnstile login (satu widget di atas, dipakai login wallet & password) =====
+    // ===== Turnstile login (widget di form password, dipakai juga oleh login wallet) =====
     const TURNSTILE_ON = @json(\App\Services\Turnstile::enabled());
     function loginTurnstileToken() {
         const el = document.querySelector('#loginTurnstile [name="cf-turnstile-response"]');
@@ -439,18 +438,6 @@
     }
     function resetLoginTurnstile() {
         try { const el = document.getElementById('loginTurnstile'); if (window.turnstile && el) turnstile.reset(el); } catch (_) {}
-    }
-    // Widget ada di luar form password: salin tokennya ke form saat submit.
-    function attachTurnstile(form) {
-        if (!TURNSTILE_ON) return;
-        let input = form.querySelector('input[name="cf-turnstile-response"]');
-        if (!input) {
-            input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'cf-turnstile-response';
-            form.appendChild(input);
-        }
-        input.value = loginTurnstileToken();
     }
 
     // ===== LOGIN dengan Wallet (nonce + tanda tangan) =====
