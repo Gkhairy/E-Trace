@@ -23,6 +23,7 @@ Schedule::command('settlement:keep')->daily()->withoutOverlapping();
 // halaman dibuka. Resumable lewat `indexer_cursors`.
 Schedule::command('transfers:index')->everyMinute()->withoutOverlapping();
 
-// Radar Bencana AI: pantau BMKG, GDACS, dan berita tiap 15 menit. Skor AI 70+ membuka
-// donasi otomatis; skor sedang masuk antrean pengawas (config/disaster.php).
-Schedule::command('disaster:scan')->everyFifteenMinutes()->withoutOverlapping();
+// Radar Bencana AI: pantau BMKG, GDACS, dan berita sekali sehari (hemat token AI).
+// Skor AI 70+ membuka donasi otomatis; skor sedang masuk antrean pengawas
+// (config/disaster.php). Pengawas tetap bisa memindai kapan saja lewat "Scan sekarang".
+Schedule::command('disaster:scan')->dailyAt('07:00')->withoutOverlapping();

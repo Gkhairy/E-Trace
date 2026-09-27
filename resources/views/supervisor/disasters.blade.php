@@ -25,7 +25,7 @@
             <span class="relative flex w-2.5 h-2.5"><span class="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping"></span><span class="relative inline-flex rounded-full w-2.5 h-2.5 bg-green-500"></span></span>
         </h2>
         <p class="text-sm text-slate-500 mt-1">
-            Memantau <b class="text-slate-700">BMKG</b>, <b class="text-slate-700">GDACS</b>, dan berita Indonesia tiap 15 menit. AI menilai tiap kejadian.
+            Memantau <b class="text-slate-700">BMKG</b>, <b class="text-slate-700">GDACS</b>, dan berita Indonesia setiap hari pukul 07.00 WIB (atau kapan saja lewat <b class="text-slate-700">Scan sekarang</b>). AI menilai tiap kejadian.
             Skor AI <b class="text-slate-700">70 ke atas</b> langsung membuka donasi (maks. {{ config('disaster.max_auto_per_day') }} per hari), sedangkan skor 45–69 menunggu persetujuanmu.
         </p>
         @if($lastScan)
