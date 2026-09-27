@@ -474,6 +474,12 @@ class AuthController extends Controller
             'signature' => 'required',
         ]);
 
+        // Cloudflare Turnstile, sama seperti login password: tanpa ini login wallet
+        // menjadi jalan pintas yang melewati anti-bot. Aman-nonaktif bila belum dikonfigurasi.
+        if (!\App\Services\Turnstile::verify($request->input('cf-turnstile-response'), $request->ip())) {
+            return response()->json(['error' => 'Verifikasi anti-bot gagal. Centang "Verify you are human" lalu coba lagi.'], 422);
+        }
+
         $wallet = strtolower($request->wallet_address);
 
         $user = User::where('wallet_address', $wallet)->first();

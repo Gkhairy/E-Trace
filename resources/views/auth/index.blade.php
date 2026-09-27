@@ -98,6 +98,11 @@
                 <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 rounded-xl mb-4 text-sm">{{ $errors->first() }}</div>
             @endif
 
+            {{-- Anti-bot untuk KEDUA cara login (wallet & password), jadi diletakkan di atas keduanya. --}}
+            @if(\App\Services\Turnstile::enabled())
+                <div id="loginTurnstile" class="cf-turnstile flex justify-center mb-4" data-sitekey="{{ \App\Services\Turnstile::siteKey() }}"></div>
+            @endif
+
             <button id="mmBtn" type="button" onclick="loginWithWallet()"
                 class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-semibold transition flex items-center justify-center gap-2 mb-4">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 10h18M7 15h.01M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
@@ -110,16 +115,13 @@
                 <div class="h-px bg-slate-200 flex-1"></div>
             </div>
 
-            <form method="POST" action="/login" id="loginPass" class="space-y-3">
+            <form method="POST" action="/login" id="loginPass" class="space-y-3" onsubmit="attachTurnstile(this)">
                 @csrf
                 <input name="email" type="email" value="{{ !$startRegister ? old('email') : '' }}" required placeholder="{{ __('auth.email') }}" class="in-field">
                 <input name="password" type="password" required placeholder="{{ __('auth.password') }}" class="in-field">
                 <div class="text-right -mt-1">
                     <a href="/forgot-password" class="text-xs text-blue-600 hover:underline">{{ __('auth.forgot_password') }}</a>
                 </div>
-                @if(\App\Services\Turnstile::enabled())
-                    <div class="cf-turnstile flex justify-center" data-sitekey="{{ \App\Services\Turnstile::siteKey() }}"></div>
-                @endif
                 <button class="w-full py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition shadow-sm mt-1">{{ __('auth.sign_in') }}</button>
             </form>
             <p class="text-[11px] text-slate-400 text-center mt-2">{{ __('auth.pin_after_pw') }}</p>
@@ -429,11 +431,40 @@
         }
     }
 
+    // ===== Turnstile login (satu widget di atas, dipakai login wallet & password) =====
+    const TURNSTILE_ON = @json(\App\Services\Turnstile::enabled());
+    function loginTurnstileToken() {
+        const el = document.querySelector('#loginTurnstile [name="cf-turnstile-response"]');
+        return el ? el.value : '';
+    }
+    function resetLoginTurnstile() {
+        try { const el = document.getElementById('loginTurnstile'); if (window.turnstile && el) turnstile.reset(el); } catch (_) {}
+    }
+    // Widget ada di luar form password: salin tokennya ke form saat submit.
+    function attachTurnstile(form) {
+        if (!TURNSTILE_ON) return;
+        let input = form.querySelector('input[name="cf-turnstile-response"]');
+        if (!input) {
+            input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'cf-turnstile-response';
+            form.appendChild(input);
+        }
+        input.value = loginTurnstileToken();
+    }
+
     // ===== LOGIN dengan Wallet (nonce + tanda tangan) =====
     async function loginWithWallet() {
         const btn = document.getElementById('mmBtn');
         const orig = btn.innerHTML;
         if (_walletBusy) { notify('Ada permintaan wallet yang masih diproses. Cek aplikasi wallet-mu dulu.', 'warn'); return; }
+        // Anti-bot dulu, sebelum membuka wallet: sama seperti login dengan password.
+        const cfToken = loginTurnstileToken();
+        if (TURNSTILE_ON && !cfToken) {
+            notify('Centang "Verify you are human" dulu sebelum login dengan wallet.', 'warn');
+            document.getElementById('loginTurnstile')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
         try {
             if (detectedWallets().length === 0) { notify(noWalletMsg, 'warn'); return; }
             const prov = await pickWallet();
@@ -453,13 +484,13 @@
             const loginReq = await fetch("/login-wallet", {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": "{{ csrf_token() }}" },
-                body: JSON.stringify({ wallet_address: wallet, signature: signature })
+                body: JSON.stringify({ wallet_address: wallet, signature: signature, 'cf-turnstile-response': cfToken })
             });
             let loginRes;
             try { loginRes = await loginReq.json(); }
             catch (_) { throw new Error("Server error (" + loginReq.status + "). Cek log Laravel."); }
             if (loginReq.ok && loginRes.success) { window.location.href = loginRes.redirect || "/products"; }
-            else { notify(loginRes.error || "Login gagal.", 'error'); }
+            else { notify(loginRes.error || "Login gagal.", 'error'); resetLoginTurnstile(); } // token sekali pakai
         } catch (e) {
             console.error(e);
             notify(walletErr(e) || (e.message || "Login gagal."), 'error');
