@@ -32,7 +32,7 @@ class DonationController extends Controller
         $raised    = Donation::selectRaw('campaign_id, SUM(amount) t')->groupBy('campaign_id')->pluck('t', 'campaign_id');
         $disbursed = Disbursement::selectRaw('campaign_id, SUM(amount) t')->groupBy('campaign_id')->pluck('t', 'campaign_id');
 
-        $campaigns = Campaign::latest()->get()->map(function ($c) use ($raised, $disbursed) {
+        $campaigns = Campaign::with('disasterEvent')->latest()->get()->map(function ($c) use ($raised, $disbursed) {
             $in  = (float) ($raised[$c->id] ?? 0);
             $out = (float) ($disbursed[$c->id] ?? 0);
             return [
@@ -44,7 +44,12 @@ class DonationController extends Controller
             ];
         });
 
-        return view('donate.index', compact('campaigns', 'configured'));
+        // Radar Bencana AI: kejadian nyata yang dinilai AI sebagai bencana (publik).
+        $radar = \App\Models\DisasterEvent::with('campaign')->where('ai_is_disaster', true)
+            ->whereIn('status', ['opened', 'pending_review'])->latest('occurred_at')->limit(4)->get();
+        $radarChecked = \App\Models\DisasterEvent::max('created_at');
+
+        return view('donate.index', compact('campaigns', 'configured', 'radar', 'radarChecked'));
     }
 
     /** Form buat campaign (pengawas). */
@@ -61,7 +66,7 @@ class DonationController extends Controller
 
         $data = $req->validate([
             'title'            => 'required|string|max:120',
-            'description'      => 'nullable|string|max:2000',
+            'description'      => 'nullable|string|max:6000',
             'recipient_wallet' => ['required', 'regex:/^0x[a-fA-F0-9]{40}$/'],
             'goal_amount'      => 'nullable|numeric|min:0',
             'closes_at'        => 'nullable|date|after:today',
@@ -107,7 +112,7 @@ class DonationController extends Controller
 
         $data = $req->validate([
             'title'            => 'required|string|max:120',
-            'description'      => 'nullable|string|max:2000',
+            'description'      => 'nullable|string|max:6000',
             'recipient_wallet' => ['required', 'regex:/^0x[a-fA-F0-9]{40}$/'],
             'goal_amount'      => 'nullable|numeric|min:0',
             'closes_at'        => 'nullable|date',

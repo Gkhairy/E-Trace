@@ -3,10 +3,12 @@
     $navDisputes = \App\Models\OrderItem::where('status', 'disputed')->count();
     $navHeld = \App\Models\Order::where('settlement_status', 'held')
         ->orWhere(fn ($q) => $q->where('is_insured', true)->where('insurance_status', 'active'))->count();
+    $navRadar = \App\Models\DisasterEvent::where('status', 'pending_review')->count();
     $tabs = [
         ['/supervisor',          'Ringkasan',        null,         'M4 5h6v6H4zM14 5h6v4h-6zM14 13h6v6h-6zM4 15h6v4H4z'],
         ['/supervisor/disputes', 'Sengketa',         $navDisputes, 'M12 3v18M5 7h14M7 7l-3 7a3 3 0 006 0L7 7zm10 0l-3 7a3 3 0 006 0l-3-7z'],
         ['/supervisor/held',     'Ditahan AI & Klaim', $navHeld,   'M12 8v4l2.5 2.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z'],
+        ['/supervisor/disasters', 'Radar Bencana',   $navRadar,    'M12 12m-1 0a1 1 0 102 0 1 1 0 10-2 0M16.2 7.8a6 6 0 010 8.5M7.8 16.2a6 6 0 010-8.5M19.1 4.9a10 10 0 010 14.2M4.9 19.1a10 10 0 010-14.2'],
         ['/supervisor/labels',   'Label Entitas',    null,         'M7 7h.01M3 11.6V5a2 2 0 012-2h6.6a2 2 0 011.4.6l7.4 7.4a2 2 0 010 2.8l-6.6 6.6a2 2 0 01-2.8 0L3.6 13a2 2 0 01-.6-1.4z'],
         ['/admin/banners',       'Iklan',            null,         'M11 5.9V19a1 1 0 01-1.8.6L6.6 16H4a1 1 0 01-1-1V9a1 1 0 011-1h2.6l2.6-3.6A1 1 0 0111 5.9zM15.5 8.5a5 5 0 010 7M18.4 5.6a9 9 0 010 12.8'],
     ];

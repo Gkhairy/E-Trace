@@ -79,6 +79,7 @@ Route::get('/explorer/{address}', [ExplorerController::class, 'show'])->where('a
 
 // DONASI berbasis campaign. Daftar & detail = publik; buat campaign & salurkan = pengawas.
 Route::get('/donate', [DonationController::class, 'index']);
+Route::get('/donate/cover/{type}', [\App\Http\Controllers\DisasterController::class, 'cover'])->where('type', '[a-z]+');
 Route::get('/donate/create', [DonationController::class, 'create'])->middleware('auth');
 Route::post('/donate/campaigns', [DonationController::class, 'store'])->middleware('auth');
 Route::get('/donate/{slug}/edit', [DonationController::class, 'edit'])->where('slug', '[a-z0-9\-]+')->middleware('auth');
@@ -229,6 +230,13 @@ Route::middleware('auth')->group(function () {
     // AI Auto-Settlement — order 'held' untuk ditinjau manual (release/refund/klaim).
     Route::get('/supervisor/held', [SupervisorController::class, 'held']);
     Route::post('/supervisor/settle', [SupervisorController::class, 'settle']);
+
+    // RADAR BENCANA AI — scan sumber, uji berita, antrean usulan donasi.
+    Route::get('/supervisor/disasters', [\App\Http\Controllers\DisasterController::class, 'index']);
+    Route::post('/supervisor/disasters/scan', [\App\Http\Controllers\DisasterController::class, 'scan'])->middleware('throttle:6,1,post-disaster-scan');
+    Route::post('/supervisor/disasters/assess', [\App\Http\Controllers\DisasterController::class, 'assess'])->middleware('throttle:10,1,post-disaster-assess');
+    Route::post('/supervisor/disasters/approve', [\App\Http\Controllers\DisasterController::class, 'approve']);
+    Route::post('/supervisor/disasters/dismiss', [\App\Http\Controllers\DisasterController::class, 'dismiss']);
 });
 
 // ORDER

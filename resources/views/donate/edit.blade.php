@@ -38,7 +38,7 @@
         <div>
             <label class="block text-sm font-medium text-slate-700 mb-1.5">Foto campaign</label>
             @if($campaign->image)
-                <img src="/campaign_images/{{ $campaign->image }}" class="w-40 rounded-xl border border-slate-200 mb-2 object-cover aspect-[16/9]">
+                <img src="{{ $campaign->imageUrl() }}" class="w-40 rounded-xl border border-slate-200 mb-2 object-cover aspect-[16/9]">
             @endif
             <input type="file" name="image" accept="image/*"
                 class="text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white file:text-xs hover:file:bg-blue-700 file:cursor-pointer">

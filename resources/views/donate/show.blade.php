@@ -17,15 +17,31 @@
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
     {{-- KIRI: gambar + deskripsi + donatur --}}
     <div class="lg:col-span-2 space-y-6">
-        <div class="rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 aspect-[16/9] flex items-center justify-center">
+        <div class="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 aspect-[16/9] flex items-center justify-center">
             @if($campaign->image)
-                <img src="/campaign_images/{{ $campaign->image }}" alt="{{ $campaign->title }}" class="w-full h-full object-cover">
+                <img src="{{ $campaign->imageUrl() }}" alt="{{ $campaign->title }}" class="w-full h-full object-cover" referrerpolicy="no-referrer"
+                     onerror="this.onerror=null; this.src='{{ $campaign->coverUrl() }}'; document.getElementById('photoCredit')?.remove()">
+                @if($credit = $campaign->imageCredit())
+                    <a id="photoCredit" href="{{ $credit['url'] }}" target="_blank" rel="noopener noreferrer"
+                       class="absolute left-3 bottom-3 text-xs font-medium text-white bg-black/55 hover:bg-black/70 backdrop-blur-sm rounded-lg px-2.5 py-1 transition">{{ $credit['text'] }} ↗</a>
+                @endif
             @else
                 <svg class="w-14 h-14 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 10-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"/></svg>
             @endif
         </div>
 
         <div>
+        @if($campaign->isAi())
+            <div class="flex flex-wrap items-center gap-2 mb-3">
+                <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12m-1 0a1 1 0 102 0 1 1 0 10-2 0M16.2 7.8a6 6 0 010 8.5M7.8 16.2a6 6 0 010-8.5M19.1 4.9a10 10 0 010 14.2M4.9 19.1a10 10 0 010-14.2"/></svg>
+                    Dibuka oleh Radar Bencana AI
+                </span>
+                @if($campaign->disasterEvent)
+                    <span class="text-xs text-slate-500">Sumber {{ $campaign->disasterEvent->sourceName() }}@if($campaign->disasterEvent->ai_severity !== null) · skor AI {{ $campaign->disasterEvent->ai_severity }}@endif</span>
+                @endif
+            </div>
+        @endif
             <div class="flex items-start justify-between gap-3">
                 <h1 class="text-2xl font-bold text-slate-900">{{ $campaign->title }}</h1>
                 @if($isSup)
@@ -35,7 +51,23 @@
                     </a>
                 @endif
             </div>
-            <p class="text-sm text-slate-500 mt-2 whitespace-pre-line leading-relaxed">{{ $campaign->description ?: 'Tidak ada deskripsi.' }}</p>
+            @if($campaign->isAi() && $campaign->description)
+                @php
+                    $sections = ['Kronologi', 'Dampak', 'Kebutuhan mendesak', 'Penyaluran dana', 'Sumber'];
+                    $linkify = fn ($t) => preg_replace('~(https?://[^\s<]+)~', '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline break-all">$1</a>', e($t));
+                @endphp
+                <div class="mt-3 space-y-1 text-sm text-slate-600 leading-relaxed">
+                    @foreach(preg_split('/\R/', $campaign->description) as $line)
+                        @if(in_array(trim($line), $sections, true))
+                            <h3 class="font-semibold text-slate-900 pt-3">{{ trim($line) }}</h3>
+                        @elseif(trim($line) !== '')
+                            <p class="{{ str_starts_with(trim($line), '•') ? 'pl-3 text-xs text-slate-500' : '' }}">{!! $linkify($line) !!}</p>
+                        @endif
+                    @endforeach
+                </div>
+            @else
+                <p class="text-sm text-slate-500 mt-2 whitespace-pre-line leading-relaxed">{{ $campaign->description ?: 'Tidak ada deskripsi.' }}</p>
+            @endif
         </div>
 
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">

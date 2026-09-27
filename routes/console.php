@@ -22,3 +22,7 @@ Schedule::command('settlement:keep')->daily()->withoutOverlapping();
 // penuh per alamat (masuk dari siapa, keluar ke mana) tanpa membebani RPC saat
 // halaman dibuka. Resumable lewat `indexer_cursors`.
 Schedule::command('transfers:index')->everyMinute()->withoutOverlapping();
+
+// Radar Bencana AI: pantau BMKG, GDACS, dan berita tiap 15 menit. Skor AI 70+ membuka
+// donasi otomatis; skor sedang masuk antrean pengawas (config/disaster.php).
+Schedule::command('disaster:scan')->everyFifteenMinutes()->withoutOverlapping();
