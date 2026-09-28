@@ -1,101 +1,151 @@
 <div align="center">
 
-# 🛰️ E-Trace
+<img src="public/favicon.svg" alt="E-Trace" width="96" />
 
-### Marketplace on-chain yang transparan sepenuhnya
+# E-Trace
 
-*Belanja pakai kripto (TLKM) semudah e-wallet — setiap pembayaran dijaga **smart-contract escrow**, dan setiap transaksi bisa diverifikasi siapa saja di blockchain.*
+### Every payment held in escrow, every transaction on-chain. Don't trust. Trace.
+
+*Shop with crypto (TLKM) as easily as with an e-wallet. Every payment is held by a **smart-contract escrow**, and anyone can verify every transaction on the blockchain.*
 
 ![Network](https://img.shields.io/badge/BNB_Smart_Chain-Testnet_97-F0B90B?logo=binance&logoColor=white)
 ![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel&logoColor=white)
 ![PHP](https://img.shields.io/badge/PHP-8.2-777BB4?logo=php&logoColor=white)
 ![Solidity](https://img.shields.io/badge/Solidity-0.8.20-363636?logo=solidity&logoColor=white)
 ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-06B6D4?logo=tailwindcss&logoColor=white)
-![Status](https://img.shields.io/badge/status-prototype_·_testnet_·_belum_diaudit-orange)
+![Status](https://img.shields.io/badge/status-prototype_·_testnet-orange)
+
+**[🌐 Live app: e-trace.shop](https://e-trace.shop)** · **[📚 Docs](https://khairy.gitbook.io/e-trace/)** · **🎬 Demo video: _coming soon_**
 
 </div>
 
 ---
 
-## 📌 Ringkasan
+## 📌 Overview
 
-Di marketplace konvensional, uang pembeli dipegang perusahaan — pembeli harus percaya platform, penjual menunggu pencairan, alur dana gelap. **E-Trace memindahkan kepercayaan dari perusahaan ke kode**: dana pembeli ditahan *smart contract* (escrow) dan baru lepas ke penjual setelah pembeli mengonfirmasi barang diterima. Setiap pembayaran punya jejak on-chain yang tidak bisa diubah siapa pun.
+In a conventional marketplace, the company holds the buyer's money. Buyers have to trust the platform, sellers wait for payouts, and nobody can see where the money goes. **E-Trace moves that trust from the company to code.** The buyer's money is held by a smart contract (escrow) and is released to the seller only after the buyer confirms the goods arrived. Every payment leaves an on-chain trail that nobody can change.
 
-Di atas fondasi escrow itu, E-Trace menumbuhkan **ekosistem keuangan on-chain**: kredit *Paylater* dua sisi, penyelesaian escrow **otomatis oleh AI**, garansi pengiriman berbasis asuransi parametrik, dan explorer transparansi publik.
+On top of that escrow, E-Trace builds an **on-chain financial ecosystem**: two-sided *Paylater* credit, **AI-driven** escrow settlement, parametric delivery insurance, transparent donations, community wallets and a public transparency explorer.
 
-## ✨ Fitur Utama
+## 🔗 Links
 
-### 🛒 Marketplace & Escrow
-- **Pembayaran escrow via smart contract (TLKM)** — dana ditahan kontrak, lepas ke penjual saat pembeli konfirmasi; refund bila penjual tak mengirim.
-- **Escrow multi-penjual** — satu keranjang banyak penjual; escrow dipisah per item, konfirmasi satu item tak melepas dana penjual lain.
-- **Verifikasi on-chain** — backend membaca kontrak sebagai sumber kebenaran (total, nominal, penjual), tidak percaya data dari browser.
+| | |
+| --- | --- |
+| **Live app** | [https://e-trace.shop](https://e-trace.shop) |
+| **Documentation** (user flows, contracts, business model, roadmap) | [https://khairy.gitbook.io/e-trace](https://khairy.gitbook.io/e-trace/) |
+| **Demo video** | _coming soon_ |
+| **Network** | BNB Smart Chain Testnet (chain ID 97) |
 
-### 💳 Paylater — Pinjam & Danai
-- **Pool likuiditas dua sisi**: peminjam **Pinjam** (checkout sekarang, bayar nanti) dan pemberi dana **Danai** (setor TLKM ke pool).
-- **Deposito berjangka** — fleksibel / 30 / 90 hari, **bagi hasil (nisbah)** naik seiring jangka.
-- Bunga, pool, dan jangka **tercatat di smart contract** (`TlkmPaylater.sol`).
+## 📜 Smart contract addresses (BSC Testnet)
 
-### 🤖 AI Auto-Settlement + Garansi Tepat Waktu
-- **Keeper** membaca riwayat tracking → **DeliveryAI (LLM)** memutuskan `release / refund / hold`; keputusan disimpan untuk audit.
-- **Aturan deterministik**: tidak dikirim N hari → **auto-refund**; barang diterima & tak dikonfirmasi M hari → **auto-selesai** (dilewati untuk tujuan jauh).
-- **On-Time Guarantee** — asuransi ongkir parametrik: ETA berbasis **jarak**, payout dari pool bila telat karena penjual/kurir. Idempoten + *circuit breaker* harian.
+| Contract | Address | What it does |
+| --- | --- | --- |
+| **PaymentGatewayV3** | [`0x76e783878E4d88e435c4296F87c56446be72FDc9`](https://testnet.bscscan.com/address/0x76e783878E4d88e435c4296F87c56446be72FDc9) | Multi-seller escrow: pay, confirm, refund, dispute, arbiter actions, 1% fee on release |
+| **TLKM Token** (BEP-20) | [`0x5D628943164d5D27eB102424045901e26720B4C1`](https://testnet.bscscan.com/address/0x5D628943164d5D27eB102424045901e26720B4C1) | Payment token used across the app (18 decimals) |
+| **DonationPool** | [`0xdCCE11EADbE5426f946a61D7705C56761dF2f394`](https://testnet.bscscan.com/address/0xdCCE11EADbE5426f946a61D7705C56761dF2f394) | Donation campaigns and recorded disbursements |
+| **TlkmPaylater** | [`0x69D8f32F7e918061f32F26Ad7302906Cd857FCc1`](https://testnet.bscscan.com/address/0x69D8f32F7e918061f32F26Ad7302906Cd857FCc1) | Collateralised credit + lending pool with fixed terms and profit sharing |
+| **CommunityMultisigWallet** | one per group, e.g. [`0xa408e7991b7585ea3b94e38a5312d39169c8849f`](https://testnet.bscscan.com/address/0xa408e7991b7585ea3b94e38a5312d39169c8849f) | Shared community wallet; every action needs signer approval |
 
-### 🔎 Explorer Transparansi
-- Dashboard publik: volume, transaksi, escrow ditahan, toko teratas, entitas terverifikasi.
-- **Visualisasi** — grafik aktivitas 14 hari (volume + transaksi) & donut distribusi status escrow.
+Sources are in [`contracts/`](contracts/). The app reads contract addresses from `.env` via `config/chain.php`.
 
-### 👛 Wallet, Keamanan & Lainnya
-- **Embedded wallet** (email/HP + **PIN**) — pengguna awam tak perlu paham seed phrase; tanda tangan sekali, berikutnya cukup PIN.
-- **Cloudflare Turnstile** anti-bot di login/daftar (aman-nonaktif bila belum dikonfigurasi).
-- **Chatbot AI** bantuan aplikasi + pencarian produk (OpenAI, dibatasi ke ruang lingkup app).
-- **Laporan keuangan penjual** (rekap otomatis + HPP, ekspor Excel/PDF).
-- **Donasi transparan / dompet komunitas** — tercatat on-chain, **0% fee**.
-- Registrasi **OTP email** (RabbitMQ) + opsi **2FA**, peran pembeli/penjual/pengawas, **dwibahasa** (ID/EN).
+## ✨ Features
 
-## 🧱 Arsitektur Singkat
+### 🛒 Marketplace and escrow
+- **Smart-contract escrow payments (TLKM).** The contract holds the funds and releases them to the seller when the buyer confirms; refunds if the seller never ships.
+- **Multi-seller escrow.** One cart, many sellers; escrow is split per item, so confirming one item doesn't release another seller's funds.
+- **On-chain verification.** The backend reads the contract as the source of truth (totals, amounts, sellers) and never trusts the browser.
+
+### 💳 Paylater: borrow and fund
+- **Two-sided liquidity pool.** Borrowers **borrow** (check out now, pay later) and funders **fund** (deposit TLKM into the pool).
+- **Fixed terms.** Flexible / 30 / 90 days, with a **profit share** that grows with the term.
+- Interest, pool and terms are **recorded in the smart contract** (`TlkmPaylater.sol`).
+
+### 🤖 AI auto-settlement + On-Time Guarantee
+- A **keeper** reads tracking history, and **DeliveryAI (LLM)** decides `release / refund / hold`; every decision is stored for audit.
+- **Deterministic rules.** Not shipped in N days → **auto-refund**; delivered and not confirmed in M days → **auto-complete**.
+- **On-Time Guarantee.** Parametric shipping insurance: **distance-based** ETA, automatic payout from the pool when the seller or courier is late. Idempotent, with a daily circuit breaker.
+
+### 🌋 Disaster Radar and transparent donations
+- Disaster news feeds on-chain **donation campaigns**; every donation and disbursement is public, with **0% fee**.
+- **Community wallets** (multisig) for cooperatives, schools and groups.
+
+### 🔎 Transparency explorer
+- Public dashboard: volume, transactions, escrow held, top stores, verified entities.
+- 14-day activity chart and escrow status distribution.
+
+### 👛 Wallet, security and more
+- **Embedded wallet** (email + **PIN**): no seed phrase needed. MetaMask login is also supported (Sign-In with Ethereum).
+- **Cloudflare Turnstile**, email OTP, optional **2FA**, rate limits.
+- **AI chatbot (EVA)** for app help and product search.
+- **Seller financial reports** (automatic summaries + COGS, Excel/PDF export).
+- **Sponsored home banners** (jumbotron) for sellers and brands.
+- Buyer / seller / supervisor roles, **bilingual UI (English / Bahasa Indonesia)**.
+
+## 🧱 Architecture
 
 ```mermaid
 flowchart LR
-    Buyer([Pembeli]) -- "bayar TLKM" --> ESC[PaymentGatewayV3<br/>Escrow on-chain]
-    Buyer -- "Konfirmasi Terima" --> ESC
-    ESC -- "lepas dana - fee 1%" --> Seller([Penjual])
+    Buyer([Buyer]) -- "pay TLKM" --> ESC[PaymentGatewayV3<br/>on-chain escrow]
+    Buyer -- "confirm received" --> ESC
+    ESC -- "release minus 1% fee" --> Seller([Seller])
     KEEP[SettlementKeeper<br/>+ DeliveryAI] -- "arbiterRelease / arbiterRefund" --> ESC
     Track[(Tracking events)] --> KEEP
-    KEEP -- "payout ongkir" --> Pool[(Insurance Pool)]
+    KEEP -- "late-delivery payout" --> Pool[(Insurance pool)]
     Pool --> Buyer
-    ESC -. "baca status" .-> Explorer[[Explorer publik]]
+    ESC -. "read status" .-> Explorer[[Public explorer]]
 ```
 
-Kebenaran status (delivered/late) dihitung **di server** dari `tracking_events` + AI — **tidak** percaya browser. Semua aksi arbiter ditandatangani kunci arbiter platform di `.env` (rahasia).
+Delivery status (delivered / late) is computed **on the server** from `tracking_events` + AI, never from the browser. Arbiter actions are signed with the platform arbiter key, which lives only in environment variables.
 
-## 🔗 Smart Contracts (Solidity, BSC Testnet)
+## 💰 Business model
 
-| Kontrak | Fungsi |
-|---|---|
-| `contracts/PaymentGatewayV3.sol` | Escrow multi-penjual: bayar, konfirmasi, refund, aksi arbiter, fee 1% saat rilis |
-| `contracts/TlkmPaylater.sol` | Pool lending dua sisi: supply/withdraw, borrow/repay, deposito berjangka + nisbah |
-| **TLKM** (BEP-20) | Token pembayaran platform (18 desimal) |
+| Revenue stream | How it works |
+| --- | --- |
+| **Escrow fee** | 1% of each completed sale, paid by the seller from the payout; refunds are free |
+| **Paylater interest share** | The platform keeps 15–40% of the flat 3% loan interest, depending on the funder's term |
+| **Sponsored banners** | Paid slots in the home-page jumbotron for sellers, brands and partners |
+| **On-Time Guarantee** | Margin between premiums collected and payouts |
+| **Donations and community wallets** | Always free (0% fee) |
 
-> Panduan deploy ke BSC Testnet ada di **`contracts/PANDUAN-DEPLOY.md`**. Alamat kontrak dibaca dari `.env` via `config/chain.php` (satu sumber kebenaran).
+Market size (TAM/SAM/SOM), 3-year revenue projection and Paylater economics: see [Business model](https://khairy.gitbook.io/e-trace/project/business-model).
 
-## 🛠️ Tech Stack
+## 🗺️ Roadmap
 
-| Lapisan | Teknologi |
+| Phase | When | Focus |
+| --- | --- | --- |
+| **0** | Q3 2026 (done) | Testnet MVP: escrow, Paylater, AI settlement, donations, explorer |
+| **1** | Q4 2026 – Q1 2027 | Stabilize the 5 core features, external audit, onboard first sellers and communities |
+| **2** | Q2 – Q3 2027 | Smarter AI assistant, **mainnet launch**, more categories and partners |
+| **3** | Q4 2027 → | Open transparency API for donation institutions, cooperatives and agencies |
+
+**Funding:** raising a **USD 150,000 pre-seed** round (18 months runway) for audits, engineering, acquisition and legal. Details: [Roadmap](https://khairy.gitbook.io/e-trace/project/roadmap).
+
+## 🛡️ Security
+
+- Contracts use `ReentrancyGuard` and `SafeERC20`; the escrow fee is immutable and capped at 10%.
+- The contracts went through an internal review with [Pashov's solidity-auditor skills](https://github.com/pashov/skills) (3 passes, multiple agents). Findings are acknowledged and will be fixed before mainnet, followed by an external audit.
+- The web app went through a security review; the critical and high findings (upload handling, insurance premium verification, IP spoofing, wallet registration nonce) are fixed.
+- See [Security and audit status](https://khairy.gitbook.io/e-trace/project/security). Found a vulnerability? Please open a private [security advisory](https://github.com/Gkhairy/E-Trace/security).
+
+## 🛠️ Tech stack
+
+| Layer | Technology |
 |---|---|
 | Backend | Laravel 12, PHP 8.2 |
 | Frontend | Blade, Tailwind CSS, Vite, ethers.js, Chart.js |
 | Database | MySQL |
-| Antrean | RabbitMQ (email OTP & notifikasi) |
-| Blockchain | Solidity 0.8.20, BEP-20 (TLKM), **BNB Smart Chain Testnet** (chainId 97) |
-| Integrasi Web3 | web3.php, ethereum-tx, keccak, elliptic-php |
+| Queue | RabbitMQ (email OTP and notifications) |
+| Blockchain | Solidity 0.8.20, BEP-20 (TLKM), **BNB Smart Chain Testnet** (chain ID 97) |
+| Web3 | web3.php, ethereum-tx, keccak, elliptic-php |
 | AI | OpenAI `gpt-4o-mini` (chatbot + DeliveryAI settlement) |
-| Keamanan | Cloudflare Turnstile, google2fa (2FA), PIN gate |
-| Lain-lain | bacon-qr-code, dompdf (PDF), maatwebsite/excel |
+| Security | Cloudflare Turnstile, google2fa (2FA), PIN gate |
+| Other | bacon-qr-code, dompdf (PDF), maatwebsite/excel |
+| Deploy | Docker (nginx + php-fpm) on Railway |
 
-## 🚀 Mulai Cepat
+## 🚀 Quick start
 
 ```bash
-# 1. Dependency
+# 1. Dependencies
 composer install
 npm install
 
@@ -103,24 +153,24 @@ npm install
 cp .env.example .env
 php artisan key:generate
 
-# 3. Migrasi + seed (atur .env dulu — lihat Konfigurasi)
+# 3. Migrate + seed (configure .env first, see below)
 php artisan migrate --seed
 
-# 4. Build aset
-npm run build      # atau: npm run dev
+# 4. Build assets
+npm run build      # or: npm run dev
 
-# 5. Jalankan
+# 5. Run
 php artisan serve
 ```
 
-Jalankan di terminal terpisah:
+In separate terminals:
 
 ```bash
-php artisan queue:work      # email OTP & notifikasi (RabbitMQ)
-php artisan schedule:work   # keeper AI-settlement + klaim asuransi (cek harian)
+php artisan queue:work      # email OTP and notifications (RabbitMQ)
+php artisan schedule:work   # AI-settlement keeper + insurance claims (daily)
 ```
 
-## ⚙️ Konfigurasi (.env)
+## ⚙️ Configuration (.env)
 
 ```env
 # Database
@@ -129,59 +179,59 @@ DB_DATABASE=crypto
 DB_USERNAME=root
 DB_PASSWORD=
 
-# Antrean (RabbitMQ)
+# Queue (RabbitMQ)
 QUEUE_CONNECTION=rabbitmq
 RABBITMQ_HOST=127.0.0.1
 
-# AI (chatbot + settlement) — RAHASIA
+# AI (chatbot + settlement), secret
 OPENAI_API_KEY=sk-...
 
 # Blockchain (BNB Smart Chain Testnet)
 CHAIN_ID=97
 CHAIN_RPC_URL=https://data-seed-prebsc-1-s1.bnbchain.org:8545/
 CHAIN_EXPLORER_URL=https://testnet.bscscan.com
-TLKM_ADDRESS=0x...              # setelah deploy
-PAYMENT_GATEWAY_ADDRESS=0x...   # setelah deploy
+TLKM_ADDRESS=0x5D628943164d5D27eB102424045901e26720B4C1
+PAYMENT_GATEWAY_ADDRESS=0x76e783878E4d88e435c4296F87c56446be72FDc9
 
-# Keeper / asuransi (opsional; fitur aman-nonaktif bila kosong)
-KEEPER_ARBITER_PRIVATE_KEY=...  # RAHASIA — kunci arbiter platform
+# Keeper / insurance (optional; features stay off when empty)
+KEEPER_ARBITER_PRIVATE_KEY=...  # secret, platform arbiter key
 INSURANCE_POOL_ADDRESS=0x...
 
-# Anti-bot (opsional)
+# Anti-bot (optional)
 TURNSTILE_SITE_KEY=
 TURNSTILE_SECRET_KEY=
 ```
 
-> 🔒 **`.env` berisi rahasia dan TIDAK di-commit.** Jangan pernah menaruh private key / API key di repo.
+> 🔒 **`.env` holds secrets and is never committed.** Never put private keys or API keys in the repository.
 
-## 🧪 Alur Uji Coba (End-to-End)
+## 🧪 End-to-end test flow
 
-1. Daftar / login (email + OTP, atau wallet).
-2. Jadikan akun **penjual**: `php artisan tinker` → `App\Models\User::where('email','...')->update(['role'=>'seller']);`
-3. Penjual buat produk (harga TLKM). Pembeli (punya TLKM) → **Beli** → approve → bayar ke escrow.
-4. Cek tx hash di **BscScan Testnet** sebagai bukti transparansi (atau via **Explorer** internal).
-5. Barang diterima → **Konfirmasi Terima** (dana lepas ke penjual). Tak dikirim 3 hari → **auto-refund** oleh keeper.
+1. Sign up / log in (email + OTP + PIN, or MetaMask).
+2. Make the account a **seller**: `php artisan tinker` → `App\Models\User::where('email','...')->update(['role'=>'seller']);`
+3. The seller creates a product (priced in TLKM). The buyer (holding TLKM) → **Buy** → approve → pay into escrow.
+4. Look up the tx hash on **BscScan Testnet** as proof (or in the built-in **Explorer**).
+5. Goods arrive → **Confirm received** (funds released to the seller). Not shipped in 3 days → **auto-refund** by the keeper.
 
-## 💰 Model Bisnis
+Step-by-step guides for buyers, sellers, Paylater, donations and community wallets are in the [docs](https://khairy.gitbook.io/e-trace/).
 
-Pendapatan platform = **fee 1%** dari nilai transaksi, ditanggung penjual (dipotong dari payout, tidak dibebankan pembeli). Donasi & dompet komunitas **gratis (0% fee)**.
+## ⚠️ Notes
 
-## ⚠️ Catatan Penting
+- Runs on **testnet** (chain ID 97) with test tokens: **not real money**.
+- A prototype built for a hackathon; do not send real funds to these contracts.
+- Personal data (addresses, phone numbers) stays in the database, **not** on-chain, in line with Indonesia's PDP law.
 
-- Berjalan di **testnet** (chainId 97) dengan token uji coba — **bukan uang sungguhan**.
-- Smart contract **belum diaudit** — prototipe untuk kompetisi/edukasi.
-- Data pribadi (alamat, telepon) disimpan di database, **tidak** on-chain — sejalan dengan UU PDP.
-
-## 📁 Struktur Ringkas
+## 📁 Project structure
 
 ```
-app/          Controller, Model, Service (ChainVerifier, DeliveryAI, ShippingService), Command (SettlementKeeper)
-contracts/    Smart contract Solidity (PaymentGatewayV3, TlkmPaylater) + panduan deploy
-database/     Migrasi & seeder
-resources/    Tampilan Blade + aset frontend
-routes/       Definisi rute (web, console)
+app/          Controllers, models, services (ChainVerifier, DeliveryAI, ShippingService), commands (SettlementKeeper)
+contracts/    Solidity smart contracts
+database/     Migrations and seeders
+docs/         Documentation source (published on GitBook)
+docker/       nginx + php-fpm config for deployment
+resources/    Blade views + frontend assets (English and Bahasa Indonesia)
+routes/       Route definitions (web, console)
 ```
 
 <div align="center">
-<sub>Dibangun di atas BNB Smart Chain Testnet · escrow yang bisa dibuktikan siapa saja.</sub>
+<sub>Built on BNB Smart Chain Testnet · escrow anyone can verify.</sub>
 </div>
