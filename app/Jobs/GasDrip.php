@@ -35,11 +35,18 @@ class GasDrip implements ShouldQueue
             $priv = substr($priv, 2);
         }
 
+        // Klaim atomik dulu: job ganda (retry/daftar ulang) tidak bisa mengirim dua kali.
+        $claimed = User::whereKey($user->id)->whereNull('gas_dripped_at')->update(['gas_dripped_at' => now()]);
+        if (!$claimed) {
+            return;
+        }
+
         $amount = (string) config('wallet.gas_drip_amount', '0.01');
         try {
             $signer->sendRaw($priv, $user->wallet_address, $signer->toWeiHex($amount)); // ETH 18 desimal
-            $user->forceFill(['gas_dripped_at' => now()])->save();
         } catch (\Throwable $e) {
+            // Gagal → lepaskan klaim supaya drip bisa dicoba lagi.
+            User::whereKey($user->id)->update(['gas_dripped_at' => null]);
             Log::warning('GasDrip gagal untuk user ' . $user->id . ': ' . $e->getMessage());
         }
     }

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Web3\Contract;
 use Web3p\EthereumTx\Transaction;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -103,9 +104,26 @@ class ChainSigner
      */
     public function sendRaw(string $privHex, string $to, string $valueWeiHex = '0x0', string $dataHex = ''): string
     {
-        $from = (new EmbeddedWallet())->addressFromPrivate($privHex);
+        $from = strtolower((new EmbeddedWallet())->addressFromPrivate($privHex));
 
-        $nonce    = $this->rpc('eth_getTransactionCount', [$from, 'pending']) ?: '0x0';
+        // Satu pengiriman per alamat per waktu (web, worker, keeper, job). Tanpa ini dua proses
+        // yang memakai kunci yang sama (mis. GasDrip + WelcomeTlkm dari wallet gas platform)
+        // membaca nonce yang sama dan salah satu transaksinya ditolak.
+        return \Illuminate\Support\Facades\Cache::lock('chain-tx:' . $from, 30)->block(20,
+            fn () => $this->signAndBroadcast($privHex, $from, $to, $valueWeiHex, $dataHex));
+    }
+
+    private function signAndBroadcast(string $privHex, string $from, string $to, string $valueWeiHex, string $dataHex): string
+    {
+        // Nonce 'pending' dari RPC bisa tertinggal sesaat setelah broadcast (node berbeda di
+        // balik load balancer), jadi ambil yang lebih besar dari nonce terakhir yang kita pakai.
+        $nonceKey = 'chain-nonce:' . $from;
+        $rpcNonce = gmp_init($this->rpc('eth_getTransactionCount', [$from, 'pending']) ?: '0x0', 16);
+        $last     = \Illuminate\Support\Facades\Cache::get($nonceKey);
+        $nonceInt = ($last !== null && gmp_cmp(gmp_add(gmp_init($last, 10), 1), $rpcNonce) > 0)
+            ? gmp_add(gmp_init($last, 10), 1)
+            : $rpcNonce;
+        $nonce    = '0x' . gmp_strval($nonceInt, 16);
         $gasPrice = $this->rpc('eth_gasPrice') ?: '0x3b9aca00';
         $gas      = $this->estimateGas($from, $to, $valueWeiHex, $dataHex);
 
@@ -127,6 +145,7 @@ class ChainSigner
                 ? __('Saldo tBNB untuk biaya gas tidak cukup. Coba lagi sebentar lagi.')
                 : __('Gagal mengirim transaksi ke blockchain') . ($err !== '' ? ': ' . $err : '.'));
         }
+        \Illuminate\Support\Facades\Cache::put($nonceKey, gmp_strval($nonceInt, 10), now()->addMinutes(2));
         return $hash;
     }
 

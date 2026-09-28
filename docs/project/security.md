@@ -34,10 +34,10 @@ E-Trace is a **testnet prototype**. The smart contracts have had an internal rev
 
 | Step | Status |
 | --- | --- |
-| Internal contract review with [Pashov's solidity-auditor skills](https://github.com/pashov/skills) (3 passes, multiple specialised agents) | ✅ Done: 18 findings, acknowledged |
+| Internal contract review with [Pashov's solidity-auditor skills](https://github.com/pashov/skills) (3 passes, multiple specialised agents) | ✅ Done: 28 findings after a second manual pass, acknowledged. See the [Audit report](audit-report.md) |
 | Web application security review (parallel agents per area) | ✅ Done |
 | Fix critical and high app findings: file-upload handling, insurance premium verification, client-IP spoofing, wallet-registration nonce (SIWE) | ✅ Fixed |
-| Fix contract findings (escrow refund timing, multisig stale approvals, Paylater accounting) | ⏳ Before mainnet, in the next contract version |
+| Fix contract findings (escrow refund timing, multisig stale approvals, Paylater accounting and more) | ⏳ Before mainnet, in PaymentGatewayV4, TlkmPaylaterV2 and CommunityMultisigWalletV2 |
 | External audit | ⏳ Before mainnet. See the [Roadmap](roadmap.md) |
 
 Contract findings are on testnet only, where no real money is at stake. They are fixed in the next contract version rather than patched live, because deployed contracts can't be changed in place.

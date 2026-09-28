@@ -123,7 +123,7 @@ Market size (TAM/SAM/SOM), 3-year revenue projection and Paylater economics: see
 ## 🛡️ Security
 
 - Contracts use `ReentrancyGuard` and `SafeERC20`; the escrow fee is immutable and capped at 10%.
-- The contracts went through an internal review with [Pashov's solidity-auditor skills](https://github.com/pashov/skills) (3 passes, multiple agents). Findings are acknowledged and will be fixed before mainnet, followed by an external audit.
+- The contracts went through an internal review with [Pashov's solidity-auditor skills](https://github.com/pashov/skills) (3 passes, multiple agents). 28 findings (5 high, 10 medium, 9 low, 4 informational) are acknowledged and will be fixed in the next contract version before mainnet, followed by an external audit. Full list: [Audit report](https://khairy.gitbook.io/e-trace/project/audit-report).
 - The web app went through a security review; the critical and high findings (upload handling, insurance premium verification, IP spoofing, wallet registration nonce) are fixed.
 - See [Security and audit status](https://khairy.gitbook.io/e-trace/project/security). Found a vulnerability? Please open a private [security advisory](https://github.com/Gkhairy/E-Trace/security).
 
