@@ -191,7 +191,6 @@
                 <div id="mmBlock" class="hidden">
                     <input name="wallet_address" id="wallet_address" value="{{ old('wallet_address') }}" readonly disabled placeholder="{{ __('Wallet — klik Connect Wallet') }}" class="in-field font-mono text-slate-600 !bg-slate-100 cursor-not-allowed @error('wallet_address') !border-red-400 @enderror">
                     <input type="hidden" name="signature" id="signature" value="{{ old('signature') }}" disabled>
-                    <input type="hidden" name="sig_timestamp" id="sig_timestamp" value="{{ old('sig_timestamp') }}" disabled>
                 </div>
 
                 @if(\App\Services\Turnstile::enabled())
@@ -296,7 +295,6 @@
         document.getElementById('mmConnect').classList.toggle('hidden', embedded);
         document.getElementById('wallet_address').disabled = embedded;
         document.getElementById('signature').disabled = embedded;
-        document.getElementById('sig_timestamp').disabled = embedded;
         setTab('tabPin', embedded); setTab('tabMm', !embedded);
     }
     function setTab(id, active) {
@@ -413,13 +411,14 @@
             if (!prov) { if (cw) cw.textContent = prevLabel; return; } // batal pilih
             const accounts = await prov.request({ method: "eth_requestAccounts" });
             const wallet = accounts[0];
-            const ts = Math.floor(Date.now() / 1000);
-            const message = "E-Trace register\nWallet: " + wallet.toLowerCase() + "\nWaktu: " + ts;
+            // Pesan (dengan nonce sekali pakai) disusun server; kita hanya menandatanganinya.
+            const nonceRes = await fetch("/api/register-nonce?wallet=" + encodeURIComponent(wallet), { headers: { "Accept": "application/json" } });
+            const nonceJson = await nonceRes.json().catch(() => ({}));
+            if (!nonceRes.ok || !nonceJson.message) throw new Error(nonceJson.message || ('HTTP ' + nonceRes.status));
             const provider = new ethers.BrowserProvider(prov);
             const signer = await provider.getSigner();
-            const signature = await signer.signMessage(message);
+            const signature = await signer.signMessage(nonceJson.message);
             document.getElementById("wallet_address").value = wallet;
-            document.getElementById("sig_timestamp").value = ts;
             document.getElementById("signature").value = signature;
             if (cw) cw.textContent = @json(__('Wallet terhubung')) + " ✓";
         } catch (e) {

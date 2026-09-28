@@ -151,7 +151,7 @@ class ProductController extends Controller
             if (!$file) {
                 continue;
             }
-            $name = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            $name = Str::uuid() . '.' . $file->extension();
             $file->move(public_path('product_images'), $name);
             $names[] = $name;
         }

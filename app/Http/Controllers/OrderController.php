@@ -151,8 +151,12 @@ class OrderController extends Controller
         }
         $headerStatus = $vr['confirmations'] >= config('chain.paid_confirmations') ? 'paid' : 'pending_confirmation';
 
+        // Garansi hanya aktif bila premi BENAR-BENAR dibayar pembeli ke pool (dicek on-chain).
+        $premiumPaid = !empty($data['is_insured']) && !empty($data['premium_tx'])
+            && $this->premiumPaid($verifier, $data['premium_tx'], $user->wallet_address);
+
         try {
-        $order = DB::transaction(function () use ($data, $expected, $vr, $totalTlkm, $headerStatus, $shipping) {
+        $order = DB::transaction(function () use ($data, $expected, $vr, $totalTlkm, $headerStatus, $shipping, $premiumPaid) {
             // 1) Alamat pengiriman (data pribadi, di DB saja).
             // Pakai alamat tersimpan bila dipilih & milik user; kalau tidak, pakai input baru.
             $addr = null;
@@ -228,7 +232,7 @@ class OrderController extends Controller
             $order->shipping_tlkm = round($shipTlkm, 6);
             $order->eta_days      = $etaMax;
             $order->promised_date = now()->addDays($etaMax + (int) ($ins['eta_buffer_days'] ?? 3));
-            if (!empty($data['is_insured']) && $insOn) {
+            if ($premiumPaid && $insOn) {
                 $order->is_insured       = true;
                 $order->premium_tlkm     = (float) ($ins['premium_tlkm'] ?? 2);
                 $order->premium_tx       = $data['premium_tx'] ?? null;
@@ -432,6 +436,24 @@ class OrderController extends Controller
             $msg .= ' · ' . __('insurance.status.' . $order->insurance_status);
         }
         return response()->json(['success' => true, 'message' => $msg, 'reason' => $order->ai_reason]);
+    }
+
+    /**
+     * Premi garansi sah bila tx-nya transfer TLKM dari wallet pembeli ke pool asuransi
+     * sebesar >= premi, dan tx itu belum dipakai order lain.
+     */
+    private function premiumPaid(\App\Services\ChainVerifier $verifier, string $premiumTx, string $buyerWallet): bool
+    {
+        if (Order::where('premium_tx', $premiumTx)->exists()) {
+            return false;
+        }
+        $pool = strtolower((string) config('chain.insurance.pool_wallet'));
+        $t = $verifier->verifyTransfer($premiumTx, $buyerWallet);
+        if (!($t['ok'] ?? false) || $pool === '' || ($t['to'] ?? '') !== $pool) {
+            return false;
+        }
+        $premium = number_format((float) config('chain.insurance.premium_tlkm', 2), 6, '.', '');
+        return bccomp((string) $t['amount_tlkm'], $premium, 6) >= 0;
     }
 
     /** Harga produk dalam wei, dari nilai DECIMAL mentah (bukan float) agar presisi. */
