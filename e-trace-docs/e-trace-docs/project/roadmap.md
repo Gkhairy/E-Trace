@@ -19,7 +19,7 @@ Dates and funding figures are **targets** for planning and may change.
 
 Polish and stabilize the five core features (**e-commerce, donations, AI assistant, e-wallet, community savings**) and onboard the first sellers and communities.
 
-* **Smart-contract audit.** Internal review first, then an external audit before any real money is involved.
+* **Smart-contract audit.** The internal review is done (28 findings, see the [Audit report](audit-report.md)). Next: ship the fixes in a new contract version (PaymentGatewayV4, TlkmPaylaterV2, CommunityMultisigWalletV2), then an external audit before any real money is involved.
 * **Self-serve seller onboarding**, so anyone can open a store without asking the team.
 * **Self-serve ad booking.** Advertisers book and pay for home-banner slots in TLKM, with an on-chain receipt and a public ad-revenue counter.
 * **Courier API integrations**, so real tracking events feed the keeper instead of the simulated ones used on testnet.
