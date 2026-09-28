@@ -37,3 +37,6 @@ Thumbs.db
 
 # Catatan deploy pribadi — tidak untuk repo
 DEPLOY-RAILWAY.md
+
+# Pashov solidity-auditor run output (local working files)
+/.solidity-auditor/

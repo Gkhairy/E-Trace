@@ -37,6 +37,7 @@ Route::post('/login', [AuthController::class, 'loginStore'])->middleware('thrott
 
 // LOGIN METAMASK
 Route::get('/api/get-nonce', [AuthController::class, 'getNonce'])->middleware('throttle:20,1,get-api-get-nonce');
+Route::get('/api/register-nonce', [AuthController::class, 'registerNonce'])->middleware('throttle:20,1,get-api-register-nonce');
 Route::post('/login-wallet', [AuthController::class, 'loginWithWallet'])->middleware('throttle:12,1,post-login-wallet');
 
 // PIN GATE (setelah password/MetaMask; berbasis sesi, sebelum login penuh)

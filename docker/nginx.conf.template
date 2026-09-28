@@ -55,7 +55,11 @@ http {
             try_files $uri $uri/ /index.php?$query_string;
         }
 
-        location ~ \.php$ {
+        # Hanya front controller yang boleh dijalankan PHP. Berkas .php lain di
+        # bawah public/ (mis. unggahan yang menyamar) tidak pernah dieksekusi.
+        location ~ \.php$ { return 404; }
+
+        location = /index.php {
             if ($blocked_bot) { return 403; }
             include fastcgi_params;
             fastcgi_pass 127.0.0.1:9000;

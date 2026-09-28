@@ -45,7 +45,6 @@ class AuthController extends Controller
         if ($usesMetamask) {
             $rules['wallet_address'] = 'required|string|regex:/^0x[a-fA-F0-9]{40}$/|unique:users';
             $rules['signature']      = 'required|string';
-            $rules['sig_timestamp']  = 'required|numeric';
         }
 
         $request->validate($rules, [
@@ -62,15 +61,18 @@ class AuthController extends Controller
         if ($usesMetamask) {
             // BUKTI KEPEMILIKAN WALLET: signature harus cocok dg wallet_address.
             // (MetaMask: PIN hanya untuk login/konfirmasi app; penandatanganan on-chain tetap via MetaMask.)
+            // Pesan yang ditandatangani disusun SERVER dengan nonce sekali pakai dari sesi ini
+            // (lihat registerNonce), jadi tanda tangan lama/milik sesi lain tidak bisa dipakai.
             $wallet = strtolower($request->wallet_address);
-            $ts = (int) $request->sig_timestamp;
-            if (abs(time() - $ts) > 600) {
+            $reg = session('reg_nonce');
+            if (!is_array($reg) || ($reg['wallet'] ?? null) !== $wallet || ($reg['exp'] ?? 0) < time()) {
                 return back()->withErrors(['wallet_address' => __('Tanda tangan wallet kadaluarsa. Klik Connect Wallet lagi.')])->withInput();
             }
-            $recovered = $this->recoverSigner("E-Trace register\nWallet: {$wallet}\nWaktu: {$ts}", $request->signature);
+            $recovered = $this->recoverSigner($this->registerMessage($request, $wallet, $reg['nonce'], $reg['issued']), $request->signature);
             if (!$recovered || strtolower($recovered) !== $wallet) {
                 return back()->withErrors(['wallet_address' => __('Bukti kepemilikan wallet tidak valid.')])->withInput();
             }
+            session()->forget('reg_nonce'); // sekali pakai
         } else {
             // Buat embedded wallet otomatis, enkripsi private key dengan PIN.
             $ew = new EmbeddedWallet();
@@ -469,6 +471,46 @@ class AuthController extends Controller
         $user->save();
 
         return response()->json(['nonce' => $user->nonce]);
+    }
+
+    // ============================
+    // API REGISTER NONCE (bukti kepemilikan wallet saat daftar)
+    // ============================
+    public function registerNonce(Request $request)
+    {
+        $request->validate(['wallet' => ['required', 'regex:/^0x[a-fA-F0-9]{40}$/']]);
+        $wallet = strtolower($request->wallet);
+        $nonce  = Str::random(24);
+        $issued = now()->utc()->format('Y-m-d\TH:i:s\Z');
+        session(['reg_nonce' => ['wallet' => $wallet, 'nonce' => $nonce, 'issued' => $issued, 'exp' => time() + 600]]);
+
+        return response()->json(['message' => $this->registerMessage($request, $wallet, $nonce, $issued)]);
+    }
+
+    // Pesan format Sign-In with Ethereum (EIP-4361): wallet menampilkan domain dan
+    // memperingatkan pengguna bila pesan ini diminta dari situs lain (anti-phishing).
+    private function registerMessage(Request $request, string $wallet, string $nonce, string $issued): string
+    {
+        return $request->getHost() . " wants you to sign in with your Ethereum account:\n"
+            . $this->checksumAddress($wallet) . "\n\n"
+            . "Register a new E-Trace account with this wallet.\n\n"
+            . "URI: " . $request->getSchemeAndHttpHost() . "\n"
+            . "Version: 1\n"
+            . "Chain ID: " . (int) config('chain.chain_id') . "\n"
+            . "Nonce: {$nonce}\n"
+            . "Issued At: {$issued}";
+    }
+
+    // Alamat EIP-55 (huruf besar/kecil sebagai checksum), wajib di pesan EIP-4361.
+    private function checksumAddress(string $address): string
+    {
+        $addr = strtolower(substr($address, 2));
+        $hash = Keccak::hash($addr, 256);
+        $out = '0x';
+        for ($i = 0; $i < 40; $i++) {
+            $out .= hexdec($hash[$i]) >= 8 ? strtoupper($addr[$i]) : $addr[$i];
+        }
+        return $out;
     }
 
     // ============================

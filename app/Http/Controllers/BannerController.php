@@ -37,7 +37,7 @@ class BannerController extends Controller
         // Gambar: file upload ATAU URL.
         $image = null;
         if ($req->hasFile('image')) {
-            $image = Str::uuid() . '.' . $req->file('image')->getClientOriginalExtension();
+            $image = Str::uuid() . '.' . $req->file('image')->extension();
             $req->file('image')->move(public_path('banner_images'), $image);
         } elseif (!empty($data['image_url'])) {
             $image = $data['image_url'];

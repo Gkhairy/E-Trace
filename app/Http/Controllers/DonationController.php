@@ -77,7 +77,7 @@ class DonationController extends Controller
 
         $imageName = null;
         if ($req->hasFile('image')) {
-            $imageName = Str::uuid() . '.' . $req->file('image')->getClientOriginalExtension();
+            $imageName = Str::uuid() . '.' . $req->file('image')->extension();
             $req->file('image')->move(public_path('campaign_images'), $imageName);
         }
 
@@ -124,7 +124,7 @@ class DonationController extends Controller
             if ($campaign->image) {
                 @unlink(public_path('campaign_images/' . $campaign->image));
             }
-            $imageName = Str::uuid() . '.' . $req->file('image')->getClientOriginalExtension();
+            $imageName = Str::uuid() . '.' . $req->file('image')->extension();
             $req->file('image')->move(public_path('campaign_images'), $imageName);
             $campaign->image = $imageName;
         }

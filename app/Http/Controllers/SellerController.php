@@ -164,7 +164,7 @@ class SellerController extends Controller
 
         foreach (['logo', 'banner'] as $field) {
             if ($req->hasFile($field)) {
-                $name = Str::uuid() . '.' . $req->file($field)->getClientOriginalExtension();
+                $name = Str::uuid() . '.' . $req->file($field)->extension();
                 $req->file($field)->move(public_path('store_images'), $name);
                 $store->{$field} = $name;
             }

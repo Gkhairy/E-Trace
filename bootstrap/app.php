@@ -15,10 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // Percayai header proxy (X-Forwarded-Proto dsb) agar $request->secure()
         // benar di belakang load balancer / reverse proxy yang terminasi TLS —
         // mencegah redirect loop saat FORCE_HTTPS aktif.
+        // X-Forwarded-For sengaja TIDAK dipercaya: nginx (real_ip) sudah menaruh IP
+        // klien asli di REMOTE_ADDR. Mempercayainya lagi di sini membuat $request->ip()
+        // mengambil nilai XFF kiriman klien, sehingga rate limit & Turnstile bisa diakali.
         $middleware->trustProxies(
             at: '*',
-            headers: Request::HEADER_X_FORWARDED_FOR
-                | Request::HEADER_X_FORWARDED_HOST
+            headers: Request::HEADER_X_FORWARDED_HOST
                 | Request::HEADER_X_FORWARDED_PORT
                 | Request::HEADER_X_FORWARDED_PROTO
         );

@@ -153,14 +153,11 @@ class CommunityPurchase
             }
 
             $ins   = config('chain.insurance');
-            $insOn = (bool) ($ins['enabled'] ?? false) && !empty($ins['pool_wallet']);
             $order->shipping_tlkm = $m['shipping_tlkm'];
             $order->eta_days      = $m['eta_days'];
             $order->promised_date = now()->addDays((int) $m['eta_days'] + (int) ($ins['eta_buffer_days'] ?? 3));
-            if (!empty($m['is_insured']) && $insOn) {
-                $order->is_insured       = true;
-                $order->insurance_status = 'active';
-            }
+            // Pembelian komunitas belum membayar premi ke pool, jadi garansi TIDAK
+            // diaktifkan (sebelumnya aktif tanpa premi -> payout gratis dari pool).
             $order->save();
 
             // Keranjang pembeli dikosongkan setelah dibayar.
