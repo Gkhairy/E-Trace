@@ -1,0 +1,12 @@
+$schema: https://api.gitbook.com/gitbook-docs.yaml
+site:
+  title: E-Trace Docs
+  structure:
+    - type: space
+      key: space-1
+      title: E-Trace Docs
+      path: e-trace-docs
+      default: true
+      content:
+        directory: ./e-trace-docs
+        language: en
