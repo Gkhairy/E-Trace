@@ -13,9 +13,9 @@ class SellerController extends Controller
     private function store()
     {
         $user = auth()->user();
-        abort_unless($user->isSeller(), 403, 'Hanya penjual yang bisa mengakses dashboard toko.');
+        abort_unless($user->isSeller(), 403, __('Hanya penjual yang bisa mengakses dashboard toko.'));
         $store = $user->store;
-        abort_unless($store, 404, 'Toko belum tersedia untuk akun ini.');
+        abort_unless($store, 404, __('Toko belum tersedia untuk akun ini.'));
         return $store;
     }
 
@@ -172,7 +172,7 @@ class SellerController extends Controller
 
         $store->save();
 
-        return redirect('/seller/store')->with('success', 'Pengaturan toko disimpan.');
+        return redirect('/seller/store')->with('success', __('Pengaturan toko disimpan.'));
     }
 
     /**
@@ -194,11 +194,11 @@ class SellerController extends Controller
         $item = OrderItem::where('id', $data['item_id'])
             ->where('seller_wallet', $store->payout_wallet)
             ->first();
-        abort_unless($item, 404, 'Item tidak ditemukan.');
+        abort_unless($item, 404, __('Item tidak ditemukan.'));
 
         // Hanya boleh kirim kalau pembayaran (escrow) sudah terkonfirmasi.
         if ($item->status !== 'paid') {
-            return back()->with('error', 'Pesanan belum bisa diproses (pembayaran belum terkonfirmasi atau sudah selesai/refund).');
+            return back()->with('error', __('Pesanan belum bisa diproses (pembayaran belum terkonfirmasi atau sudah selesai/refund).'));
         }
 
         if ($data['action'] === 'process') {
@@ -223,12 +223,13 @@ class SellerController extends Controller
             // Notifikasi in-app ke pembeli: pesanan dikirim (+ resi).
             $buyerId = optional($item->order)->user_id;
             $prodName = optional($item->product)->name ?: 'Produk';
-            $resi = $item->tracking_number ? (' Resi: ' . $item->tracking_number . ($item->courier ? ' (' . $item->courier . ')' : '') . '.') : '';
-            \App\Support\Notify::send($buyerId, 'order', 'Pesanan dikirim',
-                "\"{$prodName}\" sedang dikirim ke alamatmu.{$resi}", '/orders', '🚚');
+            $resi = $item->tracking_number ? $item->tracking_number . ($item->courier ? ' (' . $item->courier . ')' : '') : null;
+            \App\Support\Notify::send($buyerId, 'order', 'Pesanan dikirim', $resi
+                ? ['":product" sedang dikirim ke alamatmu. Resi: :resi.', ['product' => $prodName, 'resi' => $resi]]
+                : ['":product" sedang dikirim ke alamatmu.', ['product' => $prodName]], '/orders', '🚚');
         }
 
-        return back()->with('success', 'Status pengiriman diperbarui.');
+        return back()->with('success', __('Status pengiriman diperbarui.'));
     }
 }
 

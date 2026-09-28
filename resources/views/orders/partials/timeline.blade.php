@@ -19,30 +19,30 @@
 <div class="mt-3 pl-[60px] pr-2">
     @if($refunded)
         <div class="inline-flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-full px-3 py-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Pesanan Dibuat → <b>Refund</b> (dana dikembalikan ke pembeli)
+            <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> {{ __('Pesanan Dibuat') }} → <b>{{ __('Refund') }}</b> {{ __('(dana dikembalikan ke pembeli)') }}
         </div>
     @elseif($disputed)
         <div class="inline-flex items-center gap-1.5 text-xs text-red-600 bg-red-50 border border-red-200 rounded-full px-3 py-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Pesanan Dibuat → <b>Sengketa</b> (menunggu keputusan pengawas)
+            <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> {{ __('Pesanan Dibuat') }} → <b>{{ __('Sengketa') }}</b> {{ __('(menunggu keputusan pengawas)') }}
         </div>
     @else
         <div class="flex items-center">
             {{-- Dibuat --}}
             <div class="flex flex-col items-center">
                 <span class="w-3 h-3 rounded-full border-2 {{ $dot($s1) }}"></span>
-                <span class="text-[10px] mt-1 {{ $lbl($s1) }}">Dibuat</span>
+                <span class="text-[10px] mt-1 {{ $lbl($s1) }}">{{ __('Dibuat') }}</span>
             </div>
             <div class="flex-1 h-0.5 mx-1 -mt-4 {{ $line($s2 === 'done' ? 'done' : 'todo') }}"></div>
             {{-- Dikirim --}}
             <div class="flex flex-col items-center">
                 <span class="w-3 h-3 rounded-full border-2 {{ $dot($s2) }}"></span>
-                <span class="text-[10px] mt-1 {{ $lbl($s2) }}">Dikirim</span>
+                <span class="text-[10px] mt-1 {{ $lbl($s2) }}">{{ __('Dikirim') }}</span>
             </div>
             <div class="flex-1 h-0.5 mx-1 -mt-4 {{ $line($s3 === 'done' ? 'done' : 'todo') }}"></div>
             {{-- Selesai --}}
             <div class="flex flex-col items-center">
                 <span class="w-3 h-3 rounded-full border-2 {{ $dot($s3) }}"></span>
-                <span class="text-[10px] mt-1 {{ $lbl($s3) }}">Selesai</span>
+                <span class="text-[10px] mt-1 {{ $lbl($s3) }}">{{ __('Selesai') }}</span>
             </div>
         </div>
     @endif

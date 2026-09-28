@@ -37,17 +37,17 @@ class ProductController extends Controller
 
     public function create()
     {
-        abort_unless(auth()->user()->isSeller(), 403, 'Hanya penjual yang bisa menambah produk.');
-        abort_unless(auth()->user()->store, 403, 'Toko belum tersedia untuk akun ini.');
+        abort_unless(auth()->user()->isSeller(), 403, __('Hanya penjual yang bisa menambah produk.'));
+        abort_unless(auth()->user()->store, 403, __('Toko belum tersedia untuk akun ini.'));
         return view('products.create', ['categories' => Category::orderBy('sort')->get()]);
     }
 
     public function store(Request $req)
     {
-        abort_unless(auth()->user()->isSeller(), 403, 'Hanya penjual yang bisa menambah produk.');
+        abort_unless(auth()->user()->isSeller(), 403, __('Hanya penjual yang bisa menambah produk.'));
 
         $store = auth()->user()->store;
-        abort_unless($store, 403, 'Toko belum tersedia untuk akun ini.');
+        abort_unless($store, 403, __('Toko belum tersedia untuk akun ini.'));
 
         $req->validate([
             'name' => 'required',
@@ -74,22 +74,22 @@ class ProductController extends Controller
             'gallery'       => $gallery ?: null,
         ]);
 
-        return redirect('/seller/products')->with('success', 'Produk berhasil ditambahkan.');
+        return redirect('/seller/products')->with('success', __('Produk berhasil ditambahkan.'));
     }
 
     /** Ambil produk milik toko user (otorisasi), atau 403/404. */
     private function ownedProduct($id): Product
     {
         $store = auth()->user()->store;
-        abort_unless($store, 403, 'Toko belum tersedia untuk akun ini.');
+        abort_unless($store, 403, __('Toko belum tersedia untuk akun ini.'));
         $product = Product::findOrFail($id);
-        abort_unless($product->store_id === $store->id, 403, 'Bukan produk tokomu.');
+        abort_unless($product->store_id === $store->id, 403, __('Bukan produk tokomu.'));
         return $product;
     }
 
     public function edit($id)
     {
-        abort_unless(auth()->user()->isSeller(), 403, 'Hanya penjual.');
+        abort_unless(auth()->user()->isSeller(), 403, __('Hanya penjual.'));
         $product = $this->ownedProduct($id);
         return view('products.edit', [
             'product'    => $product,
@@ -99,7 +99,7 @@ class ProductController extends Controller
 
     public function update(Request $req, $id)
     {
-        abort_unless(auth()->user()->isSeller(), 403, 'Hanya penjual.');
+        abort_unless(auth()->user()->isSeller(), 403, __('Hanya penjual.'));
         $product = $this->ownedProduct($id);
 
         $req->validate([
@@ -126,18 +126,18 @@ class ProductController extends Controller
         }
         $product->save();
 
-        return redirect('/seller/products')->with('success', 'Produk diperbarui.');
+        return redirect('/seller/products')->with('success', __('Produk diperbarui.'));
     }
 
     public function destroy($id)
     {
-        abort_unless(auth()->user()->isSeller(), 403, 'Hanya penjual.');
+        abort_unless(auth()->user()->isSeller(), 403, __('Hanya penjual.'));
         $product = $this->ownedProduct($id);
 
         $this->deleteLocalImages($product);
         $product->delete();
 
-        return redirect('/seller/products')->with('success', 'Produk dihapus.');
+        return redirect('/seller/products')->with('success', __('Produk dihapus.'));
     }
 
     /**

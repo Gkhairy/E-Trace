@@ -104,7 +104,7 @@ class WalletController extends Controller
 
             // ===== Sisi PENYUPLAI (lender/earn) — 3 jangka + statistik pool =====
             $stats = $pv->poolStats();
-            $termLabels = [0 => 'Fleksibel', 1 => 'Tetap 30 hari', 2 => 'Tetap 90 hari'];
+            $termLabels = [0 => __('Fleksibel'), 1 => __('Tetap 30 hari'), 2 => __('Tetap 90 hari')];
             $terms = [];
             foreach ([0, 1, 2] as $t) {
                 $bi  = $pv->bucketInfo($t);
@@ -183,7 +183,7 @@ class WalletController extends Controller
         ]);
 
         if (!auth()->user()->wallet_address) {
-            return back()->with('error', 'Akun belum punya wallet untuk menerima uang.');
+            return back()->with('error', __('Akun belum punya wallet untuk menerima uang.'));
         }
 
         do {
@@ -200,7 +200,7 @@ class WalletController extends Controller
             'note'    => $data['note'] ?? null,
         ]);
 
-        return redirect('/wallet')->with('success', 'Permintaan uang dibuat. Bagikan link atau QR-nya.');
+        return redirect('/wallet')->with('success', __('Permintaan uang dibuat. Bagikan link atau QR-nya.'));
     }
 
     /** Halaman bayar sebuah permintaan (publik) — siapa saja bisa membayar. */
@@ -209,7 +209,7 @@ class WalletController extends Controller
         $request = PaymentRequest::where('code', $code)->firstOrFail();
         $recipient = $request->user;
 
-        abort_unless($recipient && $recipient->wallet_address, 404, 'Penerima tidak punya wallet.');
+        abort_unless($recipient && $recipient->wallet_address, 404, __('Penerima tidak punya wallet.'));
 
         $identity = Identity::resolve($recipient->wallet_address);
 

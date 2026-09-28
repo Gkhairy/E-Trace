@@ -21,13 +21,13 @@ class AddressController extends Controller
         ShippingAddress::where('user_id', auth()->id())->update(['is_default' => false]);
         $addr->update(['is_default' => true]);
 
-        return back()->with('success', 'Alamat utama diperbarui.');
+        return back()->with('success', __('Alamat utama diperbarui.'));
     }
 
     public function destroy(Request $req)
     {
         ShippingAddress::where('id', $req->id)->where('user_id', auth()->id())->delete();
 
-        return back()->with('success', 'Alamat dihapus.');
+        return back()->with('success', __('Alamat dihapus.'));
     }
 }

@@ -16,7 +16,7 @@ class CheckoutController extends Controller
             ->get();
 
         if ($items->isEmpty()) {
-            return redirect('/cart')->with('success', 'Keranjang masih kosong.');
+            return redirect('/cart')->with('success', __('Keranjang masih kosong.'));
         }
 
         // Kelompokkan per penjual (seller_wallet).
@@ -64,17 +64,17 @@ class CheckoutController extends Controller
             // RPC ~0,7-1,5 dt tiap panggilan; di-cache singkat agar checkout tidak lambat.
             $pos = $wallet ? \Illuminate\Support\Facades\Cache::remember("pl:pos:{$wallet}", 30, fn () => $pv->positionOf($wallet)) : null;
             if (!$pos) {
-                $paylaterBtn['reason'] = 'Posisi Paylater belum terbaca.';
+                $paylaterBtn['reason'] = __('Posisi Paylater belum terbaca.');
             } else {
                 $availTlkm = (float) bcdiv(bcsub($pos['limit'], $pos['principal']), bcpow('10', '18'), 6);
                 if ($availTlkm + 1e-6 < $total) {
                     $shown = rtrim(rtrim(number_format($availTlkm, 2), '0'), '.');
-                    $paylaterBtn['reason'] = "Sisa limit Paylater ({$shown} TLKM) kurang dari total. Tambah agunan di Dompet.";
+                    $paylaterBtn['reason'] = __('Sisa limit Paylater (:amt TLKM) kurang dari total. Tambah agunan di Dompet.', ['amt' => $shown]);
                 } else {
                     $liqWei = \Illuminate\Support\Facades\Cache::remember("pl:liq", 30, fn () => $pv->availableLiquidity());
                     $liqTlkm = $liqWei !== null ? (float) bcdiv($liqWei, bcpow('10', '18'), 6) : 0.0;
                     if ($liqTlkm + 1e-6 < $total) {
-                        $paylaterBtn['reason'] = 'Likuiditas pool Paylater belum cukup.';
+                        $paylaterBtn['reason'] = __('Likuiditas pool Paylater belum cukup.');
                     } else {
                         $paylaterBtn['available'] = true;
                     }

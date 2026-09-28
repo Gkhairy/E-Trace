@@ -5,7 +5,7 @@
 @include('products._form', [
     'product'     => null,
     'action'      => '/products/store',
-    'submitLabel' => 'Simpan produk',
+    'submitLabel' => __('Simpan produk'),
 ])
 @endsection
 

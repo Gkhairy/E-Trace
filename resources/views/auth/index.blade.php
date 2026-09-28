@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     @include('partials.favicon')
-    <title>{{ ($mode ?? 'login') === 'register' ? 'Daftar' : 'Masuk' }} — E-Trace</title>
+    <title>{{ ($mode ?? 'login') === 'register' ? __('Daftar') : __('Masuk') }} — E-Trace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.1/dist/ethers.umd.min.js"></script>
     @if(\App\Services\Turnstile::enabled())
@@ -106,7 +106,7 @@
 
             <div class="flex items-center gap-3 my-2 mb-3">
                 <div class="h-px bg-slate-200 flex-1"></div>
-                <span class="text-xs text-slate-400">atau</span>
+                <span class="text-xs text-slate-400">{{ __('atau') }}</span>
                 <div class="h-px bg-slate-200 flex-1"></div>
             </div>
 
@@ -161,7 +161,7 @@
 
                 {{-- No HP dengan PEMILIH KODE NEGARA (target internasional) --}}
                 <div class="flex gap-2">
-                    <select id="phoneCc" class="in-field !w-[132px] shrink-0 !px-2" aria-label="Kode negara">
+                    <select id="phoneCc" class="in-field !w-[132px] shrink-0 !px-2" aria-label="{{ __('Kode negara') }}">
                         @php
                             $dials = [
                                 ['+62','ID','🇮🇩'], ['+60','MY','🇲🇾'], ['+65','SG','🇸🇬'], ['+66','TH','🇹🇭'],
@@ -189,7 +189,7 @@
 
                 {{-- Blok MetaMask --}}
                 <div id="mmBlock" class="hidden">
-                    <input name="wallet_address" id="wallet_address" value="{{ old('wallet_address') }}" readonly disabled placeholder="Wallet — klik Connect Wallet" class="in-field font-mono text-slate-600 !bg-slate-100 cursor-not-allowed @error('wallet_address') !border-red-400 @enderror">
+                    <input name="wallet_address" id="wallet_address" value="{{ old('wallet_address') }}" readonly disabled placeholder="{{ __('Wallet — klik Connect Wallet') }}" class="in-field font-mono text-slate-600 !bg-slate-100 cursor-not-allowed @error('wallet_address') !border-red-400 @enderror">
                     <input type="hidden" name="signature" id="signature" value="{{ old('signature') }}" disabled>
                     <input type="hidden" name="sig_timestamp" id="sig_timestamp" value="{{ old('sig_timestamp') }}" disabled>
                 </div>
@@ -257,10 +257,10 @@
 <div id="walletModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onclick="event.stopPropagation()">
         <div class="flex items-center justify-between mb-1">
-            <h3 class="text-lg font-bold text-slate-900">Pilih Wallet</h3>
+            <h3 class="text-lg font-bold text-slate-900">{{ __('Pilih Wallet') }}</h3>
             <button type="button" id="walletCancel" class="text-slate-400 hover:text-slate-700"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
         </div>
-        <p class="text-xs text-slate-500 mb-4">Wallet browser yang terdeteksi di perangkatmu.</p>
+        <p class="text-xs text-slate-500 mb-4">{{ __('Wallet browser yang terdeteksi di perangkatmu.') }}</p>
         <div id="walletList" class="space-y-2"></div>
     </div>
 </div>
@@ -273,10 +273,10 @@
     // Modal notifikasi — pengganti alert() browser agar konsisten dengan tema.
     function notify(message, type = 'info', title = null) {
         const map = {
-            error:   { cls: 'bg-red-100 text-red-600',    title: 'Gagal',     d: 'M6 18L18 6M6 6l12 12' },
-            warn:    { cls: 'bg-amber-100 text-amber-600', title: 'Perhatian', d: 'M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z' },
-            success: { cls: 'bg-green-100 text-green-600', title: 'Berhasil',  d: 'M5 13l4 4L19 7' },
-            info:    { cls: 'bg-blue-100 text-blue-600',   title: 'Info',      d: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+            error:   { cls: 'bg-red-100 text-red-600',    title: @json(__('Gagal')),     d: 'M6 18L18 6M6 6l12 12' },
+            warn:    { cls: 'bg-amber-100 text-amber-600', title: @json(__('Perhatian')), d: 'M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z' },
+            success: { cls: 'bg-green-100 text-green-600', title: @json(__('Berhasil')),  d: 'M5 13l4 4L19 7' },
+            info:    { cls: 'bg-blue-100 text-blue-600',   title: @json(__('Info')),      d: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
         };
         const t = map[type] || map.info;
         const icon = document.getElementById('notifyIcon');
@@ -320,10 +320,10 @@
         // Validasi field wajib dulu (nama/email/HP/password) sebelum minta PIN.
         if (!regForm.reportValidity()) return;
         // Bangun nomor telepon lengkap (kode negara + nomor).
-        if (!buildFullPhone()) { notify('Masukkan nomor HP yang valid.', 'warn'); return; }
+        if (!buildFullPhone()) { notify(@json(__('Masukkan nomor HP yang valid.')), 'warn'); return; }
         // Mode MetaMask: pastikan wallet sudah terhubung.
         if (isMetamaskMode() && !document.getElementById('wallet_address').value) {
-            notify('Hubungkan MetaMask dulu (klik "Connect Wallet").', 'warn');
+            notify(@json(__('Hubungkan MetaMask dulu (klik "Connect Wallet").')), 'warn');
             return;
         }
         document.getElementById('pinModalErr').classList.add('hidden');
@@ -338,8 +338,8 @@
         const pin = (document.getElementById('mPin').value || '').trim();
         const pin2 = (document.getElementById('mPin2').value || '').trim();
         const err = (m) => { const e = document.getElementById('pinModalErr'); e.textContent = m; e.classList.remove('hidden'); };
-        if (!/^\d{6}$/.test(pin)) return err('PIN harus 6 angka.');
-        if (pin !== pin2) return err('Konfirmasi PIN tidak cocok.');
+        if (!/^\d{6}$/.test(pin)) return err(@json(__('PIN harus 6 angka.')));
+        if (pin !== pin2) return err(@json(__('Konfirmasi PIN tidak cocok.')));
         document.getElementById('pinHidden').value = pin;
         document.getElementById('pinConfHidden').value = pin2;
         regForm.submit();
@@ -387,27 +387,27 @@
         });
     }
 
-    const noWalletMsg = 'Belum ada wallet Web3 terpasang. Pasang MetaMask / Coinbase / Rabby / Trust / OKX dll dulu, lalu coba lagi.';
+    const noWalletMsg = @json(__('Belum ada wallet Web3 terpasang. Pasang MetaMask / Coinbase / Rabby / Trust / OKX dll dulu, lalu coba lagi.'));
 
     // Cegah permintaan wallet ganda (penyebab error -32002 "already pending").
     let _walletBusy = false;
     // Terjemahkan error wallet jadi pesan ramah. Null = pakai default pemanggil.
     function walletErr(e) {
-        if (e && (e.code === 4001 || e.code === 'ACTION_REJECTED')) return 'Kamu membatalkan tanda tangan di wallet.';
+        if (e && (e.code === 4001 || e.code === 'ACTION_REJECTED')) return @json(__('Kamu membatalkan tanda tangan di wallet.'));
         const msg = ((e && (e.message || '')) + '') + JSON.stringify(e?.info || e?.error || '');
         if ((e && e.code === -32002) || /already pending|-32002/i.test(msg))
-            return 'Ada permintaan tanda tangan yang masih menunggu di wallet-mu. Buka aplikasi wallet, konfirmasi atau tolak dulu, lalu coba lagi.';
+            return @json(__('Ada permintaan tanda tangan yang masih menunggu di wallet-mu. Buka aplikasi wallet, konfirmasi atau tolak dulu, lalu coba lagi.'));
         return null;
     }
 
     // ===== REGISTER: connect wallet + tanda tangan kepemilikan =====
     async function connectWallet() {
         if (detectedWallets().length === 0) { notify(noWalletMsg, 'warn'); return; }
-        if (_walletBusy) { notify('Ada permintaan wallet yang masih diproses. Cek aplikasi wallet-mu dulu.', 'warn'); return; }
+        if (_walletBusy) { notify(@json(__('Ada permintaan wallet yang masih diproses. Cek aplikasi wallet-mu dulu.')), 'warn'); return; }
         _walletBusy = true;
         const cw = document.getElementById('cwLabel');
         const prevLabel = cw ? cw.textContent : null;
-        if (cw) cw.textContent = 'Menunggu tanda tangan…';
+        if (cw) cw.textContent = @json(__('Menunggu tanda tangan…'));
         try {
             const prov = await pickWallet();
             if (!prov) { if (cw) cw.textContent = prevLabel; return; } // batal pilih
@@ -421,10 +421,10 @@
             document.getElementById("wallet_address").value = wallet;
             document.getElementById("sig_timestamp").value = ts;
             document.getElementById("signature").value = signature;
-            if (cw) cw.textContent = "Wallet terhubung ✓";
+            if (cw) cw.textContent = @json(__('Wallet terhubung')) + " ✓";
         } catch (e) {
             if (cw) cw.textContent = prevLabel;
-            notify(walletErr(e) || ("Gagal menghubungkan wallet: " + (e.message || e)), 'error');
+            notify(walletErr(e) || (@json(__('Gagal menghubungkan wallet:')) + ' ' + (e.message || e)), 'error');
         } finally {
             _walletBusy = false;
         }
@@ -444,11 +444,11 @@
     async function loginWithWallet() {
         const btn = document.getElementById('mmBtn');
         const orig = btn.innerHTML;
-        if (_walletBusy) { notify('Ada permintaan wallet yang masih diproses. Cek aplikasi wallet-mu dulu.', 'warn'); return; }
+        if (_walletBusy) { notify(@json(__('Ada permintaan wallet yang masih diproses. Cek aplikasi wallet-mu dulu.')), 'warn'); return; }
         // Anti-bot dulu, sebelum membuka wallet: sama seperti login dengan password.
         const cfToken = loginTurnstileToken();
         if (TURNSTILE_ON && !cfToken) {
-            notify('Centang "Verify you are human" dulu sebelum login dengan wallet.', 'warn');
+            notify(@json(__('Centang "Verify you are human" dulu sebelum login dengan wallet.')), 'warn');
             document.getElementById('loginTurnstile')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
@@ -462,8 +462,8 @@
             const wallet = accounts[0];
             const nonceRes = await fetch("/api/get-nonce?wallet=" + wallet);
             const nonceJson = await nonceRes.json();
-            if (!nonceJson.nonce) { notify("Wallet ini belum terdaftar. Silakan Daftar dulu.", 'warn'); return; }
-            btn.textContent = "Menunggu tanda tangan…";
+            if (!nonceJson.nonce) { notify(@json(__('Wallet ini belum terdaftar. Silakan Daftar dulu.')), 'warn'); return; }
+            btn.textContent = @json(__('Menunggu tanda tangan…'));
             const provider = new ethers.BrowserProvider(prov);
             const signer = await provider.getSigner();
             const signature = await signer.signMessage("Login with wallet\nNonce: " + nonceJson.nonce);
@@ -475,12 +475,12 @@
             });
             let loginRes;
             try { loginRes = await loginReq.json(); }
-            catch (_) { throw new Error("Server error (" + loginReq.status + "). Cek log Laravel."); }
+            catch (_) { throw new Error(@json(__('Server bermasalah')) + " (" + loginReq.status + ")."); }
             if (loginReq.ok && loginRes.success) { window.location.href = loginRes.redirect || "/products"; }
-            else { notify(loginRes.error || "Login gagal.", 'error'); resetLoginTurnstile(); } // token sekali pakai
+            else { notify(loginRes.error || @json(__('Login gagal.')), 'error'); resetLoginTurnstile(); } // token sekali pakai
         } catch (e) {
             console.error(e);
-            notify(walletErr(e) || (e.message || "Login gagal."), 'error');
+            notify(walletErr(e) || (e.message || @json(__('Login gagal.'))), 'error');
         } finally {
             _walletBusy = false;
             btn.disabled = false; btn.innerHTML = orig;

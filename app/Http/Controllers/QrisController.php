@@ -26,13 +26,13 @@ class QrisController extends Controller
 
         // Verifikasi PIN (berlaku untuk semua akun — embedded maupun MetaMask).
         $user = auth()->user();
-        abort_unless($user->pin_hash, 422, 'Akun belum punya PIN.');
-        abort_if($user->pinLocked(), 423, 'PIN terkunci sementara. Coba lagi nanti.');
+        abort_unless($user->pin_hash, 422, __('Akun belum punya PIN.'));
+        abort_if($user->pinLocked(), 423, __('PIN terkunci sementara. Coba lagi nanti.'));
         if (!Hash::check($data['pin'], $user->pin_hash)) {
             $user->increment('pin_attempts');
             if ($user->pin_attempts >= 5) {
                 $user->forceFill(['pin_locked_until' => now()->addMinutes(15), 'pin_attempts' => 0])->save();
-                abort(423, 'PIN salah 5×. Dikunci 15 menit.');
+                abort(423, __('PIN salah 5×. Dikunci 15 menit.'));
             }
             abort(422, 'PIN salah. Sisa percobaan: ' . max(0, 5 - $user->pin_attempts) . '.');
         }

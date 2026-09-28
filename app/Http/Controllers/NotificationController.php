@@ -43,6 +43,6 @@ class NotificationController extends Controller
         AppNotification::where('user_id', auth()->id())->unread()->update(['read_at' => now()]);
         return $request->wantsJson()
             ? response()->json(['success' => true])
-            : back()->with('success', 'Semua notifikasi ditandai dibaca.');
+            : back()->with('success', __('Semua notifikasi ditandai dibaca.'));
     }
 }

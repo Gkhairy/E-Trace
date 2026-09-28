@@ -124,8 +124,8 @@ class ChainSigner
         if (!$hash) {
             $err = (string) $this->lastError;
             throw new \App\Exceptions\ChainTxException(str_contains(strtolower($err), 'insufficient funds')
-                ? 'Saldo tBNB untuk biaya gas tidak cukup. Coba lagi sebentar lagi.'
-                : 'Gagal mengirim transaksi ke blockchain' . ($err !== '' ? ': ' . $err : '.'));
+                ? __('Saldo tBNB untuk biaya gas tidak cukup. Coba lagi sebentar lagi.')
+                : __('Gagal mengirim transaksi ke blockchain') . ($err !== '' ? ': ' . $err : '.'));
         }
         return $hash;
     }

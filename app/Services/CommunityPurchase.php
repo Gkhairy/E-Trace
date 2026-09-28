@@ -39,13 +39,13 @@ class CommunityPurchase
     public function snapshot(int $buyerId, ShippingAddress $addr, bool $insured, ShippingService $shipping): array
     {
         $items = CartItem::with('product')->where('user_id', $buyerId)->get();
-        abort_if($items->isEmpty(), 422, 'Keranjang kosong.');
+        abort_if($items->isEmpty(), 422, __('Keranjang kosong.'));
 
         $sellers = $lines = $productIds = $amounts = [];
         $total = '0';
         foreach ($items->values() as $i => $it) {
             $p = $it->product;
-            abort_unless($p && $p->seller_wallet, 422, 'Produk tidak valid dalam keranjang.');
+            abort_unless($p && $p->seller_wallet, 422, __('Produk tidak valid dalam keranjang.'));
             $amount = number_format((float) $p->price_usdc * $it->quantity, 6, '.', '');
 
             $sellers[]    = strtolower($p->seller_wallet);
@@ -97,11 +97,11 @@ class CommunityPurchase
     public function payAndRecord(CommunityWallet $wallet, CommunityProposal $p, ChainSigner $signer): string
     {
         $m = $p->meta ?: [];
-        abort_if(empty($m['lines']), 500, 'Snapshot pembelian tidak lengkap.');
+        abort_if(empty($m['lines']), 500, __('Snapshot pembelian tidak lengkap.'));
 
         $gateway = config('chain.gateway');
         $zero = '0x0000000000000000000000000000000000000000';
-        abort_if(!$gateway || $gateway === $zero, 422, 'Alamat gateway escrow belum dikonfigurasi.');
+        abort_if(!$gateway || $gateway === $zero, 422, __('Alamat gateway escrow belum dikonfigurasi.'));
 
         // Idempoten: kalau order sudah tercatat, jangan bayar dua kali.
         if ($existing = Order::where('order_id', $m['order_id'])->first()) {
@@ -109,7 +109,7 @@ class CommunityPurchase
         }
 
         $priv = (new EmbeddedWallet())->decryptServer($wallet->only(['wallet_enc', 'wallet_salt', 'wallet_iv', 'wallet_tag']));
-        abort_unless($priv, 500, 'Kunci dompet komunitas gagal dibuka.');
+        abort_unless($priv, 500, __('Kunci dompet komunitas gagal dibuka.'));
 
         $totalWei = $signer->toWei((string) $m['total']);
         $amountsWei = array_map(fn ($a) => $signer->toWei((string) $a), $m['amounts']);
@@ -119,7 +119,7 @@ class CommunityPurchase
         // Encoder manual: encoder bawaan web3.php salah meng-encode string[] (lihat AbiEncoder).
         $data = \App\Support\AbiEncoder::payCart($m['sellers'], $amountsWei, $m['product_ids'], $m['order_id']);
         $hash = $signer->sendRaw($priv, $gateway, '0x0', $data);
-        $this->requireSuccess($signer, $hash, 'Pembayaran escrow gagal di blockchain (transaksi revert) — dana komunitas tidak berkurang.');
+        $this->requireSuccess($signer, $hash, __('Pembayaran escrow gagal di blockchain (transaksi revert) — dana komunitas tidak berkurang.'));
 
         // 2) Catat order (pembeli = pengusul; dana dari dompet komunitas).
         DB::transaction(function () use ($m, $wallet, $hash) {
@@ -186,7 +186,7 @@ class CommunityPurchase
     private function requireSuccess(ChainSigner $s, string $hash, string $message): void
     {
         $r = $s->waitReceipt($hash);
-        abort_if(!$r, 422, 'Transaksi belum terkonfirmasi di blockchain. Coba lagi sebentar. (tx: ' . $hash . ')');
+        abort_if(!$r, 422, __('Transaksi belum terkonfirmasi di blockchain. Coba lagi sebentar. (tx: :tx)', ['tx' => $hash]));
         $status = strtolower((string) ($r['status'] ?? ''));
         abort_if(!in_array($status, ['0x1', '1'], true), 422, $message . ' (tx: ' . $hash . ')');
     }

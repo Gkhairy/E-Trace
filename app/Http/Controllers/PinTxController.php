@@ -41,14 +41,14 @@ class PinTxController extends Controller
     private function unlock(string $pin): string
     {
         $user = auth()->user();
-        abort_unless($user && $user->isEmbedded() && $user->pin_hash, 422, 'Akun ini bukan embedded wallet.');
-        abort_if($user->pinLocked(), 423, 'PIN terkunci sementara. Coba lagi nanti.');
+        abort_unless($user && $user->isEmbedded() && $user->pin_hash, 422, __('Akun ini bukan embedded wallet.'));
+        abort_if($user->pinLocked(), 423, __('PIN terkunci sementara. Coba lagi nanti.'));
 
         if (!Hash::check($pin, $user->pin_hash)) {
             $user->increment('pin_attempts');
             if ($user->pin_attempts >= 5) {
                 $user->forceFill(['pin_locked_until' => now()->addMinutes(15), 'pin_attempts' => 0])->save();
-                abort(423, 'PIN salah 5×. Wallet dikunci 15 menit.');
+                abort(423, __('PIN salah 5×. Wallet dikunci 15 menit.'));
             }
             abort(422, 'PIN salah. Sisa percobaan: ' . max(0, 5 - $user->pin_attempts) . '.');
         }
@@ -56,7 +56,7 @@ class PinTxController extends Controller
         $user->forceFill(['pin_attempts' => 0])->save();
         $wallet = new EmbeddedWallet();
         $priv = $wallet->decrypt($user, $pin);
-        abort_unless($priv, 422, 'Gagal membuka wallet (PIN salah?).');
+        abort_unless($priv, 422, __('Gagal membuka wallet (PIN salah?).'));
 
         // Gas drip saat daftar cuma sekali; isi ulang tBNB bila sudah menipis.
         app(GasTopUp::class)->ensure($wallet->addressFromPrivate($priv));
@@ -125,7 +125,7 @@ class PinTxController extends Controller
             $data[$k] = array_values($data[$k]);
         }
         $n = count($data['sellers']);
-        abort_unless($n === count($data['amounts']) && $n === count($data['productIds']), 422, 'Data keranjang tidak lengkap.');
+        abort_unless($n === count($data['amounts']) && $n === count($data['productIds']), 422, __('Data keranjang tidak lengkap.'));
 
         $amountsWei = array_map(fn ($a) => $signer->toWei($a), $data['amounts']);
 
@@ -136,7 +136,7 @@ class PinTxController extends Controller
         foreach ($data['productIds'] as $i => $pid) {
             $product = \App\Models\Product::where('product_id', $pid)->first();
             abort_unless($product && strtolower($product->seller_wallet) === strtolower($data['sellers'][$i]), 422,
-                'Produk di keranjang tidak valid. Muat ulang halaman checkout.');
+                __('Produk di keranjang tidak valid. Muat ulang halaman checkout.'));
             $priceWei = bcmul((string) $product->getRawOriginal('price_usdc'), '1000000000000000000', 0);
             abort_if(\App\Services\ChainVerifier::paidQuantity($amountsWei[$i], $priceWei) === null, 422,
                 'Harga "' . $product->name . '" berubah. Muat ulang halaman checkout.');
@@ -157,7 +157,7 @@ class PinTxController extends Controller
 
         // Tx yang revert tidak boleh dilaporkan sebagai sukses.
         $r = $signer->waitReceipt($hash);
-        abort_if(!$r, 422, 'Transaksi belum terkonfirmasi. Coba lagi sebentar. (tx: ' . $hash . ')');
+        abort_if(!$r, 422, __('Transaksi belum terkonfirmasi. Coba lagi sebentar. (tx: :tx)', ['tx' => $hash]));
         abort_if(!in_array(strtolower((string) ($r['status'] ?? '')), ['0x1', '1'], true), 422,
             'Pembayaran escrow gagal di blockchain (transaksi revert). Saldo tidak berkurang. (tx: ' . $hash . ')');
 
@@ -169,7 +169,7 @@ class PinTxController extends Controller
     {
         $data = $req->validate(['pin' => 'required|digits:6', 'amount' => 'required|numeric|min:0.000001']);
         $paylater = config('chain.paylater_address');
-        abort_unless($paylater, 422, 'Paylater belum dikonfigurasi.');
+        abort_unless($paylater, 422, __('Paylater belum dikonfigurasi.'));
         $priv = $this->unlock($data['pin']);
         $hash = $signer->sendContractCall($priv, $paylater, self::PAYLATER_ABI, 'depositCollateral', [], $signer->toWeiHex($data['amount']));
         return response()->json(['success' => true, 'tx_hash' => $hash]);
@@ -180,7 +180,7 @@ class PinTxController extends Controller
     {
         $data = $req->validate(['pin' => 'required|digits:6', 'amount' => 'required|numeric|min:0.000001']);
         $paylater = config('chain.paylater_address');
-        abort_unless($paylater, 422, 'Paylater belum dikonfigurasi.');
+        abort_unless($paylater, 422, __('Paylater belum dikonfigurasi.'));
         $priv = $this->unlock($data['pin']);
         $hash = $signer->sendContractCall($priv, $paylater, self::PAYLATER_ABI, 'borrow', [$signer->toWei($data['amount'])]);
         return response()->json(['success' => true, 'tx_hash' => $hash]);
@@ -191,7 +191,7 @@ class PinTxController extends Controller
     {
         $data = $req->validate(['pin' => 'required|digits:6', 'amount' => 'required|numeric|min:0.000001']);
         $paylater = config('chain.paylater_address');
-        abort_unless($paylater, 422, 'Paylater belum dikonfigurasi.');
+        abort_unless($paylater, 422, __('Paylater belum dikonfigurasi.'));
         $priv = $this->unlock($data['pin']);
         $wei  = $signer->toWei($data['amount']);
         $this->ensureAllowance($signer, $priv, $paylater, $wei); // repay = pull TLKM
@@ -204,7 +204,7 @@ class PinTxController extends Controller
     {
         $data = $req->validate(['pin' => 'required|digits:6', 'amount' => 'required|numeric|min:0.000001']);
         $paylater = config('chain.paylater_address');
-        abort_unless($paylater, 422, 'Paylater belum dikonfigurasi.');
+        abort_unless($paylater, 422, __('Paylater belum dikonfigurasi.'));
         $priv = $this->unlock($data['pin']);
         $hash = $signer->sendContractCall($priv, $paylater, self::PAYLATER_ABI, 'withdrawCollateral', [$signer->toWei($data['amount'])]);
         return response()->json(['success' => true, 'tx_hash' => $hash]);
@@ -215,7 +215,7 @@ class PinTxController extends Controller
     {
         $data = $req->validate(['pin' => 'required|digits:6', 'term' => 'required|integer|between:0,2', 'amount' => 'required|numeric|min:0.000001']);
         $paylater = config('chain.paylater_address');
-        abort_unless($paylater, 422, 'Paylater belum dikonfigurasi.');
+        abort_unless($paylater, 422, __('Paylater belum dikonfigurasi.'));
         $priv = $this->unlock($data['pin']);
         $wei  = $signer->toWei($data['amount']);
         $this->ensureAllowance($signer, $priv, $paylater, $wei); // supply = pull TLKM
@@ -228,7 +228,7 @@ class PinTxController extends Controller
     {
         $data = $req->validate(['pin' => 'required|digits:6', 'term' => 'required|integer|between:0,2', 'shares' => ['required', 'regex:/^[0-9]{1,78}$/']]);
         $paylater = config('chain.paylater_address');
-        abort_unless($paylater, 422, 'Paylater belum dikonfigurasi.');
+        abort_unless($paylater, 422, __('Paylater belum dikonfigurasi.'));
         $priv = $this->unlock($data['pin']);
         // shares sudah dalam satuan mentah (bukan human) -> jangan konversi toWei.
         $hash = $signer->sendContractCall($priv, $paylater, self::PAYLATER_ABI, 'withdrawSupply', [(int) $data['term'], $data['shares']]);
@@ -257,7 +257,7 @@ class PinTxController extends Controller
         ];
 
         $method = $data['method'];
-        abort_unless(isset($defs[$method]), 422, 'Metode komunitas tidak diizinkan.');
+        abort_unless(isset($defs[$method]), 422, __('Metode komunitas tidak diizinkan.'));
         $def  = $defs[$method];
         $args = array_values($data['args'] ?? []);
         foreach ($def['wei'] as $i) {

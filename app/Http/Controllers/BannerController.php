@@ -10,7 +10,7 @@ class BannerController extends Controller
 {
     private function ensureAdmin(): void
     {
-        abort_unless(auth()->check() && auth()->user()->isSupervisor(), 403, 'Hanya admin/pengawas yang bisa mengelola iklan.');
+        abort_unless(auth()->check() && auth()->user()->isSupervisor(), 403, __('Hanya admin/pengawas yang bisa mengelola iklan.'));
     }
 
     /** Halaman kelola iklan (banner carousel). */
@@ -43,7 +43,7 @@ class BannerController extends Controller
             $image = $data['image_url'];
         }
         if (!$image) {
-            return back()->with('error', 'Sertakan gambar (upload atau URL).');
+            return back()->with('error', __('Sertakan gambar (upload atau URL).'));
         }
 
         Banner::create([
@@ -54,7 +54,7 @@ class BannerController extends Controller
             'is_active' => true,
         ]);
 
-        return back()->with('success', 'Iklan ditambahkan.');
+        return back()->with('success', __('Iklan ditambahkan.'));
     }
 
     /** Aktif/nonaktifkan banner. */
@@ -64,7 +64,7 @@ class BannerController extends Controller
         $banner = Banner::findOrFail($req->id);
         $banner->is_active = !$banner->is_active;
         $banner->save();
-        return back()->with('success', 'Status iklan diperbarui.');
+        return back()->with('success', __('Status iklan diperbarui.'));
     }
 
     /** Hapus banner. */
@@ -76,6 +76,6 @@ class BannerController extends Controller
             @unlink(public_path('banner_images/' . $banner->image));
         }
         $banner->delete();
-        return back()->with('success', 'Iklan dihapus.');
+        return back()->with('success', __('Iklan dihapus.'));
     }
 }

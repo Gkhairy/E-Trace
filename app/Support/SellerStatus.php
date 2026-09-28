@@ -42,6 +42,6 @@ class SellerStatus
                 => ['Perlu diproses', 'amber', 'Pembeli sudah membayar. Kemas dan kirim pesanan ini.'],
         };
 
-        return ['label' => $label, 'tone' => $tones[$tone], 'hint' => $hint];
+        return ['label' => __($label), 'tone' => $tones[$tone], 'hint' => __($hint)];
     }
 }

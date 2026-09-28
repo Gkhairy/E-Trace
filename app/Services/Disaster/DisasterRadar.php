@@ -143,13 +143,13 @@ class DisasterRadar
 
         if ($this->autoEligible($event)) {
             $this->openCampaign($event, null);
-            $this->notifySupervisors('Donasi dibuka otomatis oleh AI', ($event->ai_title ?: $event->title) . ' — sumber ' . $event->sourceLabel() . '.', '/supervisor/disasters');
+            $this->notifySupervisors('Donasi dibuka otomatis oleh AI', [':title — sumber :source.', ['title' => $event->ai_title ?: $event->title, 'source' => $event->sourceLabel()]], '/supervisor/disasters');
             return 'opened';
         }
 
         $event->update(['status' => 'pending_review']);
         if ($event->source !== 'manual') {
-            $this->notifySupervisors('Usulan donasi dari Radar Bencana', ($event->ai_title ?: $event->title) . ' — skor AI ' . $event->ai_severity . '. Tinjau untuk membuka donasi.', '/supervisor/disasters');
+            $this->notifySupervisors('Usulan donasi dari Radar Bencana', [':title — skor AI :score. Tinjau untuk membuka donasi.', ['title' => $event->ai_title ?: $event->title, 'score' => $event->ai_severity]], '/supervisor/disasters');
         }
         return 'pending_review';
     }
@@ -158,7 +158,7 @@ class DisasterRadar
     public function openCampaign(DisasterEvent $event, ?int $reviewerId, ?string $recipient = null): Campaign
     {
         $recipient = strtolower($recipient ?: (string) config('disaster.recipient_wallet'));
-        abort_unless(preg_match('/^0x[a-f0-9]{40}$/', $recipient), 422, 'Wallet Lembaga Donasi belum diisi (DISASTER_RECIPIENT_WALLET).');
+        abort_unless(preg_match('/^0x[a-f0-9]{40}$/', $recipient), 422, __('Wallet Lembaga Donasi belum diisi (DISASTER_RECIPIENT_WALLET).'));
 
         $title = $event->ai_title ?: $event->title;
         // Bagian penyaluran & sumber ditulis sistem (bukan AI) supaya link-nya pasti benar.
@@ -230,7 +230,7 @@ class DisasterRadar
         return null;
     }
 
-    private function notifySupervisors(string $title, string $body, string $url): void
+    private function notifySupervisors(string $title, string|array $body, string $url): void
     {
         foreach (User::where('role', 'supervisor')->pluck('id') as $id) {
             Notify::send($id, 'disaster', $title, $body, $url, '🛰️');

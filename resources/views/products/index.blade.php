@@ -33,10 +33,10 @@
 
     @if($slideCount > 1)
         {{-- Panah --}}
-        <button type="button" onclick="heroStep(-1)" aria-label="Sebelumnya" class="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 hover:bg-white text-slate-700 shadow flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+        <button type="button" onclick="heroStep(-1)" aria-label="{{ __('Sebelumnya') }}" class="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 hover:bg-white text-slate-700 shadow flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
         </button>
-        <button type="button" onclick="heroStep(1)" aria-label="Berikutnya" class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 hover:bg-white text-slate-700 shadow flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+        <button type="button" onclick="heroStep(1)" aria-label="{{ __('Berikutnya') }}" class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 hover:bg-white text-slate-700 shadow flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
         </button>
         {{-- Titik --}}
@@ -155,7 +155,7 @@
             <a href="/products?category={{ $cat->slug }}"
                class="cat-item group flex flex-col items-center gap-2 text-center rounded-xl p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 {{ ($i >= $visible && !$on) ? 'cat-extra hidden' : '' }}">
                 <span class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl transition {{ $on ? 'bg-blue-600 shadow-md shadow-blue-600/30' : 'bg-slate-100 group-hover:bg-blue-50 group-hover:scale-105' }}">{{ $cat->icon }}</span>
-                <span class="text-[13px] sm:text-sm font-medium leading-snug line-clamp-2 {{ $on ? 'text-blue-700 font-semibold' : 'text-slate-700 group-hover:text-slate-900' }}">{{ $cat->name }}</span>
+                <span class="text-[13px] sm:text-sm font-medium leading-snug line-clamp-2 {{ $on ? 'text-blue-700 font-semibold' : 'text-slate-700 group-hover:text-slate-900' }}">{{ __($cat->name) }}</span>
             </a>
         @endforeach
     </div>
@@ -173,7 +173,7 @@
 
 {{-- ===== HEADER KATALOG ===== --}}
 <div id="katalog" class="mb-6 scroll-mt-28">
-    <h2 class="text-2xl font-bold text-slate-900">{{ $activeCategory ? $activeCategory->icon.' '.$activeCategory->name : __('catalog.catalog') }}</h2>
+    <h2 class="text-2xl font-bold text-slate-900">{{ $activeCategory ? $activeCategory->icon.' '.__($activeCategory->name) : __('catalog.catalog') }}</h2>
     <p class="text-sm text-slate-500">{{ number_format($products->total(), 0, ',', '.') }} {{ $activeCategory ? __('catalog.in_category') : __('catalog.available') }}</p>
 </div>
 
@@ -222,7 +222,7 @@
                                 {{ $product->store->name }}
                             </p>
                         @else
-                            <p class="text-[11px] text-slate-400 font-mono mt-0.5 truncate">Seller {{ substr($product->seller_wallet, 0, 6) }}…{{ substr($product->seller_wallet, -4) }}</p>
+                            <p class="text-[11px] text-slate-400 font-mono mt-0.5 truncate">{{ __('Penjual') }} {{ substr($product->seller_wallet, 0, 6) }}…{{ substr($product->seller_wallet, -4) }}</p>
                         @endif
                         </div>
                     </div>

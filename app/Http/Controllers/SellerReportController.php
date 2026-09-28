@@ -12,19 +12,13 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class SellerReportController extends Controller
 {
-    /** Nama bulan Indonesia (index 1..12). */
-    private const BULAN = [
-        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
-        7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
-    ];
-
     /** Ambil toko milik penjual yang login (otorisasi). */
     private function store()
     {
         $user = auth()->user();
-        abort_unless($user->isSeller(), 403, 'Hanya penjual yang bisa mengunduh laporan toko.');
+        abort_unless($user->isSeller(), 403, __('Hanya penjual yang bisa mengunduh laporan toko.'));
         $store = $user->store;
-        abort_unless($store, 404, 'Toko belum tersedia untuk akun ini.');
+        abort_unless($store, 404, __('Toko belum tersedia untuk akun ini.'));
         return $store;
     }
 
@@ -64,7 +58,7 @@ class SellerReportController extends Controller
 
         $view = $data['type'] === 'daily' ? 'seller.reports.daily' : 'seller.reports.monthly';
         $slug = $store->slug ?: Str::slug($store->name ?: 'toko');
-        $base = 'Laporan-' . ($data['type'] === 'daily' ? 'Harian' : 'Bulanan') . '-' . $slug
+        $base = __('Laporan') . '-' . ($data['type'] === 'daily' ? __('Harian') : __('Bulanan')) . '-' . $slug
               . '-' . $from->format('Ymd') . '-' . $to->format('Ymd');
 
         if ($data['format'] === 'pdf') {
@@ -82,7 +76,7 @@ class SellerReportController extends Controller
             return [
                 'date'    => $it->created_at,
                 'order'   => optional($it->order)->order_id ?: ('TX-' . $it->id),
-                'desc'    => trim((optional($it->product)->name ?: 'Produk') . ' - ' . (optional(optional($it->order)->user)->name ?: 'Pembeli')),
+                'desc'    => trim((optional($it->product)->name ?: __('Produk.one')) . ' - ' . (optional(optional($it->order)->user)->name ?: __('Pembeli'))),
                 'amount'  => (float) $it->amount,
                 'status'  => $it->status,
             ];
@@ -109,7 +103,7 @@ class SellerReportController extends Controller
             ->map(function ($group, $ym) {
                 [$year, $month] = explode('-', $ym);
                 return [
-                    'month'      => self::BULAN[(int) $month] ?? $month,
+                    'month'      => Carbon::create((int) $year, (int) $month, 1)->translatedFormat('F'), // nama bulan sesuai bahasa
                     'month_num'  => (int) $month,
                     'year'       => (int) $year,
                     'total'      => (float) $group->where('status', '!=', 'refunded')->sum(fn ($i) => (float) $i->amount),

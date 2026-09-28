@@ -2,34 +2,34 @@
 
 @section('content')
 <div class="max-w-2xl">
-    <h1 class="text-2xl font-bold text-slate-900 mb-1">Teman</h1>
-    <p class="text-sm text-slate-500 mb-6">Tambah teman via No HP / email untuk kirim cepat &amp; undang ke dompet komunitas.</p>
+    <h1 class="text-2xl font-bold text-slate-900 mb-1">{{ __('Teman') }}</h1>
+    <p class="text-sm text-slate-500 mb-6">{{ __('Tambah teman via No HP / email untuk kirim cepat & undang ke dompet komunitas.') }}</p>
 
     @if(session('success'))<div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{{ session('success') }}</div>@endif
     @if(session('error'))<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{{ session('error') }}</div>@endif
 
     <form action="/friends" method="POST" class="flex gap-2 mb-6">
         @csrf
-        <input name="q" required placeholder="No HP atau email teman" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
-        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold">Kirim Permintaan</button>
+        <input name="q" required placeholder="{{ __('No HP atau email teman') }}" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
+        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold">{{ __('Kirim Permintaan') }}</button>
     </form>
 
     {{-- PERMINTAAN MASUK (harus diterima) --}}
     @if($incoming->isNotEmpty())
-        <h2 class="text-sm font-bold text-slate-900 mb-2">Permintaan pertemanan ({{ $incoming->count() }})</h2>
+        <h2 class="text-sm font-bold text-slate-900 mb-2">{{ __('Permintaan pertemanan (:n)', ['n' => $incoming->count()]) }}</h2>
         <div class="bg-white border border-blue-200 rounded-2xl shadow-sm divide-y divide-slate-100 mb-6">
             @foreach($incoming as $r)
                 <div class="px-5 py-3 flex items-center justify-between gap-3">
                     <div class="min-w-0">
                         <p class="font-medium text-slate-800">{{ $r->user->public_name ?: $r->user->name }}</p>
-                        <p class="text-xs text-slate-400">ingin berteman denganmu</p>
+                        <p class="text-xs text-slate-400">{{ __('ingin berteman denganmu') }}</p>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                         <form action="/friends/accept" method="POST">@csrf<input type="hidden" name="id" value="{{ $r->id }}">
-                            <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">Terima</button>
+                            <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">{{ __('Terima') }}</button>
                         </form>
                         <form action="/friends/reject" method="POST">@csrf<input type="hidden" name="id" value="{{ $r->id }}">
-                            <button class="bg-white border border-slate-200 text-slate-600 hover:border-red-300 hover:text-red-600 px-3 py-1.5 rounded-lg text-xs font-medium">Tolak</button>
+                            <button class="bg-white border border-slate-200 text-slate-600 hover:border-red-300 hover:text-red-600 px-3 py-1.5 rounded-lg text-xs font-medium">{{ __('Tolak') }}</button>
                         </form>
                     </div>
                 </div>
@@ -39,20 +39,20 @@
 
     {{-- PERMINTAAN TERKIRIM (menunggu) --}}
     @if($outgoing->isNotEmpty())
-        <h2 class="text-sm font-bold text-slate-900 mb-2">Menunggu diterima</h2>
+        <h2 class="text-sm font-bold text-slate-900 mb-2">{{ __('Menunggu diterima') }}</h2>
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm divide-y divide-slate-100 mb-6">
             @foreach($outgoing as $r)
                 <div class="px-5 py-3 flex items-center justify-between gap-3">
                     <p class="font-medium text-slate-700">{{ $r->friend->public_name ?: $r->friend->name }}</p>
-                    <span class="text-xs text-amber-600">Menunggu…</span>
+                    <span class="text-xs text-amber-600">{{ __('Menunggu…') }}</span>
                 </div>
             @endforeach
         </div>
     @endif
 
-    <h2 class="text-sm font-bold text-slate-900 mb-2">Teman</h2>
+    <h2 class="text-sm font-bold text-slate-900 mb-2">{{ __('Teman') }}</h2>
     @if($friends->isEmpty())
-        <div class="bg-white border border-dashed border-slate-300 rounded-3xl p-12 text-center text-slate-500">Belum ada teman.</div>
+        <div class="bg-white border border-dashed border-slate-300 rounded-3xl p-12 text-center text-slate-500">{{ __('Belum ada teman.') }}</div>
     @else
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm divide-y divide-slate-100">
             @foreach($friends as $f)
@@ -63,7 +63,7 @@
                     </div>
                     <form action="/friends/delete" method="POST" data-name="{{ $f->friend->public_name ?: $f->friend->name }}" onsubmit="return confirmDeleteFriend(this)">
                         @csrf<input type="hidden" name="id" value="{{ $f->friend_id }}">
-                        <button class="text-xs text-slate-400 hover:text-red-600">Hapus</button>
+                        <button class="text-xs text-slate-400 hover:text-red-600">{{ __('Hapus') }}</button>
                     </form>
                 </div>
             @endforeach
@@ -76,13 +76,13 @@
 <script>
 // Konfirmasi hapus teman via modal tema (pengganti confirm() bawaan browser).
 function confirmDeleteFriend(form) {
-    const raw = form.dataset.name || 'teman ini';
+    const raw = form.dataset.name || @json(__('teman ini'));
     const name = raw.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
     uiConfirm({
-        title: 'Hapus Teman',
-        message: `Yakin mau menghapus <b>${name}</b> dari daftar teman?`,
-        confirmText: 'Ya, hapus',
-        cancelText: 'Batal',
+        title: @json(__('Hapus Teman')),
+        message: @json(__('Yakin mau menghapus')) + ` <b>${name}</b> ` + @json(__('dari daftar teman?')),
+        confirmText: @json(__('Ya, hapus')),
+        cancelText: @json(__('Batal')),
         danger: true,
     }).then((ok) => { if (ok) form.submit(); });
     return false; // cegah submit langsung; submit setelah konfirmasi

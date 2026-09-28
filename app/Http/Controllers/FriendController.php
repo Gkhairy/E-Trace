@@ -37,21 +37,21 @@ class FriendController extends Controller
 
         $friend = User::where('phone_hash', User::hashPhone($q))->orWhere('email', $q)->first();
         if (!$friend) {
-            return back()->with('error', 'Pengguna dengan No HP/email itu tidak ditemukan.');
+            return back()->with('error', __('Pengguna dengan No HP/email itu tidak ditemukan.'));
         }
         if ($friend->id === $me) {
-            return back()->with('error', 'Tidak bisa menambah diri sendiri.');
+            return back()->with('error', __('Tidak bisa menambah diri sendiri.'));
         }
 
         // Sudah berteman?
         if (Friendship::where('user_id', $me)->where('friend_id', $friend->id)->where('status', 'accepted')->exists()) {
-            return back()->with('error', 'Kalian sudah berteman.');
+            return back()->with('error', __('Kalian sudah berteman.'));
         }
         // Ada permintaan masuk dari dia? Langsung terima saja.
         $reverse = Friendship::where('user_id', $friend->id)->where('friend_id', $me)->where('status', 'pending')->first();
         if ($reverse) {
             $this->acceptPair($reverse);
-            return back()->with('success', 'Kalian sekarang berteman dengan ' . $this->name($friend) . '.');
+            return back()->with('success', __('Kalian sekarang berteman dengan :name.', ['name' => $this->name($friend)]));
         }
 
         $fr = Friendship::firstOrCreate(
@@ -60,9 +60,9 @@ class FriendController extends Controller
         );
 
         $meName = $this->name(auth()->user());
-        Notify::send($friend->id, 'friend', 'Permintaan pertemanan', "{$meName} ingin berteman denganmu.", '/friends', '👋');
+        Notify::send($friend->id, 'friend', 'Permintaan pertemanan', [':name ingin berteman denganmu.', ['name' => $meName]], '/friends', '👋');
 
-        return back()->with('success', 'Permintaan pertemanan dikirim ke ' . $this->name($friend) . '.');
+        return back()->with('success', __('Permintaan pertemanan dikirim ke :name.', ['name' => $this->name($friend)]));
     }
 
     /** Terima permintaan masuk. */
@@ -70,17 +70,17 @@ class FriendController extends Controller
     {
         $fr = Friendship::where('id', $req->id)->where('friend_id', auth()->id())->where('status', 'pending')->first();
         if (!$fr) {
-            return back()->with('error', 'Permintaan tidak ditemukan.');
+            return back()->with('error', __('Permintaan tidak ditemukan.'));
         }
         $this->acceptPair($fr);
-        return back()->with('success', 'Permintaan pertemanan diterima.');
+        return back()->with('success', __('Permintaan pertemanan diterima.'));
     }
 
     /** Tolak permintaan masuk. */
     public function reject(Request $req)
     {
         Friendship::where('id', $req->id)->where('friend_id', auth()->id())->where('status', 'pending')->delete();
-        return back()->with('success', 'Permintaan pertemanan ditolak.');
+        return back()->with('success', __('Permintaan pertemanan ditolak.'));
     }
 
     public function destroy(Request $req)
@@ -90,7 +90,7 @@ class FriendController extends Controller
         Friendship::where(fn ($q) => $q->where('user_id', $me)->where('friend_id', $req->id))
             ->orWhere(fn ($q) => $q->where('user_id', $req->id)->where('friend_id', $me))
             ->delete();
-        return back()->with('success', 'Teman dihapus.');
+        return back()->with('success', __('Teman dihapus.'));
     }
 
     /** Setujui sepasang: tandai accepted + buat baris kebalikan + notifikasi. */
@@ -103,7 +103,7 @@ class FriendController extends Controller
             ['status' => 'accepted']
         );
         $accepter = User::find($fr->friend_id);
-        Notify::send($fr->user_id, 'friend', 'Pertemanan diterima', $this->name($accepter) . ' menerima permintaan pertemananmu.', '/friends', '🤝');
+        Notify::send($fr->user_id, 'friend', 'Pertemanan diterima', [':name menerima permintaan pertemananmu.', ['name' => $this->name($accepter)]], '/friends', '🤝');
     }
 
     private function name(User $u): string

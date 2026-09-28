@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 @include('partials.favicon')
-<title>E-Trace — Marketplace On-Chain yang Transparan Sepenuhnya</title>
-<meta name="description" content="E-Trace: marketplace berbasis blockchain dengan escrow trustless, keranjang multi-penjual, dan transparansi on-chain penuh.">
+<title>{{ __('E-Trace — Marketplace On-Chain yang Transparan Sepenuhnya') }}</title>
+<meta name="description" content="{{ __('E-Trace: marketplace berbasis blockchain dengan escrow trustless, keranjang multi-penjual, dan transparansi on-chain penuh.') }}">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true">
@@ -73,8 +73,8 @@
         E-Trace
       </a>
       <div style="display:flex;align-items:center;gap:24px;">
-        <a href="/products" style="font-size:14px;color:#475569;">Lihat Katalog</a>
-        <a href="/login" class="lnk-cta" style="font-size:14px;font-weight:500;padding:11px 22px;border-radius:999px;background:#0f172a;color:#fff;">Masuk Toko</a>
+        <a href="/products" style="font-size:14px;color:#475569;">{{ __('Lihat Katalog') }}</a>
+        <a href="/login" class="lnk-cta" style="font-size:14px;font-weight:500;padding:11px 22px;border-radius:999px;background:#0f172a;color:#fff;">{{ __('Masuk Toko') }}</a>
       </div>
     </div>
   </header>
@@ -87,17 +87,17 @@
     <div id="hero-content" style="position:relative;z-index:10;max-width:1200px;margin:0 auto;height:100%;padding:0 40px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;">
       <div class="reveal" data-reveal="hero" style="display:inline-flex;align-items:center;gap:8px;padding:7px 16px;border-radius:999px;background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);font-size:13px;color:#2563eb;margin-bottom:28px;">
         <span style="width:6px;height:6px;border-radius:50%;background:#2563eb;display:inline-block;"></span>
-        Escrow trustless &middot; Ethereum &middot; Token TLKM
+        {{ __('Escrow trustless · Ethereum · Token TLKM') }}
       </div>
       <h1 class="reveal" data-reveal="hero" style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(2.6rem,6vw,4.6rem);line-height:1.04;color:#0f172a;max-width:760px;margin:0;">
-        Marketplace yang <span style="color:#2563eb;">transparan sepenuhnya.</span>
+        {{ __('Marketplace yang') }} <span style="color:#2563eb;">{{ __('transparan sepenuhnya.') }}</span>
       </h1>
       <p class="reveal" data-reveal="hero" style="max-width:560px;font-size:19px;line-height:1.65;color:#475569;margin-top:26px;">
-        Login dengan wallet, tanpa password. Setiap pembayaran ditahan smart contract hingga barang diterima — dan setiap transaksi bisa diverifikasi siapa saja di block explorer.
+        {{ __('Login dengan wallet, tanpa password. Setiap pembayaran ditahan smart contract hingga barang diterima — dan setiap transaksi bisa diverifikasi siapa saja di block explorer.') }}
       </p>
       <div class="reveal" data-reveal="hero" style="display:flex;flex-wrap:wrap;gap:16px;margin-top:38px;">
-        <a href="/login" class="btn-primary" style="padding:15px 30px;border-radius:999px;background:#2563eb;color:#fff;font-weight:600;font-size:15px;">Masuk Toko</a>
-        <a href="#solusi" class="btn-ghost" style="padding:15px 30px;border-radius:999px;background:#fff;border:1px solid #e2e8f0;color:#1e293b;font-weight:500;font-size:15px;box-shadow:0 1px 2px rgba(15,23,42,0.04);cursor:pointer;">Pelajari</a>
+        <a href="/login" class="btn-primary" style="padding:15px 30px;border-radius:999px;background:#2563eb;color:#fff;font-weight:600;font-size:15px;">{{ __('Masuk Toko') }}</a>
+        <a href="#solusi" class="btn-ghost" style="padding:15px 30px;border-radius:999px;background:#fff;border:1px solid #e2e8f0;color:#1e293b;font-weight:500;font-size:15px;box-shadow:0 1px 2px rgba(15,23,42,0.04);cursor:pointer;">{{ __('Pelajari') }}</a>
       </div>
     </div>
 
@@ -115,26 +115,26 @@
       {{-- Kolom kiri: cerita fitur --}}
       <div>
         <h2 class="reveal" data-reveal="left" style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(2rem,4.4vw,3.3rem);line-height:1.08;letter-spacing:-0.02em;text-wrap:balance;color:#0f172a;margin:0;">
-          Belanja dulu, bayar nanti — <span style="color:#2563eb;">atau danai, panen bagi hasil.</span>
+          {{ __('Belanja dulu, bayar nanti —') }} <span style="color:#2563eb;">{{ __('atau danai, panen bagi hasil.') }}</span>
         </h2>
         <p class="reveal" data-reveal="left" style="max-width:60ch;font-size:18px;line-height:1.65;color:#475569;margin-top:22px;">
-          TLKM bukan cuma alat bayar. Kunci jaminan untuk dapat limit belanja, atau setor ke pool likuiditas dan dapat bagi hasil dari bunga peminjam. Semua tercatat di smart contract — pool, bunga, dan jangka waktunya terbuka untuk siapa saja.
+          {{ __('TLKM bukan cuma alat bayar. Kunci jaminan untuk dapat limit belanja, atau setor ke pool likuiditas dan dapat bagi hasil dari bunga peminjam. Semua tercatat di smart contract — pool, bunga, dan jangka waktunya terbuka untuk siapa saja.') }}
         </p>
 
         <div id="pl-split" class="reveal" data-reveal="left" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:40px;">
           <div style="background:#fff;border:1px solid #bfdbfe;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:24px 22px;">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
               <span style="width:9px;height:9px;border-radius:50%;background:#2563eb;"></span>
-              <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:19px;color:#0f172a;">Pinjam</span>
+              <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:19px;color:#0f172a;">{{ __('Pinjam') }}</span>
             </div>
-            <p style="margin:0;font-size:14.5px;line-height:1.55;color:#475569;">Jaminkan aset, dapat limit TLKM. Checkout sekarang, lunasi sesuai jangka yang kamu pilih.</p>
+            <p style="margin:0;font-size:14.5px;line-height:1.55;color:#475569;">{{ __('Jaminkan aset, dapat limit TLKM. Checkout sekarang, lunasi sesuai jangka yang kamu pilih.') }}</p>
           </div>
           <div style="background:#fff;border:1px solid #fecaca;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:24px 22px;">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
               <span style="width:9px;height:9px;border-radius:50%;background:#e5121f;"></span>
-              <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:19px;color:#0f172a;">Danai</span>
+              <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:19px;color:#0f172a;">{{ __('Danai') }}</span>
             </div>
-            <p style="margin:0;font-size:14.5px;line-height:1.55;color:#475569;">Setor TLKM ke pool — fleksibel, 30, atau 90 hari. Bagi hasil naik seiring jangka.</p>
+            <p style="margin:0;font-size:14.5px;line-height:1.55;color:#475569;">{{ __('Setor TLKM ke pool — fleksibel, 30, atau 90 hari. Bagi hasil naik seiring jangka.') }}</p>
           </div>
         </div>
 
@@ -142,7 +142,7 @@
 
       {{-- Kolom kanan: koin TLKM melayang di atas putih --}}
       <div id="pl-visual" class="reveal" data-reveal="right" style="position:relative;display:flex;align-items:center;justify-content:center;min-height:440px;">
-        <img id="pl-coin-img" class="pl-coin" src="/img/tlkm-coin.png" alt="Koin TLKM dengan latar tulisan TLKM"
+        <img id="pl-coin-img" class="pl-coin" src="/img/tlkm-coin.png" alt="{{ __('Koin TLKM dengan latar tulisan TLKM') }}"
              width="2848" height="1490" decoding="async"
              onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
              style="position:relative;z-index:1;width:min(112%,560px);height:auto;aspect-ratio:2848/1490;">
@@ -162,26 +162,26 @@
 
   <section id="solusi" style="position:relative;padding:130px 40px;max-width:1200px;margin:0 auto;">
     <div class="reveal" data-reveal="fade" style="max-width:660px;margin-bottom:60px;">
-      <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">Masalah &amp; Solusi</p>
-      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0;">Marketplace biasa menahan dana Anda di tempat yang gelap.</h2>
+      <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">{{ __('Masalah & Solusi') }}</p>
+      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0;">{{ __('Marketplace biasa menahan dana Anda di tempat yang gelap.') }}</h2>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;">
       <div class="reveal" data-reveal="left" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:44px;">
-        <p style="color:#64748b;font-size:13px;margin:0 0 8px;">Cara konvensional</p>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:22px;color:#475569;margin:0 0 22px;">Perantara memegang dana</h3>
+        <p style="color:#64748b;font-size:13px;margin:0 0 8px;">{{ __('Cara konvensional') }}</p>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:22px;color:#475569;margin:0 0 22px;">{{ __('Perantara memegang dana') }}</h3>
         <div style="display:flex;flex-direction:column;gap:16px;color:#475569;font-size:15px;line-height:1.5;">
-          <div style="display:flex;gap:12px;"><span style="color:#475569;">—</span>Dana pembeli dipegang platform, prosesnya tidak terlihat.</div>
-          <div style="display:flex;gap:12px;"><span style="color:#475569;">—</span>Sengketa bergantung keputusan sepihak platform, tanpa bukti terbuka.</div>
-          <div style="display:flex;gap:12px;"><span style="color:#475569;">—</span>Tidak ada cara publik memverifikasi transaksi terjadi.</div>
+          <div style="display:flex;gap:12px;"><span style="color:#475569;">—</span>{{ __('Dana pembeli dipegang platform, prosesnya tidak terlihat.') }}</div>
+          <div style="display:flex;gap:12px;"><span style="color:#475569;">—</span>{{ __('Sengketa bergantung keputusan sepihak platform, tanpa bukti terbuka.') }}</div>
+          <div style="display:flex;gap:12px;"><span style="color:#475569;">—</span>{{ __('Tidak ada cara publik memverifikasi transaksi terjadi.') }}</div>
         </div>
       </div>
       <div class="reveal" data-reveal="right" style="position:relative;background:#fff;border:1px solid #bfdbfe;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:44px;">
-        <p style="color:#2563eb;font-size:13px;margin:0 0 8px;position:relative;">Pendekatan E-Trace</p>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:22px;color:#0f172a;margin:0 0 22px;position:relative;">Smart contract memegang dana</h3>
+        <p style="color:#2563eb;font-size:13px;margin:0 0 8px;position:relative;">{{ __('Pendekatan E-Trace') }}</p>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:22px;color:#0f172a;margin:0 0 22px;position:relative;">{{ __('Smart contract memegang dana') }}</h3>
         <div style="display:flex;flex-direction:column;gap:16px;color:#334155;font-size:15px;line-height:1.5;position:relative;">
-          <div style="display:flex;gap:12px;"><span style="color:#2563eb;">✓</span>Dana ditahan escrow on-chain, dilepas hanya saat pembeli konfirmasi.</div>
-          <div style="display:flex;gap:12px;"><span style="color:#2563eb;">✓</span>Ada masalah? Ajukan sengketa dengan bukti — diputus pengawas, bukan refund otomatis.</div>
-          <div style="display:flex;gap:12px;"><span style="color:#2563eb;">✓</span>Setiap transaksi tercatat &amp; terbuka di block explorer.</div>
+          <div style="display:flex;gap:12px;"><span style="color:#2563eb;">✓</span>{{ __('Dana ditahan escrow on-chain, dilepas hanya saat pembeli konfirmasi.') }}</div>
+          <div style="display:flex;gap:12px;"><span style="color:#2563eb;">✓</span>{{ __('Ada masalah? Ajukan sengketa dengan bukti — diputus pengawas, bukan refund otomatis.') }}</div>
+          <div style="display:flex;gap:12px;"><span style="color:#2563eb;">✓</span>{{ __('Setiap transaksi tercatat & terbuka di block explorer.') }}</div>
         </div>
       </div>
     </div>
@@ -191,24 +191,24 @@
 
   <section style="position:relative;padding:130px 40px;max-width:1200px;margin:0 auto;">
     <div class="reveal" data-reveal="fade" style="max-width:660px;margin-bottom:70px;">
-      <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">Cara Kerja</p>
-      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0;">Tiga langkah, dana selalu di bawah kendali Anda.</h2>
+      <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">{{ __('Cara Kerja') }}</p>
+      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0;">{{ __('Tiga langkah, dana selalu di bawah kendali Anda.') }}</h2>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:40px;">
       <div class="reveal" data-reveal="step" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
         <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:46px;color:transparent;-webkit-text-stroke:1.5px rgba(15,23,42,0.4);display:block;margin-bottom:20px;">01</span>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:20px;color:#0f172a;margin:0 0 10px;">Connect Wallet</h3>
-        <p style="color:#475569;line-height:1.6;margin:0;">Login dengan MetaMask — tanpa email, tanpa password. Identitas Anda adalah wallet Anda.</p>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:20px;color:#0f172a;margin:0 0 10px;">{{ __('Connect Wallet') }}</h3>
+        <p style="color:#475569;line-height:1.6;margin:0;">{{ __('Login dengan MetaMask — tanpa email, tanpa password. Identitas Anda adalah wallet Anda.') }}</p>
       </div>
       <div class="reveal" data-reveal="step" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
         <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:46px;color:transparent;-webkit-text-stroke:1.5px rgba(15,23,42,0.4);display:block;margin-bottom:20px;">02</span>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:20px;color:#0f172a;margin:0 0 10px;">Bayar via Escrow</h3>
-        <p style="color:#475569;line-height:1.6;margin:0;">Bayar dengan token TLKM. Dana masuk ke smart contract escrow, terpisah per penjual.</p>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:20px;color:#0f172a;margin:0 0 10px;">{{ __('Bayar via Escrow') }}</h3>
+        <p style="color:#475569;line-height:1.6;margin:0;">{{ __('Bayar dengan token TLKM. Dana masuk ke smart contract escrow, terpisah per penjual.') }}</p>
       </div>
       <div class="reveal" data-reveal="step" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
         <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:46px;color:transparent;-webkit-text-stroke:1.5px rgba(15,23,42,0.4);display:block;margin-bottom:20px;">03</span>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:20px;color:#0f172a;margin:0 0 10px;">Konfirmasi &amp; Dana Lepas</h3>
-        <p style="color:#475569;line-height:1.6;margin:0;">Barang diterima, Anda konfirmasi — escrow melepas dana ke penjual. Bermasalah? Ajukan sengketa dengan bukti; pengawas yang memutus.</p>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:20px;color:#0f172a;margin:0 0 10px;">{{ __('Konfirmasi & Dana Lepas') }}</h3>
+        <p style="color:#475569;line-height:1.6;margin:0;">{{ __('Barang diterima, Anda konfirmasi — escrow melepas dana ke penjual. Bermasalah? Ajukan sengketa dengan bukti; pengawas yang memutus.') }}</p>
       </div>
     </div>
   </section>
@@ -218,30 +218,30 @@
   {{-- ===== SENGKETA YANG ADIL (melindungi kedua pihak) ===== --}}
   <section id="sengketa" style="position:relative;padding:130px 40px;max-width:1200px;margin:0 auto;">
     <div class="reveal" data-reveal="fade" style="max-width:720px;margin-bottom:52px;">
-      <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">Penyelesaian Sengketa</p>
-      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0 0 16px;">Adil untuk pembeli <span style="color:#2563eb;">dan</span> penjual.</h2>
-      <p style="color:#475569;font-size:17px;line-height:1.65;margin:0;">Escrow menahan dana sampai transaksi selesai. Jika ada masalah, keputusan tidak diambil sepihak — sengketa diputus berdasarkan <b>bukti</b>, bukan sekadar komplain.</p>
+      <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">{{ __('Penyelesaian Sengketa') }}</p>
+      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0 0 16px;">{{ __('Adil untuk pembeli') }} <span style="color:#2563eb;">{{ __('dan') }}</span> {{ __('penjual.') }}</h2>
+      <p style="color:#475569;font-size:17px;line-height:1.65;margin:0;">{{ __('Escrow menahan dana sampai transaksi selesai. Jika ada masalah, keputusan tidak diambil sepihak — sengketa diputus berdasarkan') }} <b>{{ __('bukti') }}</b>{{ __(', bukan sekadar komplain.') }}</p>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;margin-bottom:32px;">
       <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
         <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:40px;color:transparent;-webkit-text-stroke:1.5px rgba(37,99,235,0.5);display:block;margin-bottom:16px;">01</span>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Dana ditahan escrow</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Pembayaran dikunci di smart contract. Penjual tidak bisa kabur membawa uang, pembeli tidak bisa menahan barang tanpa bayar.</p>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">{{ __('Dana ditahan escrow') }}</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">{{ __('Pembayaran dikunci di smart contract. Penjual tidak bisa kabur membawa uang, pembeli tidak bisa menahan barang tanpa bayar.') }}</p>
       </div>
       <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
         <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:40px;color:transparent;-webkit-text-stroke:1.5px rgba(37,99,235,0.5);display:block;margin-bottom:16px;">02</span>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Ajukan sengketa + bukti</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Pembeli maupun penjual melampirkan bukti: nomor resi/tracking pengiriman, foto barang, dan kronologi. Semua tercatat.</p>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">{{ __('Ajukan sengketa + bukti') }}</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">{{ __('Pembeli maupun penjual melampirkan bukti: nomor resi/tracking pengiriman, foto barang, dan kronologi. Semua tercatat.') }}</p>
       </div>
       <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #bfdbfe;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
         <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:40px;color:transparent;-webkit-text-stroke:1.5px rgba(37,99,235,0.5);display:block;margin-bottom:16px;">03</span>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Pengawas memutus</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Pengawas (supervisor) meninjau bukti kedua pihak dan memutuskan. Dana dilepas ke pihak yang benar — <b>bukan refund otomatis</b> hanya karena komplain.</p>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">{{ __('Pengawas memutus') }}</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">{{ __('Pengawas (supervisor) meninjau bukti kedua pihak dan memutuskan. Dana dilepas ke pihak yang benar —') }} <b>{{ __('bukan refund otomatis') }}</b> {{ __('hanya karena komplain.') }}</p>
       </div>
     </div>
     <div class="reveal" data-reveal="fade" style="display:flex;gap:12px;align-items:flex-start;background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:18px 22px;">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" style="flex-shrink:0;margin-top:1px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-      <p style="color:#1e3a8a;font-size:14px;line-height:1.6;margin:0;"><b>Melindungi kedua belah pihak:</b> pembeli tidak bisa asal klaim untuk menahan uang, dan penjual tidak bisa kabur dengan dana. Keputusan berbasis bukti dan tercatat on-chain.</p>
+      <p style="color:#1e3a8a;font-size:14px;line-height:1.6;margin:0;"><b>{{ __('Melindungi kedua belah pihak:') }}</b> {{ __('pembeli tidak bisa asal klaim untuk menahan uang, dan penjual tidak bisa kabur dengan dana. Keputusan berbasis bukti dan tercatat on-chain.') }}</p>
     </div>
   </section>
 
@@ -249,37 +249,37 @@
 
   <section style="position:relative;padding:130px 40px;max-width:1200px;margin:0 auto;">
     <div class="reveal" data-reveal="fade" style="max-width:660px;margin-bottom:52px;">
-      <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">Fitur Unggulan</p>
-      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0;">Dibangun untuk kepercayaan yang bisa dibuktikan.</h2>
+      <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">{{ __('Fitur Unggulan') }}</p>
+      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0;">{{ __('Dibangun untuk kepercayaan yang bisa dibuktikan.') }}</h2>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;">
       <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
         <div style="width:40px;height:40px;border-radius:10px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
         </div>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">Escrow Trustless</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Dana ditahan smart contract, dilepas hanya saat pembeli konfirmasi barang diterima.</p>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">{{ __('Escrow Trustless') }}</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">{{ __('Dana ditahan smart contract, dilepas hanya saat pembeli konfirmasi barang diterima.') }}</p>
       </div>
       <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
         <div style="width:40px;height:40px;border-radius:10px;background:#f5f3ff;border:1px solid #ddd6fe;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
         </div>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">Multi-Penjual</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Satu pembayaran, banyak penjual — tiap penjual punya escrow terpisah yang independen.</p>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">{{ __('Multi-Penjual') }}</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">{{ __('Satu pembayaran, banyak penjual — tiap penjual punya escrow terpisah yang independen.') }}</p>
       </div>
       <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
         <div style="width:40px;height:40px;border-radius:10px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg>
         </div>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">Token TLKM</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Token BEP-20 milik platform, digunakan untuk seluruh transaksi di jaringan BNB Smart Chain.</p>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">{{ __('Token TLKM') }}</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">{{ __('Token BEP-20 milik platform, digunakan untuk seluruh transaksi di jaringan BNB Smart Chain.') }}</p>
       </div>
       <div class="reveal" data-reveal="card" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:32px;">
         <div style="width:40px;height:40px;border-radius:10px;background:#f5f3ff;border:1px solid #ddd6fe;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"></path></svg>
         </div>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">Transparansi On-Chain</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Setiap transaksi tercatat permanen dan bisa diverifikasi siapa saja di block explorer.</p>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:17px;color:#0f172a;margin:0 0 8px;">{{ __('Transparansi On-Chain') }}</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">{{ __('Setiap transaksi tercatat permanen dan bisa diverifikasi siapa saja di block explorer.') }}</p>
       </div>
     </div>
   </section>
@@ -289,8 +289,8 @@
   {{-- ===== FITUR UNGGULAN E-TRACE (kapabilitas tambahan) ===== --}}
   <section style="position:relative;padding:130px 40px;max-width:1200px;margin:0 auto;">
     <div class="reveal" data-reveal="fade" style="max-width:680px;margin-bottom:52px;">
-      <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">Lebih dari Marketplace</p>
-      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0;">Ekosistem keuangan yang transparan &amp; bisa diaudit.</h2>
+      <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">{{ __('Lebih dari Marketplace') }}</p>
+      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0;">{{ __('Ekosistem keuangan yang transparan & bisa diaudit.') }}</h2>
     </div>
     <div class="eco-grid">
 
@@ -299,8 +299,8 @@
         <div style="width:42px;height:42px;border-radius:11px;background:#fef2f2;border:1px solid #fecaca;display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#e5121f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"></circle><path d="M18.09 10.37A6 6 0 1 1 10.34 18"></path><path d="M7 6h1v4"></path><path d="m16.71 13.88.7.71-2.82 2.82"></path></svg>
         </div>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Paylater &mdash; Pinjam &amp; Danai</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Belanja sekarang bayar nanti dengan jaminan, atau <b>danai</b> pool likuiditas dan dapat bagi hasil. Bunga, jangka, &amp; pool semua tercatat on-chain.</p>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">{{ __('Paylater — Pinjam & Danai') }}</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">{{ __('Belanja sekarang bayar nanti dengan jaminan, atau') }} <b>{{ __('danai') }}</b> {{ __('pool likuiditas dan dapat bagi hasil. Bunga, jangka, & pool semua tercatat on-chain.') }}</p>
       </div>
 
 
@@ -309,8 +309,8 @@
         <div style="width:42px;height:42px;border-radius:11px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><path d="M2 10h20"></path></svg>
         </div>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">E-Wallet Crypto</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Dompet dalam aplikasi untuk menyimpan &amp; mengirim TLKM/stablecoin, dilindungi PIN.</p>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">{{ __('E-Wallet Crypto') }}</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">{{ __('Dompet dalam aplikasi untuk menyimpan & mengirim TLKM/stablecoin, dilindungi PIN.') }}</p>
       </div>
 
       {{-- Dompet Bersama + Multisig --}}
@@ -318,8 +318,8 @@
         <div style="width:42px;height:42px;border-radius:11px;background:#f5f3ff;border:1px solid #ddd6fe;display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
         </div>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Dompet Bersama + Multisig</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Dana komunitas yang butuh persetujuan beberapa orang (<b>M dari N</b>) sebelum dicairkan. Setiap usulan &amp; persetujuan tercatat dan bisa diaudit publik.</p>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">{{ __('Dompet Bersama + Multisig') }}</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">{{ __('Dana komunitas yang butuh persetujuan beberapa orang (') }}<b>{{ __('M dari N') }}</b>{{ __(') sebelum dicairkan. Setiap usulan & persetujuan tercatat dan bisa diaudit publik.') }}</p>
       </div>
 
       {{-- Laporan Otomatis Penjual --}}
@@ -327,8 +327,8 @@
         <div style="width:42px;height:42px;border-radius:11px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8M8 17h5"></path></svg>
         </div>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Laporan Otomatis Penjual</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Penjual mengunduh laporan penjualan <b>Excel &amp; PDF</b> otomatis — harian (rincian transaksi) dan bulanan (rekap) — langsung dari transaksi di aplikasi.</p>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">{{ __('Laporan Otomatis Penjual') }}</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">{{ __('Penjual mengunduh laporan penjualan') }} <b>{{ __('Excel & PDF') }}</b> {{ __('otomatis — harian (rincian transaksi) dan bulanan (rekap) — langsung dari transaksi di aplikasi.') }}</p>
       </div>
 
       {{-- Donasi Transparan & Anti-Beku --}}
@@ -336,8 +336,8 @@
         <div style="width:42px;height:42px;border-radius:11px;background:#fef2f2;border:1px solid #fecaca;display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"></path></svg>
         </div>
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">Donasi Transparan &amp; Anti-Beku</h3>
-        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">Donasi tercatat on-chain dan tersalur lewat smart contract — tidak bisa dibekukan sepihak. Belajar dari kasus donasi yang pernah dibekukan di Indonesia: transparansi &amp; desentralisasi menjaga dana tetap sampai ke tujuan.</p>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;color:#0f172a;margin:0 0 8px;">{{ __('Donasi Transparan & Anti-Beku') }}</h3>
+        <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">{{ __('Donasi tercatat on-chain dan tersalur lewat smart contract — tidak bisa dibekukan sepihak. Belajar dari kasus donasi yang pernah dibekukan di Indonesia: transparansi & desentralisasi menjaga dana tetap sampai ke tujuan.') }}</p>
       </div>
 
     </div>
@@ -348,24 +348,24 @@
   <section style="position:relative;padding:130px 40px;max-width:1200px;margin:0 auto;overflow:hidden;">
     <div style="position:relative;display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:56px;align-items:center;">
       <div class="reveal" data-reveal="left">
-        <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">Transparansi Penuh</p>
-        <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0 0 20px;">Tak perlu percaya kami. Verifikasi sendiri.</h2>
-        <p style="color:#475569;font-size:17px;line-height:1.65;max-width:460px;margin:0;">Tiap escrow, pembayaran, dan pelepasan dana adalah entri publik di blockchain Ethereum — bisa dibuka lewat block explorer mana pun. Cocok untuk lembaga dan mitra yang butuh jejak akuntabilitas yang tidak bisa diubah sepihak.</p>
+        <p style="color:#2563eb;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 12px;">{{ __('Transparansi Penuh') }}</p>
+        <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(1.8rem,4vw,2.9rem);color:#0f172a;line-height:1.2;margin:0 0 20px;">{{ __('Tak perlu percaya kami. Verifikasi sendiri.') }}</h2>
+        <p style="color:#475569;font-size:17px;line-height:1.65;max-width:460px;margin:0;">{{ __('Tiap escrow, pembayaran, dan pelepasan dana adalah entri publik di blockchain Ethereum — bisa dibuka lewat block explorer mana pun. Cocok untuk lembaga dan mitra yang butuh jejak akuntabilitas yang tidak bisa diubah sepihak.') }}</p>
       </div>
       <div class="reveal" data-reveal="right" style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(15,23,42,0.04);border-radius:18px;padding:26px;">
-        <p style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 16px;">Contoh entri escrow on-chain</p>
+        <p style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 16px;">{{ __('Contoh entri escrow on-chain') }}</p>
         <div style="display:flex;flex-direction:column;gap:12px;">
           <div style="display:flex;align-items:center;justify-content:space-between;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:13px 16px;">
-            <div><p style="font-size:14px;color:#1e293b;font-family:monospace;margin:0;">0x8f...2a91</p><p style="font-size:12px;color:#64748b;margin:4px 0 0;">Escrow dibuat &middot; Penjual A</p></div>
-            <span style="font-size:11px;padding:5px 10px;border-radius:999px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;">Ditahan</span>
+            <div><p style="font-size:14px;color:#1e293b;font-family:monospace;margin:0;">0x8f...2a91</p><p style="font-size:12px;color:#64748b;margin:4px 0 0;">{{ __('Escrow dibuat · Penjual A') }}</p></div>
+            <span style="font-size:11px;padding:5px 10px;border-radius:999px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;">{{ __('Ditahan') }}</span>
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:13px 16px;">
-            <div><p style="font-size:14px;color:#1e293b;font-family:monospace;margin:0;">0x3c...9e0d</p><p style="font-size:12px;color:#64748b;margin:4px 0 0;">Konfirmasi diterima &middot; Penjual B</p></div>
-            <span style="font-size:11px;padding:5px 10px;border-radius:999px;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;">Dilepas</span>
+            <div><p style="font-size:14px;color:#1e293b;font-family:monospace;margin:0;">0x3c...9e0d</p><p style="font-size:12px;color:#64748b;margin:4px 0 0;">{{ __('Konfirmasi diterima · Penjual B') }}</p></div>
+            <span style="font-size:11px;padding:5px 10px;border-radius:999px;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;">{{ __('Dilepas') }}</span>
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:13px 16px;">
-            <div><p style="font-size:14px;color:#1e293b;font-family:monospace;margin:0;">0x1b...7f44</p><p style="font-size:12px;color:#64748b;margin:4px 0 0;">Refund diproses &middot; Penjual C</p></div>
-            <span style="font-size:11px;padding:5px 10px;border-radius:999px;background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;">Refund</span>
+            <div><p style="font-size:14px;color:#1e293b;font-family:monospace;margin:0;">0x1b...7f44</p><p style="font-size:12px;color:#64748b;margin:4px 0 0;">{{ __('Refund diproses · Penjual C') }}</p></div>
+            <span style="font-size:11px;padding:5px 10px;border-radius:999px;background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;">{{ __('Refund') }}</span>
           </div>
         </div>
       </div>
@@ -374,10 +374,10 @@
 
   <section style="position:relative;padding:150px 40px;max-width:1200px;margin:0 auto;text-align:center;overflow:hidden;">
     <div class="reveal" data-reveal="fade" style="position:relative;">
-      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(2rem,5vw,3.6rem);color:#0f172a;line-height:1.15;max-width:760px;margin:0 auto;">Belanja dengan transparansi yang bisa Anda buktikan sendiri.</h2>
+      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(2rem,5vw,3.6rem);color:#0f172a;line-height:1.15;max-width:760px;margin:0 auto;">{{ __('Belanja dengan transparansi yang bisa Anda buktikan sendiri.') }}</h2>
       <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin-top:40px;">
-        <a href="/login" class="btn-primary" style="padding:16px 34px;border-radius:999px;background:#2563eb;color:#fff;font-weight:600;font-size:15px;">Masuk Toko</a>
-        <a href="/products" class="btn-ghost" style="padding:16px 34px;border-radius:999px;background:#fff;border:1px solid #e2e8f0;color:#1e293b;font-weight:500;font-size:15px;box-shadow:0 1px 2px rgba(15,23,42,0.04);">Lihat Katalog</a>
+        <a href="/login" class="btn-primary" style="padding:16px 34px;border-radius:999px;background:#2563eb;color:#fff;font-weight:600;font-size:15px;">{{ __('Masuk Toko') }}</a>
+        <a href="/products" class="btn-ghost" style="padding:16px 34px;border-radius:999px;background:#fff;border:1px solid #e2e8f0;color:#1e293b;font-weight:500;font-size:15px;box-shadow:0 1px 2px rgba(15,23,42,0.04);">{{ __('Lihat Katalog') }}</a>
       </div>
     </div>
   </section>

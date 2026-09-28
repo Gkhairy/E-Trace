@@ -164,18 +164,18 @@ class ChainVerifier
     {
         $pool = $this->poolConfigured();
         if (!$pool) {
-            return ['ok' => false, 'reason' => 'Kontrak donasi belum dikonfigurasi.'];
+            return ['ok' => false, 'reason' => __('Kontrak donasi belum dikonfigurasi.')];
         }
 
         $receipt = $this->getReceipt($txHash);
         if (!$receipt) {
-            return ['ok' => false, 'reason' => 'Transaksi belum ditemukan / belum ter-mine.'];
+            return ['ok' => false, 'reason' => __('Transaksi belum ditemukan / belum ter-mine.')];
         }
         if (($receipt['status'] ?? '') !== '0x1') {
-            return ['ok' => false, 'reason' => 'Transaksi gagal (reverted) di blockchain.'];
+            return ['ok' => false, 'reason' => __('Transaksi gagal (reverted) di blockchain.')];
         }
         if (strtolower($receipt['to'] ?? '') !== $pool) {
-            return ['ok' => false, 'reason' => 'Transaksi bukan ke kontrak donasi.'];
+            return ['ok' => false, 'reason' => __('Transaksi bukan ke kontrak donasi.')];
         }
 
         // Donated(bytes32 indexed campaignId, address indexed donor, uint256 amount, uint256 ts)
@@ -199,7 +199,7 @@ class ChainVerifier
         }
 
         if ($donor === null || $amtWei === null) {
-            return ['ok' => false, 'reason' => 'Event donasi untuk campaign ini tidak ditemukan.'];
+            return ['ok' => false, 'reason' => __('Event donasi untuk campaign ini tidak ditemukan.')];
         }
 
         $block = isset($receipt['blockNumber']) ? hexdec($receipt['blockNumber']) : null;
@@ -221,18 +221,18 @@ class ChainVerifier
     {
         $pool = $this->poolConfigured();
         if (!$pool) {
-            return ['ok' => false, 'reason' => 'Kontrak donasi belum dikonfigurasi.'];
+            return ['ok' => false, 'reason' => __('Kontrak donasi belum dikonfigurasi.')];
         }
 
         $receipt = $this->getReceipt($txHash);
         if (!$receipt) {
-            return ['ok' => false, 'reason' => 'Transaksi belum ditemukan / belum ter-mine.'];
+            return ['ok' => false, 'reason' => __('Transaksi belum ditemukan / belum ter-mine.')];
         }
         if (($receipt['status'] ?? '') !== '0x1') {
-            return ['ok' => false, 'reason' => 'Transaksi gagal (reverted) di blockchain.'];
+            return ['ok' => false, 'reason' => __('Transaksi gagal (reverted) di blockchain.')];
         }
         if (strtolower($receipt['to'] ?? '') !== $pool) {
-            return ['ok' => false, 'reason' => 'Transaksi bukan ke kontrak donasi.'];
+            return ['ok' => false, 'reason' => __('Transaksi bukan ke kontrak donasi.')];
         }
 
         // Disbursed(bytes32 indexed campaignId, address indexed to, uint256 amount, address by, uint256 ts)
@@ -258,7 +258,7 @@ class ChainVerifier
         }
 
         if ($to === null || $amtWei === null) {
-            return ['ok' => false, 'reason' => 'Event penyaluran untuk campaign ini tidak ditemukan.'];
+            return ['ok' => false, 'reason' => __('Event penyaluran untuk campaign ini tidak ditemukan.')];
         }
 
         $block = isset($receipt['blockNumber']) ? hexdec($receipt['blockNumber']) : null;
@@ -284,10 +284,10 @@ class ChainVerifier
 
         $receipt = $this->getReceipt($txHash);
         if (!$receipt) {
-            return ['ok' => false, 'reason' => 'Transaksi belum ditemukan / belum ter-mine.'];
+            return ['ok' => false, 'reason' => __('Transaksi belum ditemukan / belum ter-mine.')];
         }
         if (($receipt['status'] ?? '') !== '0x1') {
-            return ['ok' => false, 'reason' => 'Transaksi gagal (reverted) di blockchain.'];
+            return ['ok' => false, 'reason' => __('Transaksi gagal (reverted) di blockchain.')];
         }
 
         // Transfer(address indexed from, address indexed to, uint256 value)
@@ -310,7 +310,7 @@ class ChainVerifier
         }
 
         if ($to === null || $amtWei === null) {
-            return ['ok' => false, 'reason' => 'Event transfer TLKM tidak ditemukan / pengirim tidak cocok.'];
+            return ['ok' => false, 'reason' => __('Event transfer TLKM tidak ditemukan / pengirim tidak cocok.')];
         }
 
         $block = isset($receipt['blockNumber']) ? hexdec($receipt['blockNumber']) : null;
@@ -337,16 +337,16 @@ class ChainVerifier
 
         $receipt = $this->getReceipt($txHash);
         if (!$receipt) {
-            return ['ok' => false, 'reason' => 'Transaksi belum ditemukan / belum ter-mine.'];
+            return ['ok' => false, 'reason' => __('Transaksi belum ditemukan / belum ter-mine.')];
         }
         if (($receipt['status'] ?? '') !== '0x1') {
-            return ['ok' => false, 'reason' => 'Transaksi gagal (reverted) di blockchain.'];
+            return ['ok' => false, 'reason' => __('Transaksi gagal (reverted) di blockchain.')];
         }
         if (strtolower($receipt['to'] ?? '') !== $this->gateway) {
-            return ['ok' => false, 'reason' => 'Transaksi bukan ke kontrak PaymentGateway.'];
+            return ['ok' => false, 'reason' => __('Transaksi bukan ke kontrak PaymentGateway.')];
         }
         if (strtolower($receipt['from'] ?? '') !== $buyer) {
-            return ['ok' => false, 'reason' => 'Wallet pembayar tidak cocok dengan wallet akunmu.'];
+            return ['ok' => false, 'reason' => __('Wallet pembayar tidak cocok dengan wallet akunmu.')];
         }
 
         $block = isset($receipt['blockNumber']) ? hexdec($receipt['blockNumber']) : null;

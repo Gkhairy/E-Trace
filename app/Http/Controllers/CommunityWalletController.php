@@ -112,14 +112,14 @@ class CommunityWalletController extends Controller
         foreach ($memberIds as $uid) {
             if ($uid !== auth()->id()) {
                 \App\Support\Notify::send($uid, 'community', 'Diundang ke dompet komunitas',
-                    "{$inviterName} mengundangmu ke \"{$wallet->name}\".", '/community/' . $wallet->id, '👥');
+                    [':name mengundangmu ke ":wallet".', ['name' => $inviterName, 'wallet' => $wallet->name]], '/community/' . $wallet->id, '👥');
             }
         }
 
         // Gas drip untuk wallet komunitas (best-effort) supaya bisa menyalurkan dana.
         $this->gasDrip($wallet);
 
-        return redirect('/community/' . $wallet->id)->with('success', 'Dompet komunitas dibuat.');
+        return redirect('/community/' . $wallet->id)->with('success', __('Dompet komunitas dibuat.'));
     }
 
     public function show(int $id, ChainVerifier $verifier, ChainSigner $signer)
@@ -226,7 +226,7 @@ class CommunityWalletController extends Controller
     {
         $data = $req->validate(['id' => 'required|integer', 'amount' => 'required|numeric|min:0.000001', 'pin' => 'required|digits:6']);
         $wallet = CommunityWallet::findOrFail($data['id']);
-        abort_unless($wallet->mode === 'A', 422, 'Bukan mode jatah bulanan.');
+        abort_unless($wallet->mode === 'A', 422, __('Bukan mode jatah bulanan.'));
         $member = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
         $this->requirePin($data['pin']);
 
@@ -250,7 +250,7 @@ class CommunityWalletController extends Controller
             return true;
         });
         if (!$reserved) {
-            return response()->json(['success' => false, 'message' => 'Melebihi jatah bulan ini.'], 422);
+            return response()->json(['success' => false, 'message' => __('Melebihi jatah bulan ini.')], 422);
         }
 
         try {
@@ -275,12 +275,12 @@ class CommunityWalletController extends Controller
     {
         $data = $req->validate(['id' => 'required|integer', 'to' => 'required|string', 'amount' => 'required|numeric|min:0.000001', 'note' => 'nullable|string|max:120', 'pin' => 'required|digits:6']);
         $wallet = CommunityWallet::findOrFail($data['id']);
-        abort_unless($wallet->mode === 'B', 422, 'Bukan mode multisig.');
+        abort_unless($wallet->mode === 'B', 422, __('Bukan mode multisig.'));
         $member = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
         $this->requirePin($data['pin']);
 
         [$toWallet, $toName] = $this->resolveRecipient($data['to']);
-        abort_unless($toWallet, 422, 'Penerima tidak ditemukan.');
+        abort_unless($toWallet, 422, __('Penerima tidak ditemukan.'));
 
         $p = CommunityProposal::create([
             'community_wallet_id' => $wallet->id, 'proposer_id' => auth()->id(), 'type' => 'transfer',
@@ -289,7 +289,7 @@ class CommunityWalletController extends Controller
         $this->autoApprove($p, $member);
         $amt = $this->fmtAmt($data['amount']);
         $this->notifyOtherSigners($wallet, 'Usulan butuh persetujuan',
-            $this->meName() . " mengusulkan kirim {$amt} TLKM dari \"{$wallet->name}\". Butuh persetujuan semua penanda tangan.", '🗳️');
+            [':name mengusulkan kirim :amt TLKM dari ":wallet". Butuh persetujuan semua penanda tangan.', ['name' => $this->meName(), 'amt' => $amt, 'wallet' => $wallet->name]], '🗳️');
 
         return response()->json(['success' => true] + $this->maybeExecute($p, $wallet, $signer));
     }
@@ -312,7 +312,7 @@ class CommunityWalletController extends Controller
         ]);
 
         $wallet = CommunityWallet::findOrFail($data['id']);
-        abort_unless($wallet->mode === 'B', 422, 'Dompet ini bukan mode multisig.');
+        abort_unless($wallet->mode === 'B', 422, __('Dompet ini bukan mode multisig.'));
         $member = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
         $this->requirePin($data['pin']);
 
@@ -324,7 +324,7 @@ class CommunityWalletController extends Controller
         }
         if (!$addr) {
             $s = $data['shipping'] ?? [];
-            abort_if(empty($s['address']) || empty($s['recipient_name']), 422, 'Alamat pengiriman belum lengkap.');
+            abort_if(empty($s['address']) || empty($s['recipient_name']), 422, __('Alamat pengiriman belum lengkap.'));
             $addr = \App\Models\ShippingAddress::create([
                 'user_id'        => auth()->id(),
                 'label'          => $data['address_label'] ?? null,
@@ -346,7 +346,7 @@ class CommunityWalletController extends Controller
         if ($balance !== null && bccomp($balance, (string) $snap['total'], 6) < 0) {
             return response()->json([
                 'success' => false,
-                'message' => 'Saldo dompet komunitas (' . $this->fmtAmt($balance) . ' TLKM) kurang dari total belanja (' . $this->fmtAmt($snap['total']) . ' TLKM).',
+                'message' => __('Saldo dompet komunitas (:bal TLKM) kurang dari total belanja (:total TLKM).', ['bal' => $this->fmtAmt($balance), 'total' => $this->fmtAmt($snap['total'])]),
             ], 422);
         }
 
@@ -365,7 +365,7 @@ class CommunityWalletController extends Controller
 
         $amt = $this->fmtAmt($snap['total']);
         $this->notifyOtherSigners($wallet, 'Usulan belanja butuh persetujuan',
-            $this->meName() . " ingin belanja {$count} barang senilai {$amt} TLKM memakai dana \"{$wallet->name}\". Butuh persetujuan semua penanda tangan.", '🛒');
+            [':name ingin belanja :count barang senilai :amt TLKM memakai dana ":wallet". Butuh persetujuan semua penanda tangan.', ['name' => $this->meName(), 'count' => $count, 'amt' => $amt, 'wallet' => $wallet->name]], '🛒');
 
         return response()->json([
             'success'     => true,
@@ -389,18 +389,18 @@ class CommunityWalletController extends Controller
         ]);
 
         $order = \App\Models\Order::where('order_id', $data['order_id'])->firstOrFail();
-        abort_unless($order->community_wallet_id, 422, 'Order ini bukan pembelian dana komunitas.');
-        abort_unless((int) $order->user_id === (int) auth()->id(), 403, 'Hanya pembeli yang boleh melakukan ini.');
+        abort_unless($order->community_wallet_id, 422, __('Order ini bukan pembelian dana komunitas.'));
+        abort_unless((int) $order->user_id === (int) auth()->id(), 403, __('Hanya pembeli yang boleh melakukan ini.'));
         $this->requirePin($data['pin']);
 
         $item = \App\Models\OrderItem::where('order_ref_id', $order->id)
             ->where('item_index', (int) $data['item_index'])->firstOrFail();
-        abort_unless($item->status === 'paid', 422, 'Item tidak dalam status dibayar.');
+        abort_unless($item->status === 'paid', 422, __('Item tidak dalam status dibayar.'));
 
         $wallet = CommunityWallet::findOrFail($order->community_wallet_id);
         $this->ensureGas($wallet);
         $priv = (new EmbeddedWallet())->decryptServer($wallet->only(['wallet_enc', 'wallet_salt', 'wallet_iv', 'wallet_tag']));
-        abort_unless($priv, 500, 'Kunci dompet komunitas gagal dibuka.');
+        abort_unless($priv, 500, __('Kunci dompet komunitas gagal dibuka.'));
 
         $method = match ($data['action']) {
             'confirm' => 'confirmItem',
@@ -432,11 +432,11 @@ class CommunityWalletController extends Controller
         }
 
         [$title, $body, $icon] = match ($data['action']) {
-            'confirm' => ['Barang komunitas diterima', ' mengonfirmasi penerimaan barang — dana dilepas ke penjual.', '📦'],
-            'refund'  => ['Dana komunitas dikembalikan', ' mengajukan refund — dana kembali ke kas komunitas.', '↩️'],
-            default   => ['Sengketa dibuka', ' membuka sengketa untuk belanja komunitas.', '⚖️'],
+            'confirm' => ['Barang komunitas diterima', ':name mengonfirmasi penerimaan barang — dana dilepas ke penjual.', '📦'],
+            'refund'  => ['Dana komunitas dikembalikan', ':name mengajukan refund — dana kembali ke kas komunitas.', '↩️'],
+            default   => ['Sengketa dibuka', ':name membuka sengketa untuk belanja komunitas.', '⚖️'],
         };
-        $this->notifyAllMembers($wallet, $title, $this->meName() . $body, $icon);
+        $this->notifyAllMembers($wallet, $title, [$body, ['name' => $this->meName()]], $icon);
 
         return response()->json(['success' => true, 'tx_hash' => $hash]);
     }
@@ -449,20 +449,20 @@ class CommunityWalletController extends Controller
             'target_id' => 'required|integer', 'as_signer' => 'nullable|boolean', 'pin' => 'required|digits:6',
         ]);
         $wallet = CommunityWallet::findOrFail($data['id']);
-        abort_unless($wallet->mode === 'B', 422, 'Hanya untuk dompet multisig.');
-        abort_unless($wallet->isOwner(auth()->id()), 403, 'Hanya pemilik yang bisa mengundang / mengeluarkan anggota.');
+        abort_unless($wallet->mode === 'B', 422, __('Hanya untuk dompet multisig.'));
+        abort_unless($wallet->isOwner(auth()->id()), 403, __('Hanya pemilik yang bisa mengundang / mengeluarkan anggota.'));
         $member = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
         $this->requirePin($data['pin']);
 
         $targetId = (int) $data['target_id'];
         $meta = null;
         if ($data['action'] === 'add') {
-            abort_unless(Friendship::where('user_id', auth()->id())->where('friend_id', $targetId)->where('status', 'accepted')->exists(), 422, 'Hanya bisa mengundang teman.');
-            abort_if(CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', $targetId)->exists(), 422, 'Orang ini sudah jadi anggota.');
+            abort_unless(Friendship::where('user_id', auth()->id())->where('friend_id', $targetId)->where('status', 'accepted')->exists(), 422, __('Hanya bisa mengundang teman.'));
+            abort_if(CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', $targetId)->exists(), 422, __('Orang ini sudah jadi anggota.'));
             $meta = ['as_signer' => (bool) ($data['as_signer'] ?? false)];
         } else {
-            abort_if($targetId === $wallet->ownerId(), 422, 'Pemilik tidak bisa dikeluarkan. Transfer kepemilikan dulu.');
-            abort_unless(CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', $targetId)->exists(), 422, 'Bukan anggota dompet ini.');
+            abort_if($targetId === $wallet->ownerId(), 422, __('Pemilik tidak bisa dikeluarkan. Transfer kepemilikan dulu.'));
+            abort_unless(CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', $targetId)->exists(), 422, __('Bukan anggota dompet ini.'));
         }
         $target = User::find($targetId);
         $targetName = $target ? ($target->public_name ?: $target->name) : 'Pengguna';
@@ -473,9 +473,10 @@ class CommunityWalletController extends Controller
             'to_wallet' => '', 'amount' => 0, 'target_user_id' => $targetId, 'to_name' => $targetName, 'meta' => $meta,
         ]);
         $this->autoApprove($p, $member);
-        $verb = $data['action'] === 'add' ? 'mengundang' : 'mengeluarkan';
-        $this->notifyOtherSigners($wallet, 'Usulan anggota butuh persetujuan',
-            $this->meName() . " ingin {$verb} \"{$targetName}\" di \"{$wallet->name}\". Butuh persetujuan semua penanda tangan.", '👥');
+        $this->notifyOtherSigners($wallet, 'Usulan anggota butuh persetujuan', [$data['action'] === 'add'
+            ? ':name ingin mengundang ":target" di ":wallet". Butuh persetujuan semua penanda tangan.'
+            : ':name ingin mengeluarkan ":target" di ":wallet". Butuh persetujuan semua penanda tangan.',
+            ['name' => $this->meName(), 'target' => $targetName, 'wallet' => $wallet->name]], '👥');
 
         return response()->json(['success' => true] + $this->maybeExecute($p, $wallet, $signer));
     }
@@ -485,14 +486,14 @@ class CommunityWalletController extends Controller
     {
         $data = $req->validate(['id' => 'required|integer', 'target_id' => 'required|integer', 'pin' => 'required|digits:6']);
         $wallet = CommunityWallet::findOrFail($data['id']);
-        abort_unless($wallet->mode === 'B', 422, 'Hanya untuk dompet multisig.');
-        abort_unless($wallet->isOwner(auth()->id()), 403, 'Hanya pemilik yang bisa memindahkan kepemilikan.');
+        abort_unless($wallet->mode === 'B', 422, __('Hanya untuk dompet multisig.'));
+        abort_unless($wallet->isOwner(auth()->id()), 403, __('Hanya pemilik yang bisa memindahkan kepemilikan.'));
         $member = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
         $this->requirePin($data['pin']);
 
         $targetId = (int) $data['target_id'];
-        abort_if($targetId === $wallet->ownerId(), 422, 'Sudah menjadi pemilik.');
-        abort_unless(CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', $targetId)->where('is_signer', true)->exists(), 422, 'Pemilik baru harus salah satu penanda tangan.');
+        abort_if($targetId === $wallet->ownerId(), 422, __('Sudah menjadi pemilik.'));
+        abort_unless(CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', $targetId)->where('is_signer', true)->exists(), 422, __('Pemilik baru harus salah satu penanda tangan.'));
         $target = User::find($targetId);
         $targetName = $target ? ($target->public_name ?: $target->name) : 'Pengguna';
 
@@ -502,7 +503,7 @@ class CommunityWalletController extends Controller
         ]);
         $this->autoApprove($p, $member);
         $this->notifyOtherSigners($wallet, 'Usulan transfer kepemilikan',
-            $this->meName() . " ingin memindahkan kepemilikan \"{$wallet->name}\" ke \"{$targetName}\". Butuh persetujuan semua penanda tangan.", '🔑');
+            [':name ingin memindahkan kepemilikan ":wallet" ke ":target". Butuh persetujuan semua penanda tangan.', ['name' => $this->meName(), 'wallet' => $wallet->name, 'target' => $targetName]], '🔑');
 
         return response()->json(['success' => true] + $this->maybeExecute($p, $wallet, $signer));
     }
@@ -514,8 +515,8 @@ class CommunityWalletController extends Controller
         $p = CommunityProposal::findOrFail($data['proposal_id']);
         $wallet = CommunityWallet::findOrFail($p->community_wallet_id);
         $member = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
-        abort_unless($p->status === 'open', 422, 'Usulan sudah selesai.');
-        abort_unless($member->is_signer, 403, 'Kamu bukan penanda tangan yang ditunjuk untuk dompet ini.');
+        abort_unless($p->status === 'open', 422, __('Usulan sudah selesai.'));
+        abort_unless($member->is_signer, 403, __('Kamu bukan penanda tangan yang ditunjuk untuk dompet ini.'));
         $this->requirePin($data['pin']);
 
         CommunityApproval::firstOrCreate(['proposal_id' => $p->id, 'user_id' => auth()->id()]);
@@ -529,16 +530,16 @@ class CommunityWalletController extends Controller
         $p = CommunityProposal::findOrFail($data['proposal_id']);
         $wallet = CommunityWallet::findOrFail($p->community_wallet_id);
         $member = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->firstOrFail();
-        abort_unless($p->status === 'open', 422, 'Usulan sudah selesai.');
-        abort_unless($member->is_signer, 403, 'Kamu bukan penanda tangan yang ditunjuk untuk dompet ini.');
+        abort_unless($p->status === 'open', 422, __('Usulan sudah selesai.'));
+        abort_unless($member->is_signer, 403, __('Kamu bukan penanda tangan yang ditunjuk untuk dompet ini.'));
         $this->requirePin($data['pin']);
 
         // Atomik, sama seperti eksekusi: bila usulan sudah diklaim untuk dieksekusi di
         // antara pengecekan di atas dan baris ini, jangan timpa statusnya jadi "ditolak"
         // sementara dana sebenarnya sedang dikirim.
         $rejected = CommunityProposal::where('id', $p->id)->where('status', 'open')->update(['status' => 'rejected']);
-        abort_unless($rejected === 1, 422, 'Usulan sudah diproses.');
-        $this->notifyAllMembers($wallet, 'Usulan ditolak', $this->meName() . " menolak sebuah usulan di \"{$wallet->name}\".", '❌');
+        abort_unless($rejected === 1, 422, __('Usulan sudah diproses.'));
+        $this->notifyAllMembers($wallet, 'Usulan ditolak', [':name menolak sebuah usulan di ":wallet".', ['name' => $this->meName(), 'wallet' => $wallet->name]], '❌');
         return response()->json(['success' => true, 'rejected' => true]);
     }
 
@@ -549,8 +550,8 @@ class CommunityWalletController extends Controller
         $wallet = CommunityWallet::findOrFail($data['id']);
         $this->authorizeMember($wallet); // penatap harus anggota
         $targetId = (int) $data['target_id'];
-        abort_if($targetId === auth()->id(), 422, 'Tidak perlu nickname untuk diri sendiri.');
-        abort_unless(CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', $targetId)->exists(), 422, 'Bukan anggota dompet ini.');
+        abort_if($targetId === auth()->id(), 422, __('Tidak perlu nickname untuk diri sendiri.'));
+        abort_unless(CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', $targetId)->exists(), 422, __('Bukan anggota dompet ini.'));
 
         $nick = trim((string) $data['nickname']);
         $keys = ['community_wallet_id' => $wallet->id, 'viewer_id' => auth()->id(), 'target_user_id' => $targetId];
@@ -631,24 +632,24 @@ class CommunityWalletController extends Controller
                 );
                 $this->syncThreshold($wallet);
                 $p->update(['status' => 'executed']);
-                $this->notifyAllMembers($wallet, 'Anggota baru ditambahkan', "\"{$p->to_name}\" ditambahkan ke \"{$wallet->name}\".", '👥');
+                $this->notifyAllMembers($wallet, 'Anggota baru ditambahkan', ['":target" ditambahkan ke ":wallet".', ['target' => $p->to_name, 'wallet' => $wallet->name]], '👥');
                 \App\Support\Notify::send((int) $p->target_user_id, 'community', 'Kamu ditambahkan ke dompet komunitas',
-                    "Kamu kini anggota \"{$wallet->name}\".", '/community/' . $wallet->id, '👥');
+                    ['Kamu kini anggota ":wallet".', ['wallet' => $wallet->name]], '/community/' . $wallet->id, '👥');
                 return ['executed' => true];
 
             case 'remove_member':
                 CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', $p->target_user_id)->delete();
                 $this->syncThreshold($wallet);
                 $p->update(['status' => 'executed']);
-                $this->notifyAllMembers($wallet, 'Anggota dikeluarkan', "\"{$p->to_name}\" dikeluarkan dari \"{$wallet->name}\".", '👋');
+                $this->notifyAllMembers($wallet, 'Anggota dikeluarkan', ['":target" dikeluarkan dari ":wallet".', ['target' => $p->to_name, 'wallet' => $wallet->name]], '👋');
                 \App\Support\Notify::send((int) $p->target_user_id, 'community', 'Kamu dikeluarkan dari dompet komunitas',
-                    "Kamu dikeluarkan dari \"{$wallet->name}\".", '/community', '👋');
+                    ['Kamu dikeluarkan dari ":wallet".', ['wallet' => $wallet->name]], '/community', '👋');
                 return ['executed' => true];
 
             case 'transfer_ownership':
                 $wallet->update(['owner_id' => $p->target_user_id]);
                 $p->update(['status' => 'executed']);
-                $this->notifyAllMembers($wallet, 'Kepemilikan dipindahkan', "Kepemilikan \"{$wallet->name}\" dipindahkan ke \"{$p->to_name}\".", '🔑');
+                $this->notifyAllMembers($wallet, 'Kepemilikan dipindahkan', ['Kepemilikan ":wallet" dipindahkan ke ":target".', ['wallet' => $wallet->name, 'target' => $p->to_name]], '🔑');
                 return ['executed' => true];
 
             case 'purchase':
@@ -659,7 +660,7 @@ class CommunityWalletController extends Controller
                 $p->update(['status' => 'executed', 'tx_hash' => $hash]);
                 $amt = $this->fmtAmt($p->amount);
                 $this->notifyAllMembers($wallet, 'Belanja komunitas dibayar',
-                    "Usulan disetujui — {$amt} TLKM dibayarkan ke escrow dari \"{$wallet->name}\".", '🛒');
+                    ['Usulan disetujui — :amt TLKM dibayarkan ke escrow dari ":wallet".', ['amt' => $amt, 'wallet' => $wallet->name]], '🛒');
                 \App\Support\Notify::send((int) $p->proposer_id, 'order', 'Belanja komunitas disetujui',
                     'Pesananmu sudah dibayar dari dana komunitas dan ditahan escrow.', '/orders', '✅');
                 return ['executed' => true, 'tx_hash' => $hash];
@@ -690,7 +691,7 @@ class CommunityWalletController extends Controller
         return rtrim(rtrim(number_format((float) $n, 6, '.', ''), '0'), '.');
     }
 
-    private function notifyOtherSigners(CommunityWallet $wallet, string $title, string $body, string $icon): void
+    private function notifyOtherSigners(CommunityWallet $wallet, string $title, string|array $body, string $icon): void
     {
         $others = CommunityMember::where('community_wallet_id', $wallet->id)->where('is_signer', true)->where('user_id', '!=', auth()->id())->pluck('user_id');
         foreach ($others as $uid) {
@@ -698,7 +699,7 @@ class CommunityWalletController extends Controller
         }
     }
 
-    private function notifyAllMembers(CommunityWallet $wallet, string $title, string $body, string $icon): void
+    private function notifyAllMembers(CommunityWallet $wallet, string $title, string|array $body, string $icon): void
     {
         foreach (CommunityMember::where('community_wallet_id', $wallet->id)->pluck('user_id') as $uid) {
             \App\Support\Notify::send((int) $uid, 'community', $title, $body, '/community/' . $wallet->id, $icon);
@@ -709,17 +710,17 @@ class CommunityWalletController extends Controller
     private function authorizeMember(CommunityWallet $wallet): void
     {
         $isMember = CommunityMember::where('community_wallet_id', $wallet->id)->where('user_id', auth()->id())->exists();
-        abort_unless($isMember || $wallet->created_by === auth()->id(), 403, 'Bukan anggota dompet ini.');
+        abort_unless($isMember || $wallet->created_by === auth()->id(), 403, __('Bukan anggota dompet ini.'));
     }
 
     private function requirePin(string $pin): void
     {
         $user = auth()->user();
-        abort_unless($user->pin_hash, 422, 'Akun belum punya PIN.');
-        abort_if($user->pinLocked(), 423, 'PIN terkunci sementara.');
+        abort_unless($user->pin_hash, 422, __('Akun belum punya PIN.'));
+        abort_if($user->pinLocked(), 423, __('PIN terkunci sementara.'));
         if (!Hash::check($pin, $user->pin_hash)) {
             $user->increment('pin_attempts');
-            if ($user->pin_attempts >= 5) { $user->forceFill(['pin_locked_until' => now()->addMinutes(15), 'pin_attempts' => 0])->save(); abort(423, 'PIN salah 5×. Dikunci 15 menit.'); }
+            if ($user->pin_attempts >= 5) { $user->forceFill(['pin_locked_until' => now()->addMinutes(15), 'pin_attempts' => 0])->save(); abort(423, __('PIN salah 5×. Dikunci 15 menit.')); }
             abort(422, 'PIN salah. Sisa percobaan: ' . max(0, 5 - $user->pin_attempts) . '.');
         }
         $user->forceFill(['pin_attempts' => 0])->save();
@@ -729,7 +730,7 @@ class CommunityWalletController extends Controller
     private function ensureGas(CommunityWallet $wallet): void
     {
         (new GasTopUp(new ChainSigner()))->ensure($wallet->address,
-            'Dompet komunitas belum punya gas (tBNB testnet — gratis, bukan uang nyata). Isi sedikit tBNB dari faucet BNB Testnet (https://testnet.bnbchain.org/faucet-smart) ke alamat dompet (' . $wallet->address . ') lalu coba lagi.');
+            __('Dompet komunitas belum punya gas (tBNB testnet — gratis, bukan uang nyata). Isi sedikit tBNB dari faucet BNB Testnet (https://testnet.bnbchain.org/faucet-smart) ke alamat dompet (:addr) lalu coba lagi.', ['addr' => $wallet->address]));
     }
 
     private function communitySign(CommunityWallet $wallet, ChainSigner $signer, string $to, string|float $amount): string
@@ -737,7 +738,7 @@ class CommunityWalletController extends Controller
         $this->ensureGas($wallet);
 
         $priv = (new EmbeddedWallet())->decryptServer($wallet->only(['wallet_enc', 'wallet_salt', 'wallet_iv', 'wallet_tag']));
-        abort_unless($priv, 500, 'Kunci dompet komunitas gagal dibuka.');
+        abort_unless($priv, 500, __('Kunci dompet komunitas gagal dibuka.'));
         return $signer->sendContractCall($priv, config('chain.tlkm'), self::ERC20_ABI, 'transfer', [$to, $signer->toWei((string) $amount)]);
     }
 

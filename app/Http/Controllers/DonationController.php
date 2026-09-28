@@ -14,7 +14,7 @@ class DonationController extends Controller
 {
     private function ensureSupervisor(): void
     {
-        abort_unless(auth()->check() && auth()->user()->isSupervisor(), 403, 'Hanya pengawas.');
+        abort_unless(auth()->check() && auth()->user()->isSupervisor(), 403, __('Hanya pengawas.'));
     }
 
     private function configured(): bool
@@ -93,7 +93,7 @@ class DonationController extends Controller
             'created_by'       => auth()->id(),
         ]);
 
-        return redirect('/donate/' . $c->slug)->with('success', 'Campaign donasi dibuat.');
+        return redirect('/donate/' . $c->slug)->with('success', __('Campaign donasi dibuat.'));
     }
 
     /** Form edit campaign (pengawas). */
@@ -137,7 +137,7 @@ class DonationController extends Controller
         $campaign->status           = $data['status'];
         $campaign->save();
 
-        return redirect('/donate/' . $campaign->slug)->with('success', 'Campaign donasi diperbarui.');
+        return redirect('/donate/' . $campaign->slug)->with('success', __('Campaign donasi diperbarui.'));
     }
 
     /** Hapus campaign (pengawas). */
@@ -154,7 +154,7 @@ class DonationController extends Controller
         Disbursement::where('campaign_id', $campaign->id)->update(['campaign_id' => null]);
         $campaign->delete();
 
-        return redirect('/donate')->with('success', 'Campaign donasi dihapus.');
+        return redirect('/donate')->with('success', __('Campaign donasi dihapus.'));
     }
 
     /** Detail campaign (publik) + form donasi + kartu penyalur (pengawas). */
@@ -222,7 +222,7 @@ class DonationController extends Controller
         $amt = rtrim(rtrim(number_format((float) $v['amount_tlkm'], 6, '.', ''), '0'), '.');
         $donorName = \App\Support\Identity::resolve($v['donor'])['name'] ?? 'Seseorang';
         \App\Support\Notify::send($campaign->created_by, 'donation', 'Donasi masuk',
-            "{$donorName} berdonasi {$amt} TLKM ke \"{$campaign->title}\".", '/donate/' . $campaign->slug, '💝');
+            [':name berdonasi :amt TLKM ke ":campaign".', ['name' => $donorName, 'amt' => $amt, 'campaign' => $campaign->title]], '/donate/' . $campaign->slug, '💝');
 
         return response()->json(['success' => true, 'amount' => $v['amount_tlkm']]);
     }
@@ -250,7 +250,7 @@ class DonationController extends Controller
 
         // Keamanan: alamat tujuan on-chain HARUS sama dengan penerima campaign.
         if ($v['to'] !== strtolower($campaign->recipient_wallet)) {
-            return response()->json(['success' => false, 'message' => 'Alamat tujuan tidak cocok dengan penerima campaign.'], 422);
+            return response()->json(['success' => false, 'message' => __('Alamat tujuan tidak cocok dengan penerima campaign.')], 422);
         }
 
         try {

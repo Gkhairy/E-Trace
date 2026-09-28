@@ -69,7 +69,7 @@ class ChatController extends Controller
     {
         $me = auth()->id();
         $partnerId = (int) $req->query('with');
-        abort_if($partnerId === $me || $partnerId <= 0, 422, 'Percakapan tidak valid.');
+        abort_if($partnerId === $me || $partnerId <= 0, 422, __('Percakapan tidak valid.'));
 
         ChatMessage::where('sender_id', $partnerId)->where('receiver_id', $me)->whereNull('read_at')
             ->update(['read_at' => now()]);
@@ -103,7 +103,7 @@ class ChatController extends Controller
             'body'        => 'required|string|max:2000',
             'product_id'  => 'nullable|integer|exists:products,id',
         ]);
-        abort_if((int) $data['receiver_id'] === auth()->id(), 422, 'Tidak bisa mengirim ke diri sendiri.');
+        abort_if((int) $data['receiver_id'] === auth()->id(), 422, __('Tidak bisa mengirim ke diri sendiri.'));
 
         $m = ChatMessage::create([
             'sender_id'   => auth()->id(),
@@ -114,7 +114,7 @@ class ChatController extends Controller
         ]);
 
         Notify::send($data['receiver_id'], 'chat', 'Pesan baru',
-            $this->displayName(auth()->user()) . ': ' . \Illuminate\Support\Str::limit($data['body'], 60),
+            [':name: :msg', ['name' => $this->displayName(auth()->user()), 'msg' => \Illuminate\Support\Str::limit($data['body'], 60)]],
             '/chat?with=' . auth()->id(), '💬');
 
         return response()->json(['success' => true, 'id' => $m->id]);
@@ -131,8 +131,8 @@ class ChatController extends Controller
 
         $product = Product::with('store')->findOrFail($data['product_id']);
         $sellerId = optional($product->store)->user_id;
-        abort_unless($sellerId, 422, 'Penjual produk tidak ditemukan.');
-        abort_if($sellerId === auth()->id(), 422, 'Tidak bisa menawar produk sendiri.');
+        abort_unless($sellerId, 422, __('Penjual produk tidak ditemukan.'));
+        abort_if($sellerId === auth()->id(), 422, __('Tidak bisa menawar produk sendiri.'));
 
         $amt = rtrim(rtrim(number_format((float) $data['amount'], 2), '0'), '.');
         ChatMessage::create([
@@ -146,7 +146,7 @@ class ChatController extends Controller
         ]);
 
         Notify::send($sellerId, 'chat', 'Tawaran harga baru',
-            $this->displayName(auth()->user()) . " menawar \"{$product->name}\" jadi {$amt} TLKM.",
+            [':name menawar ":product" jadi :amt TLKM.', ['name' => $this->displayName(auth()->user()), 'product' => $product->name, 'amt' => $amt]],
             '/chat?with=' . auth()->id(), '🏷️');
 
         return response()->json(['success' => true, 'seller_id' => $sellerId]);
@@ -161,8 +161,8 @@ class ChatController extends Controller
         ]);
 
         $m = ChatMessage::findOrFail($data['message_id']);
-        abort_unless($m->type === 'offer' && $m->receiver_id === auth()->id(), 403, 'Tidak boleh.');
-        abort_unless($m->offer_status === 'pending', 422, 'Tawaran sudah diproses.');
+        abort_unless($m->type === 'offer' && $m->receiver_id === auth()->id(), 403, __('Tidak boleh.'));
+        abort_unless($m->offer_status === 'pending', 422, __('Tawaran sudah diproses.'));
 
         $m->offer_status = $data['action'] === 'accept' ? 'accepted' : 'rejected';
         $m->save();
@@ -177,8 +177,10 @@ class ChatController extends Controller
             'type'        => 'text',
             'body'        => "Penjual {$verb} tawaranmu ({$amt} TLKM).",
         ]);
-        Notify::send($m->sender_id, 'chat', 'Tawaran ' . ($data['action'] === 'accept' ? 'diterima' : 'ditolak'),
-            "Penjual {$verb} tawaranmu {$amt} TLKM.", '/chat?with=' . auth()->id(), $data['action'] === 'accept' ? '✅' : '❌');
+        $accepted = $data['action'] === 'accept';
+        Notify::send($m->sender_id, 'chat', $accepted ? 'Tawaran diterima' : 'Tawaran ditolak',
+            [$accepted ? 'Penjual menerima tawaranmu :amt TLKM.' : 'Penjual menolak tawaranmu :amt TLKM.', ['amt' => $amt]],
+            '/chat?with=' . auth()->id(), $accepted ? '✅' : '❌');
 
         return response()->json(['success' => true, 'status' => $m->offer_status]);
     }

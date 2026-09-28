@@ -25,7 +25,7 @@ class PaylaterController extends Controller
 
         // Verifikasi ringan: fitur harus aktif (kontrak dikonfigurasi). Posisi tetap dibaca
         // dari chain saat ditampilkan, jadi baris ini hanya jejak riwayat.
-        abort_unless($verifier->configured(), 422, 'Paylater belum dikonfigurasi.');
+        abort_unless($verifier->configured(), 422, __('Paylater belum dikonfigurasi.'));
 
         $user = auth()->user();
         $tx   = strtolower($data['tx_hash']);

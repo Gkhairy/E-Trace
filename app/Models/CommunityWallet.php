@@ -14,7 +14,7 @@ class CommunityWallet extends Model
     protected $casts = ['managed' => 'boolean', 'gas_dripped_at' => 'datetime'];
 
     public function isMultisig(): bool { return $this->mode === 'B'; }
-    public function modeLabel(): string { return $this->mode === 'B' ? 'Multisig (bulat)' : 'Jatah Bulanan'; }
+    public function modeLabel(): string { return $this->mode === 'B' ? __('Multisig (bulat)') : __('Jatah Bulanan'); }
 
     /** Pemilik dompet (default = pembuat bila owner_id belum diisi). */
     public function ownerId(): int { return (int) ($this->owner_id ?: $this->created_by); }

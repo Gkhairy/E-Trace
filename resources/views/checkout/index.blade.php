@@ -20,12 +20,12 @@
 @endphp
 
 <nav class="flex items-center gap-2 text-xs text-slate-500 mb-6">
-    <a href="/cart" class="hover:text-blue-600 transition">Keranjang</a>
+    <a href="/cart" class="hover:text-blue-600 transition">{{ __('Keranjang') }}</a>
     <span class="text-slate-300">/</span>
-    <span class="text-slate-700">Checkout</span>
+    <span class="text-slate-700">{{ __('Checkout') }}</span>
 </nav>
 
-<h1 class="text-2xl font-bold text-slate-900 mb-6">Checkout</h1>
+<h1 class="text-2xl font-bold text-slate-900 mb-6">{{ __('Checkout') }}</h1>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     {{-- KIRI: alamat + ringkasan per penjual --}}
@@ -33,10 +33,10 @@
         {{-- ALAMAT: pilih tersimpan atau isi baru --}}
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
             <div class="flex items-center justify-between mb-1">
-                <h3 class="font-semibold text-slate-900">Alamat Pengiriman</h3>
-                <a href="/addresses" class="text-xs text-blue-600 hover:underline">Kelola alamat</a>
+                <h3 class="font-semibold text-slate-900">{{ __('Alamat Pengiriman') }}</h3>
+                <a href="/addresses" class="text-xs text-blue-600 hover:underline">{{ __('Kelola alamat') }}</a>
             </div>
-            <p class="text-xs text-slate-400 mb-4">Data pribadi ini disimpan di database, <b>tidak</b> masuk blockchain.</p>
+            <p class="text-xs text-slate-400 mb-4">{{ __('Data pribadi ini disimpan di database,') }} <b>{{ __('tidak') }}</b> {{ __('masuk blockchain.') }}</p>
 
             @if($addresses->isNotEmpty())
                 <div class="space-y-2 mb-4">
@@ -46,7 +46,7 @@
                             <div class="min-w-0 text-sm">
                                 <p class="font-medium text-slate-800">{{ $a->recipient_name }} <span class="text-slate-400 font-normal">· {{ $a->phone }}</span>
                                     @if($a->label)<span class="ml-1 text-[11px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">{{ $a->label }}</span>@endif
-                                    @if($a->is_default)<span class="ml-1 text-[11px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">Utama</span>@endif
+                                    @if($a->is_default)<span class="ml-1 text-[11px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">{{ __('Utama') }}</span>@endif
                                 </p>
                                 <p class="text-xs text-slate-500 mt-0.5">{{ $a->address }}, {{ $a->city }} {{ $a->postal_code }}</p>
                             </div>
@@ -54,7 +54,7 @@
                     @endforeach
                     <label data-addrcard class="flex items-center gap-3 p-3 rounded-xl border border-dashed border-slate-300 cursor-pointer hover:border-blue-400 transition">
                         <input type="radio" name="addr" value="new" class="accent-blue-600" onchange="selectAddr(this)">
-                        <span class="text-sm font-medium text-blue-600">+ Alamat baru</span>
+                        <span class="text-sm font-medium text-blue-600">+ {{ __('Alamat baru') }}</span>
                     </label>
                 </div>
             @endif
@@ -64,58 +64,58 @@
                     <button type="button" onclick="pilihAlamatPeta()"
                         class="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 text-sm font-semibold transition">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 21s-6-5.686-6-10a6 6 0 1112 0c0 4.314-6 10-6 10zM12 11a2 2 0 100-4 2 2 0 000 4z"/></svg>
-                        Pilih dari Peta
+                        {{ __('Pilih dari Peta') }}
                     </button>
-                    <p class="text-[11px] text-slate-400 mt-1.5">Geser pin ke lokasimu — alamat, kota & kode pos terisi otomatis (akurat untuk ongkir).</p>
+                    <p class="text-[11px] text-slate-400 mt-1.5">{{ __('Geser pin ke lokasimu — alamat, kota & kode pos terisi otomatis (akurat untuk ongkir).') }}</p>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Nama Penerima</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ __('Nama Penerima') }}</label>
                     <input id="recipient_name" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">No HP</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ __('No HP') }}</label>
                     <input id="phone" placeholder="0812…" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
                 </div>
                 <div class="sm:col-span-2">
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Alamat Lengkap</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ __('Alamat Lengkap') }}</label>
                     <textarea id="address" rows="2" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm resize-none"></textarea>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Kota</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ __('Kota') }}</label>
                     <input id="city" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Kode Pos</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ __('Kode Pos') }}</label>
                     <input id="postal_code" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Label (opsional)</label>
-                    <input id="addr_label" placeholder="Rumah / Kantor" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ __('Label (opsional)') }}</label>
+                    <input id="addr_label" placeholder="{{ __('Rumah / Kantor') }}" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
                 </div>
                 <div class="sm:col-span-2">
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Catatan (opsional)</label>
-                    <input id="notes" placeholder="Patokan, warna, dll" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ __('Catatan (opsional)') }}</label>
+                    <input id="notes" placeholder="{{ __('Patokan, warna, dll') }}" class="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm">
                 </div>
-                <p class="sm:col-span-2 text-[11px] text-slate-400">Alamat baru otomatis tersimpan ke buku alamat untuk pembelian berikutnya.</p>
+                <p class="sm:col-span-2 text-[11px] text-slate-400">{{ __('Alamat baru otomatis tersimpan ke buku alamat untuk pembelian berikutnya.') }}</p>
             </div>
         </div>
 
         {{-- RINGKASAN PER PENJUAL --}}
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
-            <h3 class="font-semibold text-slate-900 mb-1">Ringkasan per Penjual</h3>
-            <p class="text-xs text-slate-400 mb-4">Dana tiap penjual ditahan di <b>escrow terpisah</b>. Konfirmasi 1 penjual tidak melepas dana penjual lain.</p>
+            <h3 class="font-semibold text-slate-900 mb-1">{{ __('Ringkasan per Penjual') }}</h3>
+            <p class="text-xs text-slate-400 mb-4">{{ __('Dana tiap penjual ditahan di') }} <b>{{ __('escrow terpisah') }}</b>{{ __('. Konfirmasi 1 penjual tidak melepas dana penjual lain.') }}</p>
 
             <div class="space-y-5">
                 @foreach($groups as $seller => $group)
                     @php $subtotal = $group->sum(fn($it) => (float)$it->product->price_usdc * $it->quantity); @endphp
                     <div class="border border-slate-100 rounded-xl overflow-hidden">
                         <div class="bg-slate-50 px-4 py-2.5 flex items-center justify-between">
-                            <span class="text-xs font-mono text-slate-500">{{ $shipEstimates[$seller]['store'] ?? ('Penjual '.substr($seller, 0, 8).'…'.substr($seller, -6)) }}</span>
+                            <span class="text-xs font-mono text-slate-500">{{ $shipEstimates[$seller]['store'] ?? __('Penjual :w', ['w' => substr($seller, 0, 8).'…'.substr($seller, -6)]) }}</span>
                             <span class="text-xs font-semibold text-slate-700">{{ rtrim(rtrim(number_format($subtotal, 2), '0'), '.') }} TLKM</span>
                         </div>
                         @if(isset($shipEstimates[$seller]))
                             <div class="px-4 py-1.5 bg-slate-50/60 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                                <span data-ongkir-method="{{ $seller }}">Ongkir · {{ $shipEstimates[$seller]['method'] }}{{ $shipEstimates[$seller]['km'] !== null ? ' (~'.$shipEstimates[$seller]['km'].' km)' : '' }}</span>
+                                <span data-ongkir-method="{{ $seller }}">{{ __('Ongkir') }} · {{ $shipEstimates[$seller]['method'] }}{{ $shipEstimates[$seller]['km'] !== null ? ' (~'.$shipEstimates[$seller]['km'].' km)' : '' }}</span>
                                 <span data-ongkir-seller="{{ $seller }}">{{ rtrim(rtrim(number_format($shipEstimates[$seller]['fee_tlkm'], 2), '0'), '.') }} TLKM</span>
                             </div>
                         @endif
@@ -142,9 +142,9 @@
     {{-- KANAN: total + bayar --}}
     <div class="lg:col-span-1">
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 lg:sticky lg:top-24">
-            <h3 class="font-semibold text-slate-900 mb-4">Pembayaran</h3>
-            <div class="flex justify-between text-sm text-slate-600 mb-2"><span>Jumlah item</span><span>{{ $items->sum('quantity') }}</span></div>
-            <div class="flex justify-between text-sm text-slate-600 mb-2"><span>Penjual</span><span>{{ $groups->count() }}</span></div>
+            <h3 class="font-semibold text-slate-900 mb-4">{{ __('Pembayaran') }}</h3>
+            <div class="flex justify-between text-sm text-slate-600 mb-2"><span>{{ __('Jumlah item') }}</span><span>{{ $items->sum('quantity') }}</span></div>
+            <div class="flex justify-between text-sm text-slate-600 mb-2"><span>{{ __('Penjual') }}</span><span>{{ $groups->count() }}</span></div>
             @php
                 $f = fn ($n) => rtrim(rtrim(number_format((float) $n, 2), '0'), '.');
                 $shipWallet  = config('chain.shipping.fee_wallet') ?: config('chain.insurance.pool_wallet');
@@ -153,18 +153,18 @@
             @endphp
             {{-- Rincian bayar (produk escrow + ongkir) --}}
             <div class="flex justify-between text-sm text-slate-500 mb-2 border-t border-slate-100 pt-3 mt-3">
-                <span>Produk (escrow)</span>
+                <span>{{ __('Produk (escrow)') }}</span>
                 <span>{{ $f($total) }} TLKM</span>
             </div>
             <div class="flex justify-between text-sm text-slate-600 mb-3">
-                <span>{{ $shipCharged ? 'Ongkir' : 'Estimasi ongkir' }}<sup class="text-slate-400">*</sup></span>
+                <span>{{ $shipCharged ? __('Ongkir') : __('Estimasi ongkir') }}<sup class="text-slate-400">*</sup></span>
                 <span id="ongkirTotal">{{ $f($shipTotalTlkm) }} TLKM</span>
             </div>
             <div class="flex justify-between items-end border-t border-slate-100 pt-3">
-                <span class="text-sm font-semibold text-slate-700">{{ $shipCharged ? 'Total bayar' : 'Total produk (on-chain)' }}</span>
+                <span class="text-sm font-semibold text-slate-700">{{ $shipCharged ? __('Total bayar') : __('Total produk (on-chain)') }}</span>
                 <span class="text-2xl font-extrabold text-slate-900"><span id="grandTotal">{{ $f($grand) }}</span> <span class="text-sm text-blue-600 font-semibold">TLKM</span></span>
             </div>
-            <p class="text-[11px] text-slate-400 mt-1.5 leading-snug">*Ongkir dihitung via <b>RajaOngkir</b> (tarif kurir termurah) atau estimasi jarak bila kota tak dikenali, dikonversi ke TLKM (Rp1.000 = 1 TLKM). {{ $shipCharged ? 'Ongkir dibayar sebagai transaksi terpisah ke wallet platform (di luar escrow produk).' : 'Diselesaikan terpisah dari escrow produk.' }} {{ $buyerCity ? 'Kota tujuan: '.$buyerCity.'.' : 'Pilih/isi alamat untuk estimasi akurat.' }}</p>
+            <p class="text-[11px] text-slate-400 mt-1.5 leading-snug">{{ __('*Ongkir dihitung via') }} <b>RajaOngkir</b> {{ __('(tarif kurir termurah) atau estimasi jarak bila kota tak dikenali, dikonversi ke TLKM (Rp1.000 = 1 TLKM).') }} {{ $shipCharged ? __('Ongkir dibayar sebagai transaksi terpisah ke wallet platform (di luar escrow produk).') : __('Diselesaikan terpisah dari escrow produk.') }} {{ $buyerCity ? __('Kota tujuan: :city.', ['city' => $buyerCity]) : __('Pilih/isi alamat untuk estimasi akurat.') }}</p>
 
             @if($insurance['enabled'])
             {{-- Garansi Tepat Waktu (asuransi pengiriman parametrik) — opsional --}}
@@ -185,17 +185,17 @@
 
             <div class="flex items-center gap-2 text-xs text-green-700 mt-4 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                Bayar 1× — escrow terpisah per penjual
+                {{ __('Bayar 1× — escrow terpisah per penjual') }}
             </div>
             {{-- H6: kebijakan refund yang adil --}}
             <div class="flex items-start gap-2 text-[11px] text-slate-500 mt-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
                 <svg class="w-4 h-4 shrink-0 text-slate-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <span>Refund bisa diajukan bila barang tak diterima setelah <b>3 hari</b>. Sengketa ditinjau pengawas dengan bukti (resi/foto) — bukan refund otomatis.</span>
+                <span>{{ __('Refund bisa diajukan bila barang tak diterima setelah') }} <b>{{ __('3 hari') }}</b>{{ __('. Sengketa ditinjau pengawas dengan bukti (resi/foto) — bukan refund otomatis.') }}</span>
             </div>
 
             <button id="payBtn" onclick="checkoutPay()"
                 class="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-3 rounded-xl text-sm font-bold transition shadow-sm">
-                Bayar <span id="payBtnAmt">{{ $f($grand) }}</span> TLKM
+                {{ __('Bayar') }} <span id="payBtnAmt">{{ $f($grand) }}</span> TLKM
             </button>
 
             @if(config('chain.paylater_address'))
@@ -206,9 +206,9 @@
                     {{ __('paylater.pay_with') }}
                 </button>
                 @if($paylaterBtn['available'])
-                    <p class="text-[11px] text-slate-400 text-center mt-1">Pinjam TLKM dari agunanmu bila saldo kurang, lalu bayar seperti biasa. <span class="text-amber-600">Demo testnet.</span></p>
+                    <p class="text-[11px] text-slate-400 text-center mt-1">{{ __('Pinjam TLKM dari agunanmu bila saldo kurang, lalu bayar seperti biasa.') }} <span class="text-amber-600">{{ __('Demo testnet.') }}</span></p>
                 @else
-                    <p class="text-[11px] text-amber-600 text-center mt-1">{{ $paylaterBtn['reason'] ?? 'Paylater tidak tersedia untuk order ini.' }}</p>
+                    <p class="text-[11px] text-amber-600 text-center mt-1">{{ $paylaterBtn['reason'] ?? __('Paylater tidak tersedia untuk order ini.') }}</p>
                 @endif
             @endif
 
@@ -216,28 +216,28 @@
             @if($communityWallets->isNotEmpty())
                 @php $fmtBal = fn ($b) => $b === null ? '—' : rtrim(rtrim(number_format($b, 2), '0'), '.'); @endphp
                 <div class="mt-3 pt-3 border-t border-slate-200">
-                    <p class="text-xs font-semibold text-slate-600 mb-1.5">Bayar dari Dana Komunitas</p>
+                    <p class="text-xs font-semibold text-slate-600 mb-1.5">{{ __('Bayar dari Dana Komunitas') }}</p>
                     @if($communityWallets->count() === 1)
                         @php $cw = $communityWallets[0]; @endphp
                         <input type="hidden" id="commWallet" value="{{ $cw['id'] }}">
                         <p class="text-[11px] text-slate-500 mb-2">
-                            <b class="text-slate-700">{{ $cw['name'] }}</b> · saldo {{ $fmtBal($cw['balance']) }} TLKM · {{ $cw['signers'] }} penanda tangan
-                            @unless($cw['enough'])<span class="text-amber-600 font-semibold">· saldo kurang</span>@endunless
+                            <b class="text-slate-700">{{ $cw['name'] }}</b> · {{ __('saldo') }} {{ $fmtBal($cw['balance']) }} TLKM · {{ __(':n penanda tangan', ['n' => $cw['signers']]) }}
+                            @unless($cw['enough'])<span class="text-amber-600 font-semibold">· {{ __('saldo kurang') }}</span>@endunless
                         </p>
                     @else
                         {{-- Anggota di beberapa komunitas → pilih mau minta persetujuan ke yang mana. --}}
                         <select id="commWallet" class="w-full px-3 py-2 mb-2 rounded-xl bg-white border border-slate-300 focus:border-violet-500 focus:ring-2 focus:ring-violet-100 outline-none text-sm">
                             @foreach($communityWallets as $cw)
-                                <option value="{{ $cw['id'] }}">{{ $cw['name'] }} — {{ $fmtBal($cw['balance']) }} TLKM ({{ $cw['signers'] }} signer){{ $cw['enough'] ? '' : ' · saldo kurang' }}</option>
+                                <option value="{{ $cw['id'] }}">{{ $cw['name'] }} — {{ $fmtBal($cw['balance']) }} TLKM ({{ __(':n signer', ['n' => $cw['signers']]) }}){{ $cw['enough'] ? '' : ' · '.__('saldo kurang') }}</option>
                             @endforeach
                         </select>
                     @endif
                     <button id="commBtn" onclick="checkoutPayWithCommunity()"
                         class="w-full bg-white hover:bg-violet-50 border border-violet-200 text-violet-700 py-3 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 disabled:opacity-50">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20h5v-2a3 3 0 00-5.36-1.86M17 20H7m10 0v-2c0-.66-.13-1.3-.36-1.86m0 0a5 5 0 00-9.28 0M7 20H2v-2a3 3 0 015.36-1.86M7 20v-2c0-.66.13-1.3.36-1.86m0 0a5 5 0 019.28 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                        Minta Persetujuan Komunitas
+                        {{ __('Minta Persetujuan Komunitas') }}
                     </button>
-                    <p class="text-[11px] text-slate-400 text-center mt-1">Dana diambil dari kas komunitas setelah <b>semua penanda tangan</b> menyetujui. Tetap ditahan escrow seperti biasa.</p>
+                    <p class="text-[11px] text-slate-400 text-center mt-1">{{ __('Dana diambil dari kas komunitas setelah') }} <b>{{ __('semua penanda tangan') }}</b> {{ __('menyetujui. Tetap ditahan escrow seperti biasa.') }}</p>
                 </div>
             @endif
         </div>
@@ -308,7 +308,7 @@ function pilihAlamatPeta() {
         if (loc.address) document.getElementById('address').value = loc.address;
         if (loc.city) document.getElementById('city').value = loc.city;
         if (loc.postcode) document.getElementById('postal_code').value = loc.postcode;
-        showToast('Lokasi terisi dari peta.', 'success');
+        showToast(@json(__('Lokasi terisi dari peta.')), 'success');
         updateOngkir(loc.city || '');
     });
 }
@@ -347,7 +347,7 @@ function updateOngkir(city) {
                 const feeEl = document.querySelector(`[data-ongkir-seller="${wallet}"]`);
                 if (feeEl) feeEl.textContent = fmt(s.fee_tlkm) + ' TLKM';
                 const mEl = document.querySelector(`[data-ongkir-method="${wallet}"]`);
-                if (mEl) mEl.textContent = 'Ongkir · ' + s.method + (s.km != null ? ' (~' + s.km + ' km)' : '');
+                if (mEl) mEl.textContent = @json(__('Ongkir')) + ' · ' + s.method + (s.km != null ? ' (~' + s.km + ' km)' : '');
             });
             // Garansi Tepat Waktu: estimasi tiba (SLA) ikut berubah menurut jarak.
             const etaEl = document.getElementById('insEtaDate');
@@ -372,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // berkurang (net): pinjaman masuk ke wallet lalu langsung dibayarkan ke escrow.
 async function checkoutPayWithPaylater() {
     if (!LINES.length) return;
-    if (!PAYLATER_ADDRESS) { uiAlert({ title: 'Paylater nonaktif', message: 'Fitur Paylater belum dikonfigurasi.', type: 'warn' }); return; }
+    if (!PAYLATER_ADDRESS) { uiAlert({ title: @json(__('Paylater nonaktif')), message: @json(__('Fitur Paylater belum dikonfigurasi.')), type: 'warn' }); return; }
     try {
         const need = parseFloat(TOTAL) || 0;
         const needWei = ethers.parseUnits(need.toString(), TOKEN_DECIMALS);
@@ -383,28 +383,28 @@ async function checkoutPayWithPaylater() {
         const availableWei = pos[4] - pos[1];              // limit - principal
         if (needWei > availableWei) {
             const availTlkm = (+ethers.formatUnits(availableWei < 0n ? 0n : availableWei, TOKEN_DECIMALS)).toLocaleString('en-US', { maximumFractionDigits: 2 });
-            uiAlert({ title: 'Limit Paylater kurang', message: `Sisa limit kreditmu <b>${availTlkm} TLKM</b>, sedangkan total <b>${need.toLocaleString('en-US')} TLKM</b>. Tambah agunan (tBNB) di Dompet dulu, atau bayar biasa.`, type: 'warn' });
+            uiAlert({ title: @json(__('Limit Paylater kurang')), message: tr(@json(__('Sisa limit kreditmu :avail, sedangkan total :need. Tambah agunan (tBNB) di Dompet dulu, atau bayar biasa.')), { avail: `<b>${availTlkm} TLKM</b>`, need: `<b>${need.toLocaleString('en-US')} TLKM</b>` }), type: 'warn' });
             return;
         }
         // Dua-sisi: availableLiquidity() = TLKM menganggur dari penyuplai.
         const liqWei = await pl.availableLiquidity();
         if (needWei > liqWei) {
             const liqTlkm = (+ethers.formatUnits(liqWei, TOKEN_DECIMALS)).toLocaleString('en-US', { maximumFractionDigits: 2 });
-            uiAlert({ title: 'Likuiditas pool kurang', message: `Likuiditas pool Paylater tinggal <b>${liqTlkm} TLKM</b> (butuh ${need.toLocaleString('en-US')} TLKM). Perlu ada penyuplai yang mendanai pool dulu. Untuk sekarang, silakan bayar biasa.`, type: 'warn' });
+            uiAlert({ title: @json(__('Likuiditas pool kurang')), message: tr(@json(__('Likuiditas pool Paylater tinggal :liq (butuh :need TLKM). Perlu ada penyuplai yang mendanai pool dulu. Untuk sekarang, silakan bayar biasa.')), { liq: `<b>${liqTlkm} TLKM</b>`, need: need.toLocaleString('en-US') }), type: 'warn' });
             return;
         }
 
         const dueTotal = need * (10000 + PAYLATER_INTEREST_BPS) / 10000;
         const ok = await uiConfirm({
             title: @json(__('paylater.pay_with')),
-            message: `Danai <b>${need.toLocaleString('en-US')} TLKM</b> dari Paylater. Wajib bayar <b>${dueTotal.toLocaleString('en-US', { maximumFractionDigits: 6 })} TLKM</b> (bunga ${PAYLATER_INTEREST_BPS / 100}%) sebelum tenggat.<br><span class="text-xs text-slate-400">Saldo TLKM pribadimu tidak berkurang.</span>`,
-            confirmText: 'Ya, pinjam & bayar'
+            message: tr(@json(__('Danai :need dari Paylater. Wajib bayar :due (bunga :rate%) sebelum tenggat.')), { need: `<b>${need.toLocaleString('en-US')} TLKM</b>`, due: `<b>${dueTotal.toLocaleString('en-US', { maximumFractionDigits: 6 })} TLKM</b>`, rate: PAYLATER_INTEREST_BPS / 100 }) + '<br><span class="text-xs text-slate-400">' + @json(__('Saldo TLKM pribadimu tidak berkurang.')) + '</span>',
+            confirmText: @json(__('Ya, pinjam & bayar'))
         });
         if (!ok) return;
 
         const prevBal = parseFloat(await fetchTlkmBalance(ACCOUNT_WALLET)) || 0;
 
-        txProgress.open('Danai via Paylater', ['Meminjam TLKM', 'Menunggu dana masuk']);
+        txProgress.open(@json(__('Danai via Paylater')), [@json(__('Meminjam TLKM')), @json(__('Menunggu dana masuk'))]);
         txProgress.active(0);
         const h = await borrowPaylater(need.toString());   // pinjam SELURUH nilai order
         if (!h) return txProgress.close();                 // batal PIN
@@ -412,7 +412,7 @@ async function checkoutPayWithPaylater() {
         txProgress.done(0);
 
         // Tunggu pinjaman benar-benar masuk (balance naik ~need) sebelum membayar.
-        txProgress.active(1, 'Menunggu TLKM pinjaman masuk…');
+        txProgress.active(1, @json(__('Menunggu TLKM pinjaman masuk…')));
         let landed = false;
         for (let i = 0; i < 25; i++) {
             const b = parseFloat(await fetchTlkmBalance(ACCOUNT_WALLET)) || 0;
@@ -421,7 +421,7 @@ async function checkoutPayWithPaylater() {
         }
         txProgress.done(1); txProgress.close();
         if (!landed) {
-            uiAlert({ title: 'Sedang diproses', message: 'Pinjaman TLKM masih diproses jaringan. Tunggu sebentar lalu klik “Bayar” biasa.', type: 'warn' });
+            uiAlert({ title: @json(__('Sedang diproses')), message: @json(__('Pinjaman TLKM masih diproses jaringan. Tunggu sebentar lalu klik “Bayar” biasa.')), type: 'warn' });
             return;
         }
 
@@ -429,7 +429,7 @@ async function checkoutPayWithPaylater() {
         await checkoutPay();
     } catch (e) {
         txProgress.close();
-        uiAlert({ title: 'Gagal', message: niceError(e), type: 'error' });
+        uiAlert({ title: @json(__('Gagal')), message: niceError(e), type: 'error' });
     }
 }
 
@@ -446,7 +446,7 @@ async function checkoutPayWithCommunity() {
         };
         for (const k of ['recipient_name', 'phone', 'address', 'city', 'postal_code']) {
             if (!shipping[k].trim()) {
-                showToast('Lengkapi alamat pengiriman dulu.', 'warn');
+                showToast(@json(__('Lengkapi alamat pengiriman dulu.')), 'warn');
                 document.getElementById(k)?.focus();
                 return;
             }
@@ -460,13 +460,13 @@ async function checkoutPayWithCommunity() {
     if (!walletId) return;
 
     const ok = await uiConfirm({
-        title: 'Minta Persetujuan Komunitas',
-        message: `Ajukan pembelian <b class="text-violet-600">${TOTAL_FMT} TLKM</b> memakai dana komunitas?<br><span class="text-xs text-slate-400">Pembayaran baru dijalankan setelah semua penanda tangan menyetujui.</span>`,
-        confirmText: 'Ya, ajukan',
+        title: @json(__('Minta Persetujuan Komunitas')),
+        message: tr(@json(__('Ajukan pembelian :amt memakai dana komunitas?')), { amt: `<b class="text-violet-600">${TOTAL_FMT} TLKM</b>` }) + '<br><span class="text-xs text-slate-400">' + @json(__('Pembayaran baru dijalankan setelah semua penanda tangan menyetujui.')) + '</span>',
+        confirmText: @json(__('Ya, ajukan')),
     });
     if (!ok) return;
 
-    const pin = await askPin('Ajukan Belanja Komunitas');
+    const pin = await askPin(@json(__('Ajukan Belanja Komunitas')));
     if (!pin) return;
 
     const btn = document.getElementById('commBtn');
@@ -482,18 +482,18 @@ async function checkoutPayWithCommunity() {
             }),
         });
         const d = await res.json().catch(() => ({}));
-        if (!res.ok || !d.success) throw new Error(d.message || 'Gagal mengajukan usulan.');
+        if (!res.ok || !d.success) throw new Error(d.message || @json(__('Gagal mengajukan usulan.')));
 
         if (d.executed) {
-            uiAlert({ title: 'Disetujui & dibayar', message: 'Semua penanda tangan sudah setuju — pesanan dibayar dari dana komunitas dan ditahan escrow.', type: 'success' });
+            uiAlert({ title: @json(__('Disetujui & dibayar')), message: @json(__('Semua penanda tangan sudah setuju — pesanan dibayar dari dana komunitas dan ditahan escrow.')), type: 'success' });
             setTimeout(() => location.href = '/orders', 1300);
         } else {
-            uiAlert({ title: 'Usulan terkirim', message: 'Menunggu persetujuan penanda tangan komunitas. Kamu akan diberi tahu saat disetujui.', type: 'success' });
+            uiAlert({ title: @json(__('Usulan terkirim')), message: @json(__('Menunggu persetujuan penanda tangan komunitas. Kamu akan diberi tahu saat disetujui.')), type: 'success' });
             setTimeout(() => location.href = '/community/' + d.wallet_id, 1300);
         }
     } catch (e) {
         btn.disabled = false;
-        uiAlert({ title: 'Gagal', message: niceError(e), type: 'error' });
+        uiAlert({ title: @json(__('Gagal')), message: niceError(e), type: 'error' });
     }
 }
 
@@ -508,7 +508,7 @@ async function checkoutPay() {
         };
         for (const k of ['recipient_name', 'phone', 'address', 'city', 'postal_code']) {
             if (!shipping[k].trim()) {
-                showToast('Lengkapi alamat pengiriman dulu.', 'warn');
+                showToast(@json(__('Lengkapi alamat pengiriman dulu.')), 'warn');
                 document.getElementById(k)?.focus();
                 return;
             }
@@ -517,7 +517,7 @@ async function checkoutPay() {
     } else {
         shippingAddressId = sel;
     }
-    if (!IS_EMBEDDED && !window.ethereum) return uiAlert({ title: 'MetaMask dibutuhkan', message: 'Install ekstensi MetaMask untuk melanjutkan.', type: 'warn' });
+    if (!IS_EMBEDDED && !window.ethereum) return uiAlert({ title: @json(__('MetaMask dibutuhkan')), message: @json(__('Install ekstensi MetaMask untuk melanjutkan.')), type: 'warn' });
     if (!LINES.length) return;
 
     const sellers    = LINES.map(l => l.seller);
@@ -527,16 +527,16 @@ async function checkoutPay() {
 
     const _grandFmt = _fmtTlkm(PROD_TOTAL + (SHIP_CHARGED ? (SHIP_TLKM || 0) : 0));
     const ok = await uiConfirm({
-        title: 'Konfirmasi Pembayaran',
+        title: @json(__('Konfirmasi Pembayaran')),
         message: (SHIP_CHARGED && SHIP_TLKM > 0)
-            ? `Bayar <b class="text-blue-600">${_grandFmt} TLKM</b> untuk ${LINES.length} item?<br><span class="text-xs text-slate-400">Produk ${TOTAL_FMT} ke escrow penjual + ongkir ${_fmtTlkm(SHIP_TLKM)} ke platform (transaksi terpisah).</span>`
-            : `Bayar total <b class="text-blue-600">${TOTAL_FMT} TLKM</b> untuk ${LINES.length} item?<br><span class="text-xs text-slate-400">Dana tiap penjual ditahan di escrow terpisah.</span>`,
-        confirmText: 'Ya, bayar'
+            ? tr(@json(__('Bayar :amt untuk :n item?')), { amt: `<b class="text-blue-600">${_grandFmt} TLKM</b>`, n: LINES.length }) + '<br><span class="text-xs text-slate-400">' + tr(@json(__('Produk :prod ke escrow penjual + ongkir :ship ke platform (transaksi terpisah).')), { prod: TOTAL_FMT, ship: _fmtTlkm(SHIP_TLKM) }) + '</span>'
+            : tr(@json(__('Bayar total :amt untuk :n item?')), { amt: `<b class="text-blue-600">${TOTAL_FMT} TLKM</b>`, n: LINES.length }) + '<br><span class="text-xs text-slate-400">' + @json(__('Dana tiap penjual ditahan di escrow terpisah.')) + '</span>',
+        confirmText: @json(__('Ya, bayar'))
     });
     if (!ok) return;
 
     let pin = null;
-    if (IS_EMBEDDED) { pin = await askPin('Bayar Belanja'); if (!pin) return; }
+    if (IS_EMBEDDED) { pin = await askPin(@json(__('Bayar Belanja'))); if (!pin) return; }
 
     const btn = document.getElementById('payBtn');
     btn.disabled = true;
@@ -554,47 +554,47 @@ async function checkoutPay() {
     const payPremium = async () => {
         if (!INSURED) return;
         try { payload.premium_tx = await payInsurancePremium(pin); }
-        catch (e) { payload.is_insured = 0; showToast('Premi garansi gagal dibayar — order diproses tanpa garansi.', 'warn'); }
+        catch (e) { payload.is_insured = 0; showToast(@json(__('Premi garansi gagal dibayar — order diproses tanpa garansi.')), 'warn'); }
     };
     // Bayar ongkir ke wallet platform (transaksi terpisah). Best-effort.
     const payShip = async () => {
         if (!SHIP_CHARGED || !(SHIP_TLKM > 0)) return;
         try { payload.shipping_tx = await payShipping(pin); }
-        catch (e) { showToast('Ongkir gagal dibayar — order tetap diproses (ongkir menyusul).', 'warn'); }
+        catch (e) { showToast(@json(__('Ongkir gagal dibayar — order tetap diproses (ongkir menyusul).')), 'warn'); }
     };
 
-    txProgress.open('Memproses Pembayaran', IS_EMBEDDED
-        ? ['Tanda tangan dengan PIN', 'Verifikasi & simpan']
-        : ['Memeriksa jaringan', 'Menyetujui total (approve)', 'Membayar ke escrow', 'Verifikasi & simpan']);
+    txProgress.open(@json(__('Memproses Pembayaran')), IS_EMBEDDED
+        ? [@json(__('Tanda tangan dengan PIN')), @json(__('Verifikasi & simpan'))]
+        : [@json(__('Memeriksa jaringan')), @json(__('Menyetujui total (approve)')), @json(__('Membayar ke escrow')), @json(__('Verifikasi & simpan'))]);
 
     try {
         let txHash;
         if (IS_EMBEDDED) {
             // Embedded: backend approve + payCart pakai PIN, kembalikan hash payCart.
-            txProgress.active(0, 'Approve + bayar via PIN…');
+            txProgress.active(0, @json(__('Approve + bayar via PIN…')));
             txHash = await pinTx('/pin/checkout', { pin, order_id: orderId, sellers, amounts, productIds });
             payload.tx_hash = txHash;
             txProgress.done(0);
-            if (INSURED) { txProgress.active(1, 'Membayar premi garansi…'); await payPremium(); }
-            if (SHIP_CHARGED && SHIP_TLKM > 0) { txProgress.active(1, 'Membayar ongkir…'); await payShip(); }
+            if (INSURED) { txProgress.active(1, @json(__('Membayar premi garansi…'))); await payPremium(); }
+            if (SHIP_CHARGED && SHIP_TLKM > 0) { txProgress.active(1, @json(__('Membayar ongkir…'))); await payShip(); }
             localStorage.setItem('pendingOrder:' + orderId, JSON.stringify(payload));
-            txProgress.active(1, 'Verifikasi on-chain & menyimpan…');
+            txProgress.active(1, @json(__('Verifikasi on-chain & menyimpan…')));
             await submitOrder(payload);
             txProgress.done(1);
         } else {
             txProgress.active(0); await checkNetwork(); txProgress.done(0);
-            txProgress.active(1, 'Setujui approve total di MetaMask…');
+            txProgress.active(1, @json(__('Setujui approve total di MetaMask…')));
             await approveToken(TOTAL);
             txProgress.done(1);
-            txProgress.active(2, 'Konfirmasi pembayaran di MetaMask…');
+            txProgress.active(2, @json(__('Konfirmasi pembayaran di MetaMask…')));
             const r = await payCart({ sellers, amounts, productIds, orderId });
             txHash = r.txHash;
             payload.tx_hash = txHash;
             txProgress.done(2);
-            if (INSURED) { txProgress.active(3, 'Membayar premi garansi…'); await payPremium(); }
-            if (SHIP_CHARGED && SHIP_TLKM > 0) { txProgress.active(3, 'Membayar ongkir…'); await payShip(); }
+            if (INSURED) { txProgress.active(3, @json(__('Membayar premi garansi…'))); await payPremium(); }
+            if (SHIP_CHARGED && SHIP_TLKM > 0) { txProgress.active(3, @json(__('Membayar ongkir…'))); await payShip(); }
             localStorage.setItem('pendingOrder:' + orderId, JSON.stringify(payload));
-            txProgress.active(3, 'Verifikasi on-chain & menyimpan…');
+            txProgress.active(3, @json(__('Verifikasi on-chain & menyimpan…')));
             await submitOrder(payload);
             txProgress.done(3);
         }
@@ -603,8 +603,8 @@ async function checkoutPay() {
             txProgress.close();
             updateCartBadge(0);
             uiAlert({
-                title: 'Pembayaran Berhasil',
-                message: `Order terverifikasi on-chain.<br><a href="${EXPLORER_URL}/tx/${txHash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">Lihat transaksi ↗</a>`,
+                title: @json(__('Pembayaran Berhasil')),
+                message: @json(__('Order terverifikasi on-chain.')) + `<br><a href="${EXPLORER_URL}/tx/${txHash}" target="_blank" class="text-blue-600 hover:underline text-xs break-all">` + @json(__('Lihat transaksi')) + ` ↗</a>`,
                 type: 'success'
             }).then(() => window.location.href = '/orders');
         }, 500);
@@ -615,12 +615,12 @@ async function checkoutPay() {
         if (payload.tx_hash) {
             // Sudah bayar on-chain, tapi simpan/verifikasi tertunda -> akan di-retry otomatis.
             uiAlert({
-                title: 'Pembayaran Terkirim',
-                message: 'Pembayaran on-chain berhasil, tapi penyimpanan tertunda (mungkin menunggu konfirmasi jaringan). Sistem akan menyimpan otomatis — cek halaman Order sebentar lagi.',
+                title: @json(__('Pembayaran Terkirim')),
+                message: @json(__('Pembayaran on-chain berhasil, tapi penyimpanan tertunda (mungkin menunggu konfirmasi jaringan). Sistem akan menyimpan otomatis — cek halaman Order sebentar lagi.')),
                 type: 'warn'
             }).then(() => window.location.href = '/orders');
         } else {
-            uiAlert({ title: 'Transaksi Gagal', message: niceError(e), type: 'error' });
+            uiAlert({ title: @json(__('Transaksi Gagal')), message: niceError(e), type: 'error' });
             btn.disabled = false;
         }
     }

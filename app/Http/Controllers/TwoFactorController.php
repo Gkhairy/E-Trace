@@ -25,7 +25,7 @@ class TwoFactorController extends Controller
     {
         $user = auth()->user();
         if ($user->hasTwoFactor()) {
-            return redirect('/profile')->with('success', '2FA sudah aktif.');
+            return redirect('/profile')->with('success', __('2FA sudah aktif.'));
         }
 
         // Buat secret baru (belum dikonfirmasi) — disimpan terenkripsi.
@@ -46,7 +46,7 @@ class TwoFactorController extends Controller
         $user = auth()->user();
 
         if (!$user->two_factor_secret || !$this->g2fa()->verifyKey($user->two_factor_secret, $request->code)) {
-            return back()->withErrors(['code' => 'Kode salah. Coba lagi dari aplikasi Authenticator.']);
+            return back()->withErrors(['code' => __('Kode salah. Coba lagi dari aplikasi Authenticator.')]);
         }
 
         $recovery = collect(range(1, 8))->map(fn () => Str::upper(Str::random(5)) . '-' . Str::upper(Str::random(5)))->all();
@@ -64,7 +64,7 @@ class TwoFactorController extends Controller
         $request->validate(['password' => 'required']);
         $user = auth()->user();
         if (!Hash::check($request->password, $user->password)) {
-            return back()->withErrors(['password' => 'Password salah.']);
+            return back()->withErrors(['password' => __('Password salah.')]);
         }
         $user->forceFill([
             'two_factor_secret' => null,
@@ -72,7 +72,7 @@ class TwoFactorController extends Controller
             'two_factor_confirmed_at' => null,
         ])->save();
 
-        return redirect('/profile')->with('success', '2FA dinonaktifkan.');
+        return redirect('/profile')->with('success', __('2FA dinonaktifkan.'));
     }
 
     // ===== TANTANGAN saat login (2FA aktif) =====
@@ -109,7 +109,7 @@ class TwoFactorController extends Controller
         }
 
         if (!$ok) {
-            return back()->withErrors(['code' => 'Kode 2FA/recovery salah.']);
+            return back()->withErrors(['code' => __('Kode 2FA/recovery salah.')]);
         }
 
         session()->forget('2fa:user:id');

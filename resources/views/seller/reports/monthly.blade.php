@@ -3,7 +3,7 @@
     $fmt = fn ($n) => rtrim(rtrim(number_format((float) $n, 6, '.', ''), '0'), '.') ?: '0';
 @endphp
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
 <meta charset="utf-8">
 <style>
@@ -23,16 +23,16 @@
 <body>
 <table>
     <tr class="head-row"><td colspan="4" class="title">{{ $store->name }}</td></tr>
-    <tr class="head-row"><td colspan="4" class="sub">Laporan Penjualan (Rekap Bulanan)</td></tr>
-    <tr class="head-row"><td colspan="4" class="meta">Periode: Dari {{ $from->format('d M Y') }} ke {{ $to->format('d M Y') }}</td></tr>
-    <tr class="head-row"><td colspan="4" class="meta muted">Sumber: transaksi (escrow) di aplikasi E-Trace. Nilai dalam TLKM (tanpa refund).</td></tr>
+    <tr class="head-row"><td colspan="4" class="sub">{{ __('Laporan Penjualan (Rekap Bulanan)') }}</td></tr>
+    <tr class="head-row"><td colspan="4" class="meta">{{ __('Periode: Dari :from ke :to', ['from' => $from->format('d M Y'), 'to' => $to->format('d M Y')]) }}</td></tr>
+    <tr class="head-row"><td colspan="4" class="meta muted">{{ __('Sumber: transaksi (escrow) di aplikasi E-Trace. Nilai dalam TLKM (tanpa refund).') }}</td></tr>
     <tr class="head-row"><td colspan="4">&nbsp;</td></tr>
 
     <tr>
-        <th>Bulan</th>
-        <th>Tahun</th>
-        <th class="num">Total Penjualan (TLKM)</th>
-        <th class="num">Jumlah Transaksi</th>
+        <th>{{ __('Bulan') }}</th>
+        <th>{{ __('Tahun') }}</th>
+        <th class="num">{{ __('Total Penjualan (TLKM)') }}</th>
+        <th class="num">{{ __('Jumlah Transaksi') }}</th>
     </tr>
 
     @forelse($rows as $r)
@@ -43,11 +43,11 @@
             <td class="num">{{ $r['count'] }}</td>
         </tr>
     @empty
-        <tr><td colspan="4" class="muted">Tidak ada transaksi pada rentang ini.</td></tr>
+        <tr><td colspan="4" class="muted">{{ __('Tidak ada transaksi pada rentang ini.') }}</td></tr>
     @endforelse
 
     <tr class="total">
-        <td colspan="2">TOTAL KESELURUHAN</td>
+        <td colspan="2">{{ __('TOTAL KESELURUHAN') }}</td>
         <td class="num">{{ $fmt($grandTotal) }}</td>
         <td class="num">{{ $grandCount }}</td>
     </tr>

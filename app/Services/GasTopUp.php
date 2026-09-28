@@ -34,7 +34,7 @@ class GasTopUp
 
         $bal = $this->signer->ethBalance($address);
         abort_if($bal !== null && $bal < self::MIN_BALANCE, 422, $emptyMessage
-            ?? 'Saldo tBNB untuk biaya gas di wallet ini habis dan pengisian otomatis sedang tidak tersedia. Coba lagi beberapa menit lagi.');
+            ?? __('Saldo tBNB untuk biaya gas di wallet ini habis dan pengisian otomatis sedang tidak tersedia. Coba lagi beberapa menit lagi.'));
     }
 
     private function drip(string $address): void

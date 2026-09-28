@@ -4,23 +4,23 @@
 @php $fmt = fn($n) => rtrim(rtrim(number_format((float)$n, 2), '0'), '.'); @endphp
 
 <div class="mb-6">
-    <h1 class="text-2xl font-bold text-slate-900">Hasil pencarian</h1>
+    <h1 class="text-2xl font-bold text-slate-900">{{ __('Hasil pencarian') }}</h1>
     @if($q !== '')
-        <p class="text-sm text-slate-500 mt-1">untuk “<span class="font-medium text-slate-700">{{ $q }}</span>” —
-            {{ $products->count() }} produk, {{ $stores->count() }} toko, {{ $people->count() }} orang</p>
+        <p class="text-sm text-slate-500 mt-1">{{ __('untuk') }} “<span class="font-medium text-slate-700">{{ $q }}</span>” —
+            {{ __(':p produk, :s toko, :o orang', ['p' => $products->count(), 's' => $stores->count(), 'o' => $people->count()]) }}</p>
     @endif
 </div>
 
 @if($q === '')
-    <div class="bg-white border border-dashed border-slate-300 rounded-3xl p-16 text-center text-slate-500">Ketik kata kunci di kotak pencarian untuk mencari produk, toko, atau orang (nama publik / wallet).</div>
+    <div class="bg-white border border-dashed border-slate-300 rounded-3xl p-16 text-center text-slate-500">{{ __('Ketik kata kunci di kotak pencarian untuk mencari produk, toko, atau orang (nama publik / wallet).') }}</div>
 @elseif($products->isEmpty() && $stores->isEmpty() && $people->isEmpty())
     <div class="bg-white border border-dashed border-slate-300 rounded-3xl p-16 text-center text-slate-500">
-        Tidak ada hasil untuk “{{ $q }}”. Coba kata kunci lain.
+        {{ __('Tidak ada hasil untuk “:q”. Coba kata kunci lain.', ['q' => $q]) }}
     </div>
 @else
     {{-- ORANG --}}
     @if($people->isNotEmpty())
-        <h2 class="text-sm font-bold text-slate-900 mb-3">Orang</h2>
+        <h2 class="text-sm font-bold text-slate-900 mb-3">{{ __('Orang') }}</h2>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             @foreach($people as $p)
                 <a href="/explorer/{{ $p['wallet'] }}" class="bg-white border border-slate-200 rounded-2xl p-4 hover:border-blue-400 hover:shadow-md transition">
@@ -36,12 +36,12 @@
 
     {{-- TOKO --}}
     @if($stores->isNotEmpty())
-        <h2 class="text-sm font-bold text-slate-900 mb-3">Toko</h2>
+        <h2 class="text-sm font-bold text-slate-900 mb-3">{{ __('Toko') }}</h2>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             @foreach($stores as $s)
                 <a href="/store/{{ $s->slug }}" class="bg-white border border-slate-200 rounded-2xl p-4 hover:border-blue-400 hover:shadow-md transition">
                     <p class="font-semibold text-slate-900 truncate">🏪 {{ $s->name }}</p>
-                    <p class="text-xs text-slate-500 mt-1">{{ $s->products_count }} produk</p>
+                    <p class="text-xs text-slate-500 mt-1">{{ __(':n produk', ['n' => $s->products_count]) }}</p>
                 </a>
             @endforeach
         </div>
@@ -49,7 +49,7 @@
 
     {{-- PRODUK --}}
     @if($products->isNotEmpty())
-        <h2 class="text-sm font-bold text-slate-900 mb-3">Produk</h2>
+        <h2 class="text-sm font-bold text-slate-900 mb-3">{{ __('Produk') }}</h2>
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
             @foreach($products as $product)
                 <a href="/products/{{ $product->id }}" class="group bg-white rounded-2xl overflow-hidden border border-slate-200 hover:border-blue-500 hover:shadow-lg hover:-translate-y-1 transition-all duration-200 flex flex-col">

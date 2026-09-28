@@ -64,8 +64,10 @@ class ConfigCheck extends Command
 
         // Kunci gas harus punya saldo tBNB untuk dibagikan ke wallet baru.
         $this->checkKey('PLATFORM_GAS_PRIVATE_KEY', config('wallet.gas_private_key'), function (string $addr) {
-            $bal = $this->ops->nativeBalance($addr);
-            return $bal === null ? 'saldo tak terbaca (RPC)' : "saldo {$bal} tBNB";
+            $bal  = $this->ops->nativeBalance($addr);
+            $tlkm = $this->ops->tlkmBalance($addr); // sumber bonus TLKM akun baru (WELCOME_TLKM_AMOUNT)
+            return ($bal === null ? 'saldo tak terbaca (RPC)' : "saldo {$bal} tBNB")
+                . ($tlkm === null ? '' : ", {$tlkm} TLKM");
         });
 
         $this->line('[config:check] selesai');

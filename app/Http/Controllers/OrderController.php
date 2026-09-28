@@ -78,12 +78,12 @@ class OrderController extends Controller
 
         // Cegah duplikat: satu tx_hash / order_id hanya tercatat sekali.
         if (Order::where('tx_hash', $data['tx_hash'])->orWhere('order_id', $data['order_id'])->exists()) {
-            return response()->json(['success' => false, 'message' => 'Order sudah tercatat.'], 409);
+            return response()->json(['success' => false, 'message' => __('Order sudah tercatat.')], 409);
         }
 
         $user = auth()->user();
         if (!$user->wallet_address) {
-            return response()->json(['success' => false, 'message' => 'Akun tidak memiliki wallet terikat.'], 422);
+            return response()->json(['success' => false, 'message' => __('Akun tidak memiliki wallet terikat.')], 422);
         }
 
         // Ekspektasi tiap item dibangun dari PRODUK (server-side), lalu dicocokkan ke chain.
@@ -134,14 +134,14 @@ class OrderController extends Controller
         }
 
         if (empty($expected)) {
-            return response()->json(['success' => false, 'message' => 'Tidak ada item valid untuk disimpan.'], 422);
+            return response()->json(['success' => false, 'message' => __('Tidak ada item valid untuk disimpan.')], 422);
         }
 
         // ===== VERIFIKASI ON-CHAIN (sumber kebenaran) =====
         $vr = $verifier
             ->verifyCart($data['order_id'], $data['tx_hash'], $user->wallet_address, $expected);
         if (!($vr['ok'] ?? false)) {
-            return response()->json(['success' => false, 'message' => 'Verifikasi on-chain gagal: ' . ($vr['reason'] ?? '-')], 422);
+            return response()->json(['success' => false, 'message' => __('Verifikasi on-chain gagal: :reason', ['reason' => $vr['reason'] ?? '-'])], 422);
         }
 
         // Nominal & status diambil dari CHAIN.
@@ -243,7 +243,7 @@ class OrderController extends Controller
         });
         } catch (\Illuminate\Database\QueryException $e) {
             // Backstop unique constraint (order_id/tx_hash) dari race -> tetap idempotent.
-            return response()->json(['success' => false, 'message' => 'Order sudah tercatat.'], 409);
+            return response()->json(['success' => false, 'message' => __('Order sudah tercatat.')], 409);
         }
 
         // Kirim email via queue (RabbitMQ) — SUDAH di belakang verifikasi on-chain.
@@ -259,7 +259,7 @@ class OrderController extends Controller
 
         // Notifikasi in-app: pembeli (pesanan dibuat) + tiap penjual (pesanan baru).
         \App\Support\Notify::send($order->user_id, 'order', 'Pesanan dibuat',
-            'Pembayaran diterima & ditahan escrow. Order ' . $order->order_id . '.', '/orders', '🛒');
+            ['Pembayaran diterima & ditahan escrow. Order :order.', ['order' => $order->order_id]], '/orders', '🛒');
         foreach ($order->items()->pluck('seller_wallet')->unique() as $wallet) {
             \App\Support\Notify::toWallet($wallet, 'order', 'Pesanan baru masuk',
                 'Ada pesanan baru untuk tokomu. Segera proses & kirim.', '/seller', '📦');
@@ -285,7 +285,7 @@ class OrderController extends Controller
             ->first();
 
         if (!$order) {
-            return response()->json(['success' => false, 'message' => 'Order tidak ditemukan.'], 404);
+            return response()->json(['success' => false, 'message' => __('Order tidak ditemukan.')], 404);
         }
 
         $item = OrderItem::where('order_ref_id', $order->id)
@@ -293,7 +293,7 @@ class OrderController extends Controller
             ->first();
 
         if (!$item) {
-            return response()->json(['success' => false, 'message' => 'Item tidak ditemukan.'], 404);
+            return response()->json(['success' => false, 'message' => __('Item tidak ditemukan.')], 404);
         }
 
         if ($item->status !== 'paid') {
@@ -304,13 +304,13 @@ class OrderController extends Controller
         // completed->Completed(2), refunded->Refunded(3), disputed->Disputed(4).
         $onchain = (new \App\Services\ChainVerifier())->getItem($order->order_id, (int) $data['item_index']);
         if (!$onchain) {
-            return response()->json(['success' => false, 'message' => 'Item tidak terbaca di kontrak.'], 422);
+            return response()->json(['success' => false, 'message' => __('Item tidak terbaca di kontrak.')], 422);
         }
         $toChain = ['completed' => 2, 'refunded' => 3, 'disputed' => 4];
         if ($onchain['status'] !== $toChain[$data['status']]) {
             return response()->json([
                 'success' => false,
-                'message' => 'Status on-chain belum sesuai. Pastikan transaksi sudah dikonfirmasi di blockchain.',
+                'message' => __('Status on-chain belum sesuai. Pastikan transaksi sudah dikonfirmasi di blockchain.'),
             ], 422);
         }
 
@@ -332,15 +332,15 @@ class OrderController extends Controller
         $prodName = optional($item->product)->name ?: 'Produk';
         if ($data['status'] === 'completed') {
             \App\Support\Notify::toWallet($item->seller_wallet, 'order', 'Pesanan dikonfirmasi diterima',
-                "Pembeli mengonfirmasi \"{$prodName}\" diterima — dana dilepas ke kamu.", '/seller', '✅');
+                ['Pembeli mengonfirmasi ":product" diterima — dana dilepas ke kamu.', ['product' => $prodName]], '/seller', '✅');
         } elseif ($data['status'] === 'refunded') {
             \App\Support\Notify::toWallet($item->seller_wallet, 'order', 'Item direfund',
-                "Item \"{$prodName}\" direfund ke pembeli.", '/seller', '↩️');
+                ['Item ":product" direfund ke pembeli.', ['product' => $prodName]], '/seller', '↩️');
         } elseif ($data['status'] === 'disputed') {
             \App\Support\Notify::toWallet($item->seller_wallet, 'order', 'Sengketa diajukan',
-                "Pembeli mengajukan sengketa untuk \"{$prodName}\". Dana ditahan sampai pengawas memutus.", '/seller', '⚠️');
+                ['Pembeli mengajukan sengketa untuk ":product". Dana ditahan sampai pengawas memutus.', ['product' => $prodName]], '/seller', '⚠️');
             \App\Support\Notify::toSupervisors('order', 'Sengketa baru',
-                "Ada sengketa untuk \"{$prodName}\" (order {$order->order_id}). Perlu ditinjau.", '/supervisor/disputes', '⚖️');
+                ['Ada sengketa untuk ":product" (order :order). Perlu ditinjau.', ['product' => $prodName, 'order' => $order->order_id]], '/supervisor/disputes', '⚖️');
         }
 
         return response()->json(['success' => true, 'status' => $item->status]);
@@ -355,7 +355,7 @@ class OrderController extends Controller
         // Terikat ke environment "local", BUKAN APP_DEBUG: menyalakan debug sebentar di
         // produksi untuk mencari error dulu membuat pembeli mana pun bisa memalsukan
         // "penjual telat kirim" lalu memicu refund otomatis atas barang yang sudah diterima.
-        abort_unless(auth()->user()->isSupervisor() || app()->isLocal(), 403, 'Khusus dev/pengawas.');
+        abort_unless(auth()->user()->isSupervisor() || app()->isLocal(), 403, __('Khusus dev/pengawas.'));
         $data = $req->validate([
             'order_id' => 'required|string',
             'preset'   => 'required|in:on_time,late_courier,failed_address,not_shipped_late,delivered_unconfirmed',
@@ -376,7 +376,7 @@ class OrderController extends Controller
             $order->save();
             \App\Models\TrackingEvent::create(['order_id' => $order->id, 'source' => 'simulated',
                 'raw_text' => "Simulasi: pesanan sudah > {$shipDl} hari, penjual belum mengirim (belum ada resi)."]);
-            return response()->json(['success' => true, 'message' => 'Disimulasikan: penjual telat kirim. Klik "Jalankan keeper".']);
+            return response()->json(['success' => true, 'message' => __('Disimulasikan: penjual telat kirim. Klik "Jalankan keeper".')]);
         }
         if ($data['preset'] === 'delivered_unconfirmed') {
             // Barang sudah diterima tapi pembeli lupa konfirmasi > M hari.
@@ -388,8 +388,8 @@ class OrderController extends Controller
             \App\Models\TrackingEvent::create(['order_id' => $order->id, 'source' => 'simulated',
                 'raw_text' => 'Paket DITERIMA penerima (DELIVERED). Simulasi: pembeli belum konfirmasi.']);
             $far = ($order->eta_days ?? 0) >= (int) config('chain.settlement.far_eta_days', 10);
-            $note = $far ? ' Tujuan JAUH — auto-selesai dilewati (perlu manual).' : ' Klik "Jalankan keeper" untuk auto-selesai.';
-            return response()->json(['success' => true, 'message' => 'Disimulasikan: sudah diterima, belum dikonfirmasi.' . $note]);
+            $note = ' ' . ($far ? __('Tujuan JAUH — auto-selesai dilewati (perlu manual).') : __('Klik "Jalankan keeper" untuk auto-selesai.'));
+            return response()->json(['success' => true, 'message' => __('Disimulasikan: sudah diterima, belum dikonfirmasi.') . $note]);
         }
 
         // Preset berbasis TRACKING (dinilai AI).
@@ -408,7 +408,7 @@ class OrderController extends Controller
         $order->promised_date = $promised;
         $order->save();
 
-        return response()->json(['success' => true, 'message' => 'Event tracking simulasi ditambahkan. Klik "Jalankan keeper" untuk menilai.']);
+        return response()->json(['success' => true, 'message' => __('Event tracking simulasi ditambahkan. Klik "Jalankan keeper" untuk menilai.')]);
     }
 
     /** DEMO (dev/pengawas): jalankan keeper sekali untuk satu order & tampilkan hasilnya. */
@@ -417,7 +417,7 @@ class OrderController extends Controller
         // Terikat ke environment "local", BUKAN APP_DEBUG: menyalakan debug sebentar di
         // produksi untuk mencari error dulu membuat pembeli mana pun bisa memalsukan
         // "penjual telat kirim" lalu memicu refund otomatis atas barang yang sudah diterima.
-        abort_unless(auth()->user()->isSupervisor() || app()->isLocal(), 403, 'Khusus dev/pengawas.');
+        abort_unless(auth()->user()->isSupervisor() || app()->isLocal(), 403, __('Khusus dev/pengawas.'));
         $data = $req->validate(['order_id' => 'required|string']);
 
         $order = Order::where('order_id', $data['order_id'])

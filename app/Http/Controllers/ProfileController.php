@@ -31,6 +31,6 @@ class ProfileController extends Controller
         $user->explorer_public = $req->boolean('explorer_public');
         $user->save();
 
-        return redirect('/profile')->with('success', 'Profil publik diperbarui.');
+        return redirect('/profile')->with('success', __('Profil publik diperbarui.'));
     }
 }

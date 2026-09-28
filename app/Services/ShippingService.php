@@ -111,7 +111,7 @@ class ShippingService
         if ($ro !== null) {
             return [
                 'fee' => $ro, 'fee_tlkm' => $toTlkm($ro), 'km' => null, 'known' => true,
-                'method' => 'RajaOngkir', 'note' => 'Tarif termurah via RajaOngkir.',
+                'method' => 'RajaOngkir', 'note' => __('Tarif termurah via RajaOngkir.'),
             ];
         }
 
@@ -123,7 +123,7 @@ class ShippingService
             $fee = (int) $cfg['fallback_fee'];
             return [
                 'fee' => $fee, 'fee_tlkm' => $toTlkm($fee), 'km' => null, 'known' => false,
-                'method' => 'estimasi', 'note' => 'Kota tidak dikenal — tarif dasar.',
+                'method' => __('estimasi'), 'note' => __('Kota tidak dikenal — tarif dasar.'),
             ];
         }
 
@@ -137,7 +137,7 @@ class ShippingService
 
         return [
             'fee' => $fee, 'fee_tlkm' => $toTlkm($fee), 'km' => round($km, 1), 'known' => true,
-            'method' => 'estimasi jarak', 'note' => 'Estimasi jarak garis lurus (haversine).',
+            'method' => __('estimasi jarak'), 'note' => __('Estimasi jarak garis lurus (haversine).'),
         ];
     }
 

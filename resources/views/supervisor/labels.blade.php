@@ -4,8 +4,8 @@
 
 @include('supervisor._nav')
 
-<h2 class="text-lg font-bold text-slate-900 mb-1">Label entitas terverifikasi</h2>
-<p class="text-sm text-slate-500 mb-6 max-w-3xl">Beri label resmi pada wallet (mis. <b>US GOV</b>, <b>Bank Indonesia</b>) agar tampil <b>terverifikasi</b> di Explorer. Hanya pengawas yang bisa memberi label — mencegah klaim identitas palsu.</p>
+<h2 class="text-lg font-bold text-slate-900 mb-1">{{ __('Label entitas terverifikasi') }}</h2>
+<p class="text-sm text-slate-500 mb-6 max-w-3xl">{{ __('Beri label resmi pada wallet (mis.') }} <b>US GOV</b>, <b>Bank Indonesia</b>{{ __(') agar tampil') }} <b>{{ __('terverifikasi.b') }}</b> {{ __('di Explorer. Hanya pengawas yang bisa memberi label — mencegah klaim identitas palsu.') }}</p>
 
 @if(session('success'))
     <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-5 text-sm">{{ session('success') }}</div>
@@ -20,34 +20,34 @@
         <form action="/supervisor/labels" method="POST" class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 space-y-4">
             @csrf
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1.5">Alamat Wallet</label>
+                <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ __('Alamat Wallet') }}</label>
                 <input name="address" value="{{ old('address') }}" placeholder="0x…" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-blue-500 outline-none text-sm font-mono">
             </div>
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1.5">Label</label>
+                <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ __('Label') }}</label>
                 <input name="label" value="{{ old('label') }}" placeholder="US GOV" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-blue-500 outline-none text-sm">
             </div>
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1.5">Kategori</label>
+                <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ __('Kategori') }}</label>
                 <select name="category" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-blue-500 outline-none text-sm">
                     <option value="">—</option>
-                    @foreach(['government'=>'Pemerintah','institution'=>'Lembaga','exchange'=>'Exchange','individual'=>'Individu'] as $v=>$t)
+                    @foreach(['government'=>__('Pemerintah'),'institution'=>__('Lembaga'),'exchange'=>__('Exchange'),'individual'=>__('Individu')] as $v=>$t)
                         <option value="{{ $v }}" @selected(old('category')===$v)>{{ $t }}</option>
                     @endforeach
                 </select>
             </div>
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1.5">Catatan (opsional)</label>
+                <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ __('Catatan (opsional)') }}</label>
                 <input name="notes" value="{{ old('notes') }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-blue-500 outline-none text-sm">
             </div>
-            <button class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">Simpan Label</button>
+            <button class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">{{ __('Simpan Label') }}</button>
         </form>
     </div>
 
     {{-- LIST --}}
     <div class="lg:col-span-2">
         @if($labels->isEmpty())
-            <div class="bg-white border border-dashed border-slate-300 rounded-2xl p-10 text-center text-slate-500">Belum ada label.</div>
+            <div class="bg-white border border-dashed border-slate-300 rounded-2xl p-10 text-center text-slate-500">{{ __('Belum ada label.') }}</div>
         @else
             <div class="bg-white border border-slate-200 rounded-2xl shadow-sm divide-y divide-slate-100">
                 @foreach($labels as $l)
@@ -60,9 +60,9 @@
                             </div>
                             <a href="/explorer/{{ $l->address }}" class="text-xs text-blue-600 hover:underline font-mono">{{ substr($l->address,0,12) }}…{{ substr($l->address,-6) }}</a>
                         </div>
-                        <form action="/supervisor/labels/delete" method="POST" onsubmit="return confirmSubmit(event, {title: 'Hapus label?', message: 'Label identitas wallet ini akan hilang dari Explorer.', confirmText: 'Hapus', danger: true})">
+                        <form action="/supervisor/labels/delete" method="POST" onsubmit="return confirmSubmit(event, {title: @js(__('Hapus label?')), message: @js(__('Label identitas wallet ini akan hilang dari Explorer.')), confirmText: @js(__('Hapus')), danger: true})">
                             @csrf<input type="hidden" name="id" value="{{ $l->id }}">
-                            <button class="text-xs text-slate-400 hover:text-red-600">Hapus</button>
+                            <button class="text-xs text-slate-400 hover:text-red-600">{{ __('Hapus') }}</button>
                         </form>
                     </div>
                 @endforeach

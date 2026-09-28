@@ -18,18 +18,18 @@ class ReviewController extends Controller
 
         $item = OrderItem::with(['order', 'product'])->find($data['order_item_id']);
         if (!$item) {
-            return response()->json(['success' => false, 'message' => 'Item tidak ditemukan.'], 404);
+            return response()->json(['success' => false, 'message' => __('Item tidak ditemukan.')], 404);
         }
         // Hanya pembeli pemilik order.
         if (!$item->order || $item->order->user_id !== auth()->id()) {
-            return response()->json(['success' => false, 'message' => 'Tidak diizinkan.'], 403);
+            return response()->json(['success' => false, 'message' => __('Tidak diizinkan.')], 403);
         }
         // Hanya item yang sudah selesai (barang diterima).
         if ($item->status !== 'completed') {
-            return response()->json(['success' => false, 'message' => 'Ulasan hanya untuk item yang sudah selesai.'], 422);
+            return response()->json(['success' => false, 'message' => __('Ulasan hanya untuk item yang sudah selesai.')], 422);
         }
         if (Review::where('order_item_id', $item->id)->exists()) {
-            return response()->json(['success' => false, 'message' => 'Item ini sudah diulas.'], 409);
+            return response()->json(['success' => false, 'message' => __('Item ini sudah diulas.')], 409);
         }
 
         Review::create([

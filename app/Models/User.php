@@ -47,6 +47,7 @@ class User extends Authenticatable
         'pin_attempts',
         'pin_locked_until',
         'gas_dripped_at',
+        'tlkm_granted_at',
     ];
 
     /**
@@ -155,6 +156,7 @@ class User extends Authenticatable
             'is_embedded' => 'boolean',
             'pin_locked_until' => 'datetime',
             'gas_dripped_at' => 'datetime',
+            'tlkm_granted_at' => 'datetime',
         ];
     }
 }

@@ -125,7 +125,7 @@ class SettlementKeeper extends Command
                 $order->settlement_status = 'held';
                 $order->save();
                 Notify::toSupervisors('order', 'Order ditahan — perlu tinjauan',
-                    "Order {$order->order_id}: AI belum yakin ({$decision['confidence']}) / di atas batas otomatis. " . $decision['reason'],
+                    ['Order :order: AI belum yakin (:conf) / di atas batas otomatis. :reason', ['order' => $order->order_id, 'conf' => $decision['confidence'], 'reason' => $decision['reason']]],
                     '/supervisor/held', '🕵️');
             } elseif (in_array($decision['settlement'], ['release', 'refund'], true)) {
                 if (!$o['gatewayOk'] || empty($o['arbiterKey'])) {
@@ -133,7 +133,7 @@ class SettlementKeeper extends Command
                     $order->settlement_status = 'held';
                     $order->save();
                     Notify::toSupervisors('order', 'Order ditahan — arbiter belum siap',
-                        "Order {$order->order_id}: auto-settlement mati (gateway/kunci arbiter kosong).", '/supervisor/held', '⚙️');
+                        ['Order :order: auto-settlement mati (gateway/kunci arbiter kosong).', ['order' => $order->order_id]], '/supervisor/held', '⚙️');
                 } else {
                     $method = $decision['settlement'] === 'release' ? 'arbiterRelease' : 'arbiterRefund';
                     $newItemStatus = $decision['settlement'] === 'release' ? 'completed' : 'refunded';
@@ -165,7 +165,7 @@ class SettlementKeeper extends Command
                         $order->settlement_status = 'held';
                         $order->save();
                         Notify::toSupervisors('order', 'Eksekusi settlement gagal',
-                            "Order {$order->order_id}: aksi arbiter on-chain gagal, perlu tinjauan manual.", '/supervisor/held', '⚠️');
+                            ['Order :order: aksi arbiter on-chain gagal, perlu tinjauan manual.', ['order' => $order->order_id]], '/supervisor/held', '⚠️');
                     }
                 }
             }
@@ -210,7 +210,7 @@ class SettlementKeeper extends Command
                 if ($this->arbiterItem($order, $it, false, $o, $signer)) {
                     $acted = true;
                     Notify::send($order->user_id, 'order', 'Dana dikembalikan otomatis',
-                        "Penjual tak mengirim dalam {$shipDeadline} hari — dana item dikembalikan.", '/orders', '↩️');
+                        ['Penjual tak mengirim dalam :days hari — dana item dikembalikan.', ['days' => $shipDeadline]], '/orders', '↩️');
                 }
                 continue;
             }
@@ -221,7 +221,7 @@ class SettlementKeeper extends Command
                 if ($this->arbiterItem($order, $it, true, $o, $signer)) {
                     $acted = true;
                     Notify::send($order->user_id, 'order', 'Pesanan diselesaikan otomatis',
-                        "Barang sudah diterima & tak dikonfirmasi {$autoComplete} hari — dana dilepas ke penjual.", '/orders', '✅');
+                        ['Barang sudah diterima & tak dikonfirmasi :days hari — dana dilepas ke penjual.', ['days' => $autoComplete]], '/orders', '✅');
                 }
             }
         }
@@ -286,7 +286,7 @@ class SettlementKeeper extends Command
             if ($todayPaid + $payout > (float) $cfg['daily_payout_cap_tlkm']) {
                 Log::warning("Circuit breaker: payout harian tercapai. Klaim {$order->order_id} ditunda.");
                 Notify::toSupervisors('order', 'Circuit breaker klaim aktif',
-                    "Batas payout harian ({$cfg['daily_payout_cap_tlkm']} TLKM) tercapai. Klaim {$order->order_id} ditunda.", '/supervisor/held', '⛔');
+                    ['Batas payout harian (:cap TLKM) tercapai. Klaim :order ditunda.', ['cap' => $cfg['daily_payout_cap_tlkm'], 'order' => $order->order_id]], '/supervisor/held', '⛔');
                 return; // tetap 'active' untuk dicoba besok
             }
 
@@ -310,7 +310,7 @@ class SettlementKeeper extends Command
                 $order->ai_reason   = 'Klaim garansi dibayar: telat karena penjual/kurir. ' . $decision['reason'];
                 $order->save();
                 Notify::send($order->user_id, 'order', 'Klaim Garansi Tepat Waktu dibayar',
-                    "Kompensasi ongkir {$payout} TLKM sudah dikirim ke " . ($toCommunity ? 'kas komunitas.' : 'walletmu.'), '/orders', '🛡️');
+                    [$toCommunity ? 'Kompensasi ongkir :amt TLKM sudah dikirim ke kas komunitas.' : 'Kompensasi ongkir :amt TLKM sudah dikirim ke walletmu.', ['amt' => $payout]], '/orders', '🛡️');
             } catch (\Throwable $e) {
                 Log::error("Payout klaim {$order->order_id}: " . $e->getMessage());
             }

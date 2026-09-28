@@ -46,7 +46,7 @@ class CartController extends Controller
             return redirect('/checkout');
         }
 
-        return back()->with('success', 'Produk ditambahkan ke keranjang.');
+        return back()->with('success', __('Produk ditambahkan ke keranjang.'));
     }
 
     // Ubah jumlah item.
@@ -73,6 +73,6 @@ class CartController extends Controller
             ->where('user_id', auth()->id())
             ->delete();
 
-        return back()->with('success', 'Item dihapus dari keranjang.');
+        return back()->with('success', __('Item dihapus dari keranjang.'));
     }
 }

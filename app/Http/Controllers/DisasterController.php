@@ -12,7 +12,7 @@ class DisasterController extends Controller
 {
     private function ensure(): void
     {
-        abort_unless(auth()->user()->isSupervisor(), 403, 'Khusus pengawas platform.');
+        abort_unless(auth()->user()->isSupervisor(), 403, __('Khusus pengawas platform.'));
     }
 
     public function index()
@@ -45,7 +45,7 @@ class DisasterController extends Controller
         @set_time_limit(180);
         $s = $radar->scan();
         Cache::put('disaster:last_scan', ['at' => now()->toIso8601String()] + $s, now()->addDays(7));
-        return back()->with('success', "Scan selesai: {$s['new']} kejadian baru — {$s['opened']} donasi dibuka, {$s['pending_review']} masuk antrean, {$s['rejected']} ditolak, {$s['duplicate']} duplikat.");
+        return back()->with('success', __('Scan selesai: :new kejadian baru — :opened donasi dibuka, :pending masuk antrean, :rejected ditolak, :dup duplikat.', ['new' => $s['new'], 'opened' => $s['opened'], 'pending' => $s['pending_review'], 'rejected' => $s['rejected'], 'dup' => $s['duplicate']]));
     }
 
     public function assess(Request $req, DisasterRadar $radar)
@@ -68,10 +68,10 @@ class DisasterController extends Controller
             'recipient' => ['nullable', 'regex:/^0x[a-fA-F0-9]{40}$/'],
         ]);
         $event = DisasterEvent::findOrFail($data['id']);
-        abort_unless(in_array($event->status, ['pending_review', 'rejected'], true), 422, 'Kejadian ini sudah diputuskan.');
+        abort_unless(in_array($event->status, ['pending_review', 'rejected'], true), 422, __('Kejadian ini sudah diputuskan.'));
 
         $campaign = $radar->openCampaign($event, auth()->id(), $data['recipient'] ?? null);
-        return redirect('/donate/' . $campaign->slug)->with('success', 'Donasi dibuka untuk ' . $campaign->title . '.');
+        return redirect('/donate/' . $campaign->slug)->with('success', __('Donasi dibuka untuk :title.', ['title' => $campaign->title]));
     }
 
     public function dismiss(Request $req)
@@ -79,9 +79,9 @@ class DisasterController extends Controller
         $this->ensure();
         $data = $req->validate(['id' => 'required|integer|exists:disaster_events,id']);
         $event = DisasterEvent::findOrFail($data['id']);
-        abort_unless(in_array($event->status, ['pending_review', 'rejected'], true), 422, 'Kejadian ini sudah diputuskan.');
+        abort_unless(in_array($event->status, ['pending_review', 'rejected'], true), 422, __('Kejadian ini sudah diputuskan.'));
         $event->update(['status' => 'dismissed', 'reviewed_by' => auth()->id()]);
-        return back()->with('success', 'Usulan diabaikan.');
+        return back()->with('success', __('Usulan diabaikan.'));
     }
 
     /** Sampul ilustrasi per jenis bencana (SVG), dipakai campaign dari Radar Bencana. */

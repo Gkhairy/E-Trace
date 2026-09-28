@@ -26,7 +26,7 @@ class SupervisorController extends Controller
 
     private function ensure()
     {
-        abort_unless(auth()->user()->isSupervisor(), 403, 'Khusus pengawas platform.');
+        abort_unless(auth()->user()->isSupervisor(), 403, __('Khusus pengawas platform.'));
     }
 
     /**
@@ -195,7 +195,7 @@ class SupervisorController extends Controller
 
         if (in_array($data['action'], ['release', 'refund'], true)) {
             if (!$gateway || $gateway === $zero || empty($arbiterKey)) {
-                return response()->json(['success' => false, 'message' => 'Gateway / kunci arbiter belum dikonfigurasi.'], 422);
+                return response()->json(['success' => false, 'message' => __('Gateway / kunci arbiter belum dikonfigurasi.')], 422);
             }
             $method = $data['action'] === 'release' ? 'arbiterRelease' : 'arbiterRefund';
             $newStatus = $data['action'] === 'release' ? 'completed' : 'refunded';
@@ -207,7 +207,7 @@ class SupervisorController extends Controller
                     $it->save();
                 } catch (\Throwable $e) {
                     Log::error("Supervisor {$method} {$order->order_id}#{$it->item_index}: " . $e->getMessage());
-                    return response()->json(['success' => false, 'message' => 'Aksi on-chain gagal: ' . $e->getMessage()], 422);
+                    return response()->json(['success' => false, 'message' => __('Aksi on-chain gagal: :err', ['err' => $e->getMessage()])], 422);
                 }
             }
             $order->settlement_status = $data['action'] === 'release' ? 'released' : 'refunded';
@@ -230,18 +230,18 @@ class SupervisorController extends Controller
         // approve_claim
         $cfg = config('chain.insurance');
         if (!$order->is_insured || $order->insurance_status !== 'active') {
-            return response()->json(['success' => false, 'message' => 'Klaim tidak dalam status aktif.'], 422);
+            return response()->json(['success' => false, 'message' => __('Klaim tidak dalam status aktif.')], 422);
         }
         if (empty($cfg['pool_key']) || empty($cfg['pool_wallet'])) {
-            return response()->json(['success' => false, 'message' => 'Pool asuransi belum dikonfigurasi.'], 422);
+            return response()->json(['success' => false, 'message' => __('Pool asuransi belum dikonfigurasi.')], 422);
         }
         $payout = min((float) ($order->shipping_tlkm ?? 0), (float) $cfg['payout_cap_tlkm']);
         if ($payout <= 0) {
-            return response()->json(['success' => false, 'message' => 'Ongkir nol — tak ada yang dikompensasi.'], 422);
+            return response()->json(['success' => false, 'message' => __('Ongkir nol — tak ada yang dikompensasi.')], 422);
         }
         $buyer = strtolower((string) $order->user?->wallet_address);
         if (!preg_match('/^0x[a-f0-9]{40}$/', $buyer)) {
-            return response()->json(['success' => false, 'message' => 'Wallet pembeli tidak valid.'], 422);
+            return response()->json(['success' => false, 'message' => __('Wallet pembeli tidak valid.')], 422);
         }
         try {
             $tx = $signer->sendContractCall($cfg['pool_key'], config('chain.tlkm'), self::TLKM_ABI, 'transfer', [$buyer, $signer->toWei((string) $payout)]);
@@ -251,11 +251,11 @@ class SupervisorController extends Controller
             $order->ai_reason   = 'Klaim disetujui manual oleh pengawas — kompensasi ongkir dibayar.';
             $order->save();
             Notify::send($order->user_id, 'order', 'Klaim Garansi Tepat Waktu dibayar',
-                "Kompensasi ongkir {$payout} TLKM sudah dikirim ke walletmu.", '/orders', '🛡️');
+                ['Kompensasi ongkir :amt TLKM sudah dikirim ke walletmu.', ['amt' => $payout]], '/orders', '🛡️');
             return response()->json(['success' => true, 'payout_tx' => $tx, 'payout_tlkm' => $payout]);
         } catch (\Throwable $e) {
             Log::error("Supervisor payout {$order->order_id}: " . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Payout gagal: ' . $e->getMessage()], 422);
+            return response()->json(['success' => false, 'message' => __('Payout gagal: :err', ['err' => $e->getMessage()])], 422);
         }
     }
 
@@ -286,16 +286,16 @@ class SupervisorController extends Controller
 
         $item = OrderItem::with('order')->find($data['order_item_id']);
         if (!$item || !$item->order) {
-            return response()->json(['success' => false, 'message' => 'Item tidak ditemukan.'], 404);
+            return response()->json(['success' => false, 'message' => __('Item tidak ditemukan.')], 404);
         }
 
         $onchain = (new ChainVerifier())->getItem($item->order->order_id, (int) $item->item_index);
         if (!$onchain) {
-            return response()->json(['success' => false, 'message' => 'Item tidak terbaca di kontrak.'], 422);
+            return response()->json(['success' => false, 'message' => __('Item tidak terbaca di kontrak.')], 422);
         }
         $expect = $data['status'] === 'completed' ? 2 : 3;
         if ($onchain['status'] !== $expect) {
-            return response()->json(['success' => false, 'message' => 'Status on-chain belum sesuai.'], 422);
+            return response()->json(['success' => false, 'message' => __('Status on-chain belum sesuai.')], 422);
         }
 
         $item->status = $data['status'];
@@ -335,13 +335,13 @@ class SupervisorController extends Controller
             ['address' => strtolower($data['address'])],
             ['label' => $data['label'], 'category' => $data['category'] ?? null, 'notes' => $data['notes'] ?? null, 'verified' => true]
         );
-        return back()->with('success', 'Label entitas disimpan.');
+        return back()->with('success', __('Label entitas disimpan.'));
     }
 
     public function labelDelete(Request $req)
     {
         $this->ensure();
         WalletLabel::where('id', $req->id)->delete();
-        return back()->with('success', 'Label dihapus.');
+        return back()->with('success', __('Label dihapus.'));
     }
 }

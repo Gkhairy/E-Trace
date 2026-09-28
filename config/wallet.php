@@ -14,4 +14,7 @@ return [
     // Wallet platform yang mengisi gas tBNB ke wallet baru/komunitas.
     'gas_private_key' => env('PLATFORM_GAS_PRIVATE_KEY'),
     'gas_drip_amount' => env('GAS_DRIP_AMOUNT', '0.01'),
+
+    // Bonus TLKM uji coba untuk akun baru (dari wallet gas yang sama). 0 = nonaktif.
+    'welcome_tlkm' => env('WELCOME_TLKM_AMOUNT', '1000'),
 ];

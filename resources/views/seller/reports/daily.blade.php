@@ -2,13 +2,13 @@
     // Tanpa pemisah ribuan agar sel Excel tetap NUMERIK (bisa dijumlah/urut).
     $fmt = fn ($n) => rtrim(rtrim(number_format((float) $n, 6, '.', ''), '0'), '.') ?: '0';
     $statusLabel = [
-        'paid'      => 'Dibayar (escrow)',
-        'completed' => 'Selesai',
-        'refunded'  => 'Refund',
+        'paid'      => __('Dibayar (escrow)'),
+        'completed' => __('Selesai'),
+        'refunded'  => __('Refund'),
     ];
 @endphp
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
 <meta charset="utf-8">
 <style>
@@ -28,17 +28,17 @@
 <body>
 <table>
     <tr class="head-row"><td colspan="5" class="title">{{ $store->name }}</td></tr>
-    <tr class="head-row"><td colspan="5" class="sub">Laporan Penjualan (Harian)</td></tr>
-    <tr class="head-row"><td colspan="5" class="meta">Periode: Dari {{ $from->format('d M Y') }} ke {{ $to->format('d M Y') }}</td></tr>
-    <tr class="head-row"><td colspan="5" class="meta muted">Sumber: transaksi (escrow) di aplikasi E-Trace. Nilai dalam TLKM.</td></tr>
+    <tr class="head-row"><td colspan="5" class="sub">{{ __('Laporan Penjualan (Harian)') }}</td></tr>
+    <tr class="head-row"><td colspan="5" class="meta">{{ __('Periode: Dari :from ke :to', ['from' => $from->format('d M Y'), 'to' => $to->format('d M Y')]) }}</td></tr>
+    <tr class="head-row"><td colspan="5" class="meta muted">{{ __('Sumber: transaksi (escrow) di aplikasi E-Trace. Nilai dalam TLKM.') }}</td></tr>
     <tr class="head-row"><td colspan="5">&nbsp;</td></tr>
 
     <tr>
-        <th>Tanggal</th>
-        <th>No. Order / Tx</th>
-        <th>Keterangan</th>
-        <th class="num">Nilai (TLKM)</th>
-        <th>Status</th>
+        <th>{{ __('Tanggal') }}</th>
+        <th>{{ __('No. Order / Tx') }}</th>
+        <th>{{ __('Keterangan') }}</th>
+        <th class="num">{{ __('Nilai (TLKM)') }}</th>
+        <th>{{ __('Status') }}</th>
     </tr>
 
     @forelse($rows as $r)
@@ -50,14 +50,14 @@
             <td>{{ $statusLabel[$r['status']] ?? $r['status'] }}</td>
         </tr>
     @empty
-        <tr><td colspan="5" class="muted">Tidak ada transaksi pada rentang ini.</td></tr>
+        <tr><td colspan="5" class="muted">{{ __('Tidak ada transaksi pada rentang ini.') }}</td></tr>
     @endforelse
 
     <tr class="total">
-        <td colspan="2">TOTAL</td>
-        <td>{{ $count }} transaksi</td>
+        <td colspan="2">{{ __('TOTAL') }}</td>
+        <td>{{ __(':n transaksi', ['n' => $count]) }}</td>
         <td class="num">{{ $fmt($totalSales) }}</td>
-        <td>Penjualan (tanpa refund)</td>
+        <td>{{ __('Penjualan (tanpa refund)') }}</td>
     </tr>
 </table>
 </body>

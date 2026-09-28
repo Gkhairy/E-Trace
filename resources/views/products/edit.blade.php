@@ -5,7 +5,7 @@
 @include('products._form', [
     'product'     => $product,
     'action'      => '/products/' . $product->id . '/update',
-    'submitLabel' => 'Simpan perubahan',
+    'submitLabel' => __('Simpan perubahan'),
 ])
 @endsection
 

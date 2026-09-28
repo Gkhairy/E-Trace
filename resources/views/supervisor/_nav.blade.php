@@ -5,12 +5,12 @@
         ->orWhere(fn ($q) => $q->where('is_insured', true)->where('insurance_status', 'active'))->count();
     $navRadar = \App\Models\DisasterEvent::where('status', 'pending_review')->count();
     $tabs = [
-        ['/supervisor',          'Ringkasan',        null,         'M4 5h6v6H4zM14 5h6v4h-6zM14 13h6v6h-6zM4 15h6v4H4z'],
-        ['/supervisor/disputes', 'Sengketa',         $navDisputes, 'M12 3v18M5 7h14M7 7l-3 7a3 3 0 006 0L7 7zm10 0l-3 7a3 3 0 006 0l-3-7z'],
-        ['/supervisor/held',     'Ditahan AI & Klaim', $navHeld,   'M12 8v4l2.5 2.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z'],
-        ['/supervisor/disasters', 'Radar Bencana',   $navRadar,    'M12 12m-1 0a1 1 0 102 0 1 1 0 10-2 0M16.2 7.8a6 6 0 010 8.5M7.8 16.2a6 6 0 010-8.5M19.1 4.9a10 10 0 010 14.2M4.9 19.1a10 10 0 010-14.2'],
-        ['/supervisor/labels',   'Label Entitas',    null,         'M7 7h.01M3 11.6V5a2 2 0 012-2h6.6a2 2 0 011.4.6l7.4 7.4a2 2 0 010 2.8l-6.6 6.6a2 2 0 01-2.8 0L3.6 13a2 2 0 01-.6-1.4z'],
-        ['/admin/banners',       'Iklan',            null,         'M11 5.9V19a1 1 0 01-1.8.6L6.6 16H4a1 1 0 01-1-1V9a1 1 0 011-1h2.6l2.6-3.6A1 1 0 0111 5.9zM15.5 8.5a5 5 0 010 7M18.4 5.6a9 9 0 010 12.8'],
+        ['/supervisor',          __('Ringkasan'),       null,         'M4 5h6v6H4zM14 5h6v4h-6zM14 13h6v6h-6zM4 15h6v4H4z'],
+        ['/supervisor/disputes', __('Sengketa'),       $navDisputes, 'M12 3v18M5 7h14M7 7l-3 7a3 3 0 006 0L7 7zm10 0l-3 7a3 3 0 006 0l-3-7z'],
+        ['/supervisor/held',     __('Ditahan AI & Klaim'), $navHeld,   'M12 8v4l2.5 2.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z'],
+        ['/supervisor/disasters', __('Radar Bencana'),   $navRadar,    'M12 12m-1 0a1 1 0 102 0 1 1 0 10-2 0M16.2 7.8a6 6 0 010 8.5M7.8 16.2a6 6 0 010-8.5M19.1 4.9a10 10 0 010 14.2M4.9 19.1a10 10 0 010-14.2'],
+        ['/supervisor/labels',   __('Label Entitas'),    null,         'M7 7h.01M3 11.6V5a2 2 0 012-2h6.6a2 2 0 011.4.6l7.4 7.4a2 2 0 010 2.8l-6.6 6.6a2 2 0 01-2.8 0L3.6 13a2 2 0 01-.6-1.4z'],
+        ['/admin/banners',       __('Iklan'),       null,         'M11 5.9V19a1 1 0 01-1.8.6L6.6 16H4a1 1 0 01-1-1V9a1 1 0 011-1h2.6l2.6-3.6A1 1 0 0111 5.9zM15.5 8.5a5 5 0 010 7M18.4 5.6a9 9 0 010 12.8'],
     ];
     $current = '/' . trim(request()->path(), '/');
 @endphp
@@ -21,12 +21,12 @@
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.6-4A12 12 0 0112 2.9 12 12 0 013.4 6 12 12 0 003 9c0 5.6 3.8 10.3 9 11.6 5.2-1.3 9-6 9-11.6 0-1-.1-2-.4-3z"/></svg>
         </div>
         <div class="min-w-0">
-            <h1 class="text-2xl font-bold text-slate-900 leading-tight">Panel Pengawas</h1>
-            <p class="text-sm text-slate-500">Putuskan sengketa, tinjau keputusan AI, dan jaga dompet platform tetap sehat.</p>
+            <h1 class="text-2xl font-bold text-slate-900 leading-tight">{{ __('Panel Pengawas') }}</h1>
+            <p class="text-sm text-slate-500">{{ __('Putuskan sengketa, tinjau keputusan AI, dan jaga dompet platform tetap sehat.') }}</p>
         </div>
     </div>
 
-    <nav class="mt-5 border-b border-slate-200 -mx-4 px-4 md:mx-0 md:px-0 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Menu pengawas">
+    <nav class="mt-5 border-b border-slate-200 -mx-4 px-4 md:mx-0 md:px-0 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="{{ __('Menu pengawas') }}">
         <ul class="flex gap-1 min-w-max">
             @foreach($tabs as [$href, $label, $badge, $icon])
                 @php $on = $current === $href; @endphp

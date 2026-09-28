@@ -206,9 +206,9 @@ class ExplorerController extends Controller
         $zero  = '0x0000000000000000000000000000000000000000';
         $known = array_filter([
             strtolower((string) config('chain.gateway'))               => 'Escrow',
-            strtolower((string) config('chain.paylater_address'))      => 'Pool Paylater',
-            strtolower((string) config('chain.donation_pool'))         => 'Donasi',
-            strtolower((string) config('chain.insurance.pool_wallet')) => 'Pool Asuransi',
+            strtolower((string) config('chain.paylater_address'))      => __('Pool Paylater'),
+            strtolower((string) config('chain.donation_pool'))         => __('Donasi.pool'),
+            strtolower((string) config('chain.insurance.pool_wallet')) => __('Pool Asuransi'),
         ], fn ($name, $addr) => $name && $addr && $addr !== $zero, ARRAY_FILTER_USE_BOTH);
         $known[$zero] = 'Mint / Burn';
 

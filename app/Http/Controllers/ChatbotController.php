@@ -65,7 +65,7 @@ class ChatbotController extends Controller
             // (nama variabel, .env) tidak untuk publik. Penyebabnya dicatat ke log.
             Log::warning('Chatbot: OPENAI_API_KEY belum di-set, pertanyaan tak bisa dijawab.');
             return response()->json([
-                'reply' => self::UNAVAILABLE,
+                'reply' => __(self::UNAVAILABLE),
                 'products' => [],
             ], 200);
         }
@@ -122,7 +122,7 @@ Donasi & dompet komunitas gratis (0%).
 - Untuk pertanyaan yang benar-benar di luar topik (mis. resep masakan, PR sekolah), tolak dengan sopan
   dan arahkan kembali ke E-Trace.
 - JANGAN memberi nasihat investasi/finansial atau prediksi harga token.
-- Jawab ringkas, ramah, Bahasa Indonesia; pakai langkah bernomor saat menjelaskan alur. JANGAN mengarang
+- Jawab ringkas dan ramah; pakai langkah bernomor saat menjelaskan alur. JANGAN mengarang
   fitur atau angka yang tidak ada.
 - Ini testnet & smart contract-nya belum diaudit — ingatkan bila relevan (mis. ditanya soal keamanan dana asli).
 - Kamu punya alat `search_products`. Pakai HANYA bila pengguna jelas ingin mencari, melihat,
@@ -141,6 +141,12 @@ Donasi & dompet komunitas gratis (0%).
 - Untuk pertanyaan pengeluaran/pemasukan/transaksi sebuah toko atau entitas terverifikasi, sebutkan nama
   entitas & rentang waktunya lalu arahkan ke halaman Explorer wallet tersebut. Jangan mengarang angka.
 SYS;
+
+        // Bahasa jawaban mengikuti bahasa antarmuka yang dipilih pengguna (/lang/{locale}),
+        // kecuali pengguna jelas menulis dalam bahasa lain.
+        $system .= app()->getLocale() === 'en'
+            ? "\n- LANGUAGE: reply in ENGLISH (the user's interface language), unless the user clearly writes in another language."
+            : "\n- BAHASA: jawab dalam Bahasa Indonesia, kecuali pengguna jelas menulis dalam bahasa lain.";
 
         $messages = [['role' => 'system', 'content' => $system]];
         foreach (($data['history'] ?? []) as $h) {
@@ -211,10 +217,10 @@ SYS;
                     $msg = ['content' => $raw];
                 }
             }
-            $reply = ($msg['content'] ?? null) ?: 'Maaf, aku belum bisa menjawab itu.';
+            $reply = ($msg['content'] ?? null) ?: __('Maaf, aku belum bisa menjawab itu.');
         } catch (\Throwable $e) {
             Log::warning('Chatbot: gagal menghubungi OpenAI: ' . $e->getMessage());
-            return response()->json(['reply' => self::UNAVAILABLE, 'products' => []], 200);
+            return response()->json(['reply' => __(self::UNAVAILABLE), 'products' => []], 200);
         }
 
         return response()->json(['reply' => $reply, 'products' => $products], 200);
@@ -241,7 +247,7 @@ SYS;
     private function openAiFailed($res)
     {
         Log::warning('Chatbot: OpenAI membalas HTTP ' . $res->status() . ': ' . mb_substr($res->body(), 0, 200));
-        return response()->json(['reply' => 'Maaf, asisten sedang sibuk. Coba lagi sebentar.', 'products' => []], 200);
+        return response()->json(['reply' => __('Maaf, asisten sedang sibuk. Coba lagi sebentar.'), 'products' => []], 200);
     }
 
     /**
@@ -255,7 +261,7 @@ SYS;
         $lc = mb_strtolower($message);
 
         // Harus terlihat seperti pertanyaan finansial/transaksi.
-        $financeHint = preg_match('/\b(pengeluaran|pemasukan|pendapatan|belanja|habis|transaksi|penjualan|terjual|spending|income|keluar|beli|dibelanjakan|dana)\b/u', $lc);
+        $financeHint = preg_match('/\b(pengeluaran|pemasukan|pendapatan|belanja|habis|transaksi|penjualan|terjual|spending|spent|spend|expenses?|income|revenue|earnings?|sales|transactions?|keluar|beli|dibelanjakan|dana)\b/u', $lc);
         if (!$financeHint) {
             return null;
         }
@@ -271,8 +277,8 @@ SYS;
         [$rangeKey, $rangeLabel, $since] = $this->parseRange($lc);
 
         // 3) Jenis angka yang diminta.
-        $wantsIncome  = (bool) preg_match('/\b(pemasukan|pendapatan|penjualan|terjual|income|masuk|laku)\b/u', $lc);
-        $wantsSpend   = (bool) preg_match('/\b(pengeluaran|belanja|habis|keluar|beli|dibelanjakan|spending)\b/u', $lc);
+        $wantsIncome  = (bool) preg_match('/\b(pemasukan|pendapatan|penjualan|terjual|income|revenue|earnings?|earned|sales|masuk|laku)\b/u', $lc);
+        $wantsSpend   = (bool) preg_match('/\b(pengeluaran|belanja|habis|keluar|beli|dibelanjakan|spending|spent|spend|expenses?)\b/u', $lc);
         if (!$wantsIncome && !$wantsSpend) {
             $wantsSpend = true; // default: pengeluaran
         }
@@ -295,15 +301,19 @@ SYS;
 
         // 5) Susun balasan.
         $name = $entity['name'];
-        $badge = $entity['verified'] ? ' (terverifikasi ✓)' : '';
+        $badge = $entity['verified'] ? ' (' . __('terverifikasi') . ' ✓)' : '';
         $lines = [];
         if ($wantsSpend) {
-            $lines[] = "Total pengeluaran (belanja) **{$name}**{$badge} {$rangeLabel}: **" . $this->fmt($spent) . " TLKM** dari {$spentCount} transaksi.";
+            $lines[] = __('Total pengeluaran (belanja) **:name**:badge :range: **:amount TLKM** dari :count transaksi.', [
+                'name' => $name, 'badge' => $badge, 'range' => $rangeLabel, 'amount' => $this->fmt($spent), 'count' => $spentCount,
+            ]);
         }
         if ($wantsIncome) {
-            $lines[] = "Total pemasukan (penjualan, setelah biaya) **{$name}**{$badge} {$rangeLabel}: **" . $this->fmt($earned) . " TLKM** dari {$earnedCount} transaksi.";
+            $lines[] = __('Total pemasukan (penjualan, setelah biaya) **:name**:badge :range: **:amount TLKM** dari :count transaksi.', [
+                'name' => $name, 'badge' => $badge, 'range' => $rangeLabel, 'amount' => $this->fmt($earned), 'count' => $earnedCount,
+            ]);
         }
-        $reply = implode("\n", $lines) . "\n\nLihat rincian lengkapnya di Explorer.";
+        $reply = implode("\n", $lines) . "\n\n" . __('Lihat rincian lengkapnya di Explorer.');
 
         return [
             'reply'    => $reply,
@@ -368,16 +378,16 @@ SYS;
     /** Deteksi rentang waktu -> [key, label Indonesia, Carbon sejak|null]. */
     private function parseRange(string $lc): array
     {
-        if (preg_match('/\b(hari ini|hari|today|24 jam)\b/u', $lc)) {
-            return ['day', 'hari ini', now()->subDay()];
+        if (preg_match('/\b(hari ini|hari|today|24 jam|24 hours)\b/u', $lc)) {
+            return ['day', __('hari ini'), now()->subDay()];
         }
-        if (preg_match('/\b(minggu|pekan|week|7 hari)\b/u', $lc)) {
-            return ['week', 'minggu ini', now()->subWeek()];
+        if (preg_match('/\b(minggu|pekan|week|7 hari|7 days)\b/u', $lc)) {
+            return ['week', __('minggu ini'), now()->subWeek()];
         }
-        if (preg_match('/\b(bulan|month|30 hari)\b/u', $lc)) {
-            return ['month', 'bulan ini', now()->subMonth()];
+        if (preg_match('/\b(bulan|month|30 hari|30 days)\b/u', $lc)) {
+            return ['month', __('bulan ini'), now()->subMonth()];
         }
-        return ['all', 'sepanjang waktu', null];
+        return ['all', __('sepanjang waktu'), null];
     }
 
     /** Format angka TLKM: buang nol/desimal tak perlu. */

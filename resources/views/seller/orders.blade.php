@@ -4,18 +4,18 @@
 @php
     $fmt = fn ($n) => rtrim(rtrim(number_format((float) $n, 2), '0'), '.');
     $filters = [
-        'kirim'   => 'Perlu dikirim',
-        'jalan'   => 'Dalam pengiriman',
-        'selesai' => 'Selesai',
-        'masalah' => 'Sengketa & refund',
-        'semua'   => 'Semua',
+        'kirim'   => __('Perlu dikirim'),
+        'jalan'   => __('Dalam pengiriman'),
+        'selesai' => __('Selesai'),
+        'masalah' => __('Sengketa & refund'),
+        'semua'   => __('Semua'),
     ];
     $empty = [
-        'kirim'   => ['Tidak ada yang perlu dikirim', 'Pesanan baru yang sudah dibayar akan muncul di sini.'],
-        'jalan'   => ['Tidak ada paket di jalan', 'Pesanan yang sudah kamu beri nomor resi akan muncul di sini.'],
-        'selesai' => ['Belum ada pesanan selesai', 'Pesanan selesai setelah pembeli mengonfirmasi barang diterima.'],
-        'masalah' => ['Tidak ada masalah', 'Sengketa atau pengembalian dana akan muncul di sini.'],
-        'semua'   => ['Belum ada pesanan', 'Pesanan muncul di sini begitu pembeli membayar.'],
+        'kirim'   => [__('Tidak ada yang perlu dikirim'), __('Pesanan baru yang sudah dibayar akan muncul di sini.')],
+        'jalan'   => [__('Tidak ada paket di jalan'), __('Pesanan yang sudah kamu beri nomor resi akan muncul di sini.')],
+        'selesai' => [__('Belum ada pesanan selesai'), __('Pesanan selesai setelah pembeli mengonfirmasi barang diterima.')],
+        'masalah' => [__('Tidak ada masalah'), __('Sengketa atau pengembalian dana akan muncul di sini.')],
+        'semua'   => [__('Belum ada pesanan'), __('Pesanan muncul di sini begitu pembeli membayar.')],
     ][$tab];
     // Tahap untuk garis kemajuan: bayar, kemas, kirim, selesai.
     $stage = fn ($it) => match (true) {
@@ -29,7 +29,7 @@
 
 @include('seller._nav')
 
-<div class="flex flex-wrap gap-2 mb-5" role="tablist" aria-label="Saring pesanan">
+<div class="flex flex-wrap gap-2 mb-5" role="tablist" aria-label="{{ __('Saring pesanan') }}">
     @foreach($filters as $key => $label)
         @php $on = $tab === $key; @endphp
         <a href="?tab={{ $key }}" role="tab" aria-selected="{{ $on ? 'true' : 'false' }}"
@@ -64,24 +64,24 @@
                     <div class="flex gap-4 min-w-0">
                         <img src="{{ $it->product?->thumbnail() ?? 'https://placehold.co/160x160/f1f5f9/94a3b8?text=-' }}" alt="" loading="lazy" onerror="this.src='https://placehold.co/160x160/f1f5f9/94a3b8?text=-'" class="w-16 h-16 rounded-xl object-contain bg-slate-50 ring-1 ring-slate-100 shrink-0">
                         <div class="min-w-0">
-                            <p class="font-semibold text-slate-900 truncate">{{ $it->product->name ?? 'Produk dihapus' }}</p>
+                            <p class="font-semibold text-slate-900 truncate">{{ $it->product->name ?? __('Produk dihapus') }}</p>
                             <p class="text-sm text-slate-600 tabular-nums">
-                                {{ ($it->quantity ?? 1) }} barang, <b class="text-slate-900">{{ $fmt($it->amount) }} TLKM</b>
+                                {{ __(':n barang,', ['n' => ($it->quantity ?? 1)]) }} <b class="text-slate-900">{{ $fmt($it->amount) }} TLKM</b>
                             </p>
-                            <p class="text-xs text-slate-500">Kamu terima ≈ <span class="tabular-nums">{{ $fmt((float) $it->amount * (1 - $feePct / 100)) }}</span> TLKM setelah fee {{ $fmt($feePct) }}%</p>
+                            <p class="text-xs text-slate-500">{{ __('Kamu terima ≈ :net TLKM setelah fee :fee%', ['net' => $fmt((float) $it->amount * (1 - $feePct / 100)), 'fee' => $fmt($feePct)]) }}</p>
                             <p class="mt-1 text-xs text-slate-400">{{ $it->created_at->translatedFormat('d M Y, H:i') }} · <span class="font-mono">{{ $it->order->order_id ?? '' }}</span></p>
                         </div>
                     </div>
 
                     {{-- Kirim ke --}}
                     <div class="min-w-0 text-sm">
-                        <p class="text-xs font-medium text-slate-500">Kirim ke</p>
+                        <p class="text-xs font-medium text-slate-500">{{ __('Kirim ke') }}</p>
                         @if($addr)
                             <p class="font-medium text-slate-900">{{ $addr->recipient_name }} <span class="font-normal text-slate-500">{{ $addr->phone }}</span></p>
                             <p class="text-slate-600 leading-snug">{{ $addr->address }}, {{ $addr->city }} {{ $addr->postal_code }}</p>
-                            @if($addr->notes)<p class="mt-1 text-xs text-slate-500">Catatan pembeli: {{ $addr->notes }}</p>@endif
+                            @if($addr->notes)<p class="mt-1 text-xs text-slate-500">{{ __('Catatan pembeli:') }} {{ $addr->notes }}</p>@endif
                         @else
-                            <p class="text-slate-500">Alamat tidak tersedia.</p>
+                            <p class="text-slate-500">{{ __('Alamat tidak tersedia.') }}</p>
                         @endif
                     </div>
 
@@ -90,8 +90,8 @@
                         <span class="inline-flex px-2 py-1 rounded-md ring-1 text-xs font-semibold {{ $st['tone'] }}">{{ $st['label'] }}</span>
                         <p class="mt-1.5 text-sm text-slate-600 leading-snug">{{ $st['hint'] }}</p>
                         @unless($problem)
-                            <ol class="mt-3 grid grid-cols-4 gap-1" aria-label="Kemajuan pesanan: tahap {{ $n }} dari 4">
-                                @foreach(['Dibayar', 'Dikemas', 'Dikirim', 'Selesai'] as $i => $step)
+                            <ol class="mt-3 grid grid-cols-4 gap-1" aria-label="{{ __('Kemajuan pesanan: tahap :n dari 4', ['n' => $n]) }}">
+                                @foreach([__('Dibayar'), __('Dikemas'), __('Dikirim'), __('Selesai')] as $i => $step)
                                     <li>
                                         <span class="block h-1.5 rounded-full {{ $i < $n ? 'bg-blue-600' : 'bg-slate-200' }}"></span>
                                         <span class="mt-1 block text-[11px] {{ $i < $n ? 'text-slate-700 font-medium' : 'text-slate-400' }}">{{ $step }}</span>
@@ -100,7 +100,7 @@
                             </ol>
                         @endunless
                         @if($it->tracking_number)
-                            <p class="mt-2 text-xs text-slate-600">Resi <b class="font-mono text-slate-900">{{ $it->tracking_number }}</b>@if($it->courier), {{ $it->courier }}@endif</p>
+                            <p class="mt-2 text-xs text-slate-600">{{ __('Resi') }} <b class="font-mono text-slate-900">{{ $it->tracking_number }}</b>@if($it->courier), {{ $it->courier }}@endif</p>
                         @endif
                     </div>
                 </div>
@@ -111,24 +111,24 @@
                             <form method="POST" action="/seller/fulfill" class="shrink-0">@csrf
                                 <input type="hidden" name="item_id" value="{{ $it->id }}">
                                 <input type="hidden" name="action" value="process">
-                                <button class="h-10 px-4 rounded-xl bg-white ring-1 ring-slate-300 hover:ring-slate-400 text-sm font-semibold text-slate-800 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">Tandai sedang dikemas</button>
+                                <button class="h-10 px-4 rounded-xl bg-white ring-1 ring-slate-300 hover:ring-slate-400 text-sm font-semibold text-slate-800 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">{{ __('Tandai sedang dikemas') }}</button>
                             </form>
-                            <span class="hidden sm:block self-center text-sm text-slate-400">atau langsung</span>
+                            <span class="hidden sm:block self-center text-sm text-slate-400">{{ __('atau langsung') }}</span>
                         @endif
                         <form method="POST" action="/seller/fulfill" class="flex flex-wrap items-end gap-3 flex-1 min-w-0">@csrf
                             <input type="hidden" name="item_id" value="{{ $it->id }}">
                             <input type="hidden" name="action" value="ship">
                             <div class="w-full sm:w-44">
-                                <label for="resi{{ $it->id }}" class="block text-xs font-medium text-slate-700 mb-1">Nomor resi</label>
+                                <label for="resi{{ $it->id }}" class="block text-xs font-medium text-slate-700 mb-1">{{ __('Nomor resi') }}</label>
                                 <input id="resi{{ $it->id }}" name="tracking_number" required maxlength="100" autocomplete="off" class="w-full h-10 px-3 rounded-xl bg-white ring-1 ring-slate-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono">
                             </div>
                             <div class="w-full sm:w-44">
-                                <label for="kurir{{ $it->id }}" class="block text-xs font-medium text-slate-700 mb-1">Kurir <span class="font-normal text-slate-500">(opsional)</span></label>
+                                <label for="kurir{{ $it->id }}" class="block text-xs font-medium text-slate-700 mb-1">{{ __('Kurir') }} <span class="font-normal text-slate-500">{{ __('(opsional)') }}</span></label>
                                 <input id="kurir{{ $it->id }}" name="courier" list="courierList" maxlength="60" class="w-full h-10 px-3 rounded-xl bg-white ring-1 ring-slate-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
                             </div>
-                            <button class="h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-sm font-semibold shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">Kirim pesanan</button>
+                            <button class="h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-sm font-semibold shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">{{ __('Kirim pesanan') }}</button>
                         </form>
-                        <p class="w-full text-xs text-slate-600">Pembeli otomatis diberi tahu nomor resinya lewat email dan notifikasi.</p>
+                        <p class="w-full text-xs text-slate-600">{{ __('Pembeli otomatis diberi tahu nomor resinya lewat email dan notifikasi.') }}</p>
                     </div>
                 @endif
             </li>

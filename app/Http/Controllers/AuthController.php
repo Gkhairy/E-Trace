@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Jobs\SendOtp;
 use App\Jobs\GasDrip;
+use App\Jobs\WelcomeTlkm;
 use App\Services\EmbeddedWallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,7 +29,7 @@ class AuthController extends Controller
     {
         // Cloudflare Turnstile (anti-bot). Aman-nonaktif bila belum dikonfigurasi.
         if (!\App\Services\Turnstile::verify($request->input('cf-turnstile-response'), $request->ip())) {
-            return back()->withErrors(['email' => 'Verifikasi anti-bot gagal. Muat ulang halaman lalu coba lagi.'])->withInput();
+            return back()->withErrors(['email' => __('Verifikasi anti-bot gagal. Muat ulang halaman lalu coba lagi.')])->withInput();
         }
 
         // Dua jalur: (1) MetaMask (wallet+signature) ATAU (2) embedded wallet (PIN 6 angka).
@@ -48,12 +49,12 @@ class AuthController extends Controller
         }
 
         $request->validate($rules, [
-            'phone.regex'          => 'Nomor telepon tidak valid (gunakan kode negara + nomor, mis. +62812xxxxxxx).',
-            'email.unique'         => 'Email ini sudah terdaftar.',
-            'password.min'         => 'Password minimal 8 karakter.',
-            'password.confirmed'   => 'Konfirmasi password tidak cocok.',
-            'pin.digits'           => 'PIN harus 6 angka.',
-            'pin.confirmed'        => 'Konfirmasi PIN tidak cocok.',
+            'phone.regex'          => __('Nomor telepon tidak valid (gunakan kode negara + nomor, mis. +62812xxxxxxx).'),
+            'email.unique'         => __('Email ini sudah terdaftar.'),
+            'password.min'         => __('Password minimal 8 karakter.'),
+            'password.confirmed'   => __('Konfirmasi password tidak cocok.'),
+            'pin.digits'           => __('PIN harus 6 angka.'),
+            'pin.confirmed'        => __('Konfirmasi PIN tidak cocok.'),
         ]);
 
         // PIN hash disimpan untuk SEMUA akun (login + konfirmasi bayar QRIS/aksi).
@@ -64,11 +65,11 @@ class AuthController extends Controller
             $wallet = strtolower($request->wallet_address);
             $ts = (int) $request->sig_timestamp;
             if (abs(time() - $ts) > 600) {
-                return back()->withErrors(['wallet_address' => 'Tanda tangan wallet kadaluarsa. Klik Connect Wallet lagi.'])->withInput();
+                return back()->withErrors(['wallet_address' => __('Tanda tangan wallet kadaluarsa. Klik Connect Wallet lagi.')])->withInput();
             }
             $recovered = $this->recoverSigner("E-Trace register\nWallet: {$wallet}\nWaktu: {$ts}", $request->signature);
             if (!$recovered || strtolower($recovered) !== $wallet) {
-                return back()->withErrors(['wallet_address' => 'Bukti kepemilikan wallet tidak valid.'])->withInput();
+                return back()->withErrors(['wallet_address' => __('Bukti kepemilikan wallet tidak valid.')])->withInput();
             }
         } else {
             // Buat embedded wallet otomatis, enkripsi private key dengan PIN.
@@ -95,7 +96,7 @@ class AuthController extends Controller
         $this->sendOtp($user);
         session(['otp_user_id' => $user->id]);
 
-        return redirect('/verify-otp')->with('success', 'Kode OTP dikirim ke ' . $user->email . '. Cek email kamu.');
+        return redirect('/verify-otp')->with('success', __('Kode OTP dikirim ke :email. Cek email kamu.', ['email' => $user->email]));
     }
 
     // ============================
@@ -124,7 +125,7 @@ class AuthController extends Controller
         }
         if ($user->email_verified_at) {
             session()->forget('otp_user_id');
-            return redirect('/login')->with('success', 'Akun sudah terverifikasi. Silakan login.');
+            return redirect('/login')->with('success', __('Akun sudah terverifikasi. Silakan login.'));
         }
         // Sisa cooldown "kirim ulang" (60 dtk sejak OTP terakhir dikirim) untuk countdown di UI.
         $cooldown = 0;
@@ -140,19 +141,19 @@ class AuthController extends Controller
 
         $user = User::find(session('otp_user_id'));
         if (!$user) {
-            return redirect('/login')->withErrors(['code' => 'Sesi verifikasi berakhir. Silakan login/daftar lagi.']);
+            return redirect('/login')->withErrors(['code' => __('Sesi verifikasi berakhir. Silakan login/daftar lagi.')]);
         }
 
         if (!$user->otp_hash || !$user->otp_expires_at || now()->greaterThan($user->otp_expires_at)) {
-            return back()->withErrors(['code' => 'Kode kadaluarsa. Klik "Kirim ulang".']);
+            return back()->withErrors(['code' => __('Kode kadaluarsa. Klik "Kirim ulang".')]);
         }
         if ($user->otp_attempts >= 5) {
-            return back()->withErrors(['code' => 'Terlalu banyak percobaan. Klik "Kirim ulang" untuk kode baru.']);
+            return back()->withErrors(['code' => __('Terlalu banyak percobaan. Klik "Kirim ulang" untuk kode baru.')]);
         }
 
         if (!Hash::check($request->code, $user->otp_hash)) {
             $user->increment('otp_attempts');
-            return back()->withErrors(['code' => 'Kode salah. Sisa percobaan: ' . max(0, 5 - $user->otp_attempts) . '.']);
+            return back()->withErrors(['code' => __('Kode salah. Sisa percobaan: :n.', ['n' => max(0, 5 - $user->otp_attempts)])]);
         }
 
         // Sukses: aktifkan akun, hapus OTP (sekali pakai).
@@ -163,6 +164,9 @@ class AuthController extends Controller
 
         session()->forget('otp_user_id');
 
+        // Bonus TLKM uji coba, baru setelah email terbukti (menahan pendaftaran massal).
+        WelcomeTlkm::dispatch($user->id);
+
         // Email terverifikasi — JANGAN langsung login penuh. Lewatkan ke PIN gate dulu
         // (defense-in-depth: PIN wajib sebelum sesi authenticated, konsisten dgn login biasa).
         // Bila akun punya 2FA, dahulukan tantangan 2FA.
@@ -171,7 +175,10 @@ class AuthController extends Controller
             return redirect('/two-factor-challenge');
         }
         session(['pin:user:id' => $user->id, 'pin:remember' => false]);
-        return redirect('/pin-challenge')->with('success', 'Akun terverifikasi. Masukkan PIN untuk masuk.');
+        $bonus = (float) config('wallet.welcome_tlkm', 0) > 0
+            ? ' ' . __('Bonus :amt TLKM untuk uji coba sedang dikirim ke wallet kamu.', ['amt' => number_format((float) config('wallet.welcome_tlkm'), 0, ',', '.')])
+            : '';
+        return redirect('/pin-challenge')->with('success', __('Akun terverifikasi. Masukkan PIN untuk masuk.') . $bonus);
     }
 
     public function resendOtp(Request $request)
@@ -183,10 +190,10 @@ class AuthController extends Controller
         // Cooldown 60 detik antar kirim.
         if ($user->otp_sent_at && $user->otp_sent_at->diffInSeconds(now()) < 60) {
             $wait = 60 - $user->otp_sent_at->diffInSeconds(now());
-            return back()->withErrors(['code' => "Tunggu {$wait} detik sebelum kirim ulang."]);
+            return back()->withErrors(['code' => __('Tunggu :n detik sebelum kirim ulang.', ['n' => $wait])]);
         }
         $this->sendOtp($user);
-        return back()->with('success', 'Kode OTP baru dikirim.');
+        return back()->with('success', __('Kode OTP baru dikirim.'));
     }
 
     // ============================
@@ -208,19 +215,19 @@ class AuthController extends Controller
         if ($user && $user->email_verified_at) {
             $this->sendOtp($user);
             session(['pwreset_user_id' => $user->id]);
-            return redirect('/reset-password')->with('success', 'Kode reset dikirim ke ' . $user->email . '. Cek email kamu.');
+            return redirect('/reset-password')->with('success', __('Kode reset dikirim ke :email. Cek email kamu.', ['email' => $user->email]));
         }
 
         return back()
             ->withInput($request->only('email'))
-            ->with('success', 'Jika email terdaftar, kami sudah mengirim kode reset. Cek inbox kamu.');
+            ->with('success', __('Jika email terdaftar, kami sudah mengirim kode reset. Cek inbox kamu.'));
     }
 
     public function resetForm()
     {
         $user = User::find(session('pwreset_user_id'));
         if (!$user) {
-            return redirect('/forgot-password')->withErrors(['email' => 'Sesi reset berakhir. Minta kode lagi.']);
+            return redirect('/forgot-password')->withErrors(['email' => __('Sesi reset berakhir. Minta kode lagi.')]);
         }
         $cooldown = 0;
         if ($user->otp_sent_at) {
@@ -238,17 +245,17 @@ class AuthController extends Controller
 
         $user = User::find(session('pwreset_user_id'));
         if (!$user) {
-            return redirect('/forgot-password')->withErrors(['email' => 'Sesi reset berakhir. Minta kode lagi.']);
+            return redirect('/forgot-password')->withErrors(['email' => __('Sesi reset berakhir. Minta kode lagi.')]);
         }
         if (!$user->otp_hash || !$user->otp_expires_at || now()->greaterThan($user->otp_expires_at)) {
-            return back()->withErrors(['code' => 'Kode kadaluarsa. Klik "Kirim ulang".']);
+            return back()->withErrors(['code' => __('Kode kadaluarsa. Klik "Kirim ulang".')]);
         }
         if ($user->otp_attempts >= 5) {
-            return back()->withErrors(['code' => 'Terlalu banyak percobaan. Klik "Kirim ulang" untuk kode baru.']);
+            return back()->withErrors(['code' => __('Terlalu banyak percobaan. Klik "Kirim ulang" untuk kode baru.')]);
         }
         if (!Hash::check($request->code, $user->otp_hash)) {
             $user->increment('otp_attempts');
-            return back()->withErrors(['code' => 'Kode salah. Sisa percobaan: ' . max(0, 5 - $user->otp_attempts) . '.']);
+            return back()->withErrors(['code' => __('Kode salah. Sisa percobaan: :n.', ['n' => max(0, 5 - $user->otp_attempts)])]);
         }
 
         // Sukses: ganti password, hapus OTP (sekali pakai), akhiri sesi reset.
@@ -260,21 +267,21 @@ class AuthController extends Controller
         ])->save();
         session()->forget('pwreset_user_id');
 
-        return redirect('/login')->with('success', 'Password berhasil diubah. Silakan login dengan password baru.');
+        return redirect('/login')->with('success', __('Password berhasil diubah. Silakan login dengan password baru.'));
     }
 
     public function resendReset(Request $request)
     {
         $user = User::find(session('pwreset_user_id'));
         if (!$user) {
-            return redirect('/forgot-password')->withErrors(['email' => 'Sesi reset berakhir. Minta kode lagi.']);
+            return redirect('/forgot-password')->withErrors(['email' => __('Sesi reset berakhir. Minta kode lagi.')]);
         }
         if ($user->otp_sent_at && $user->otp_sent_at->diffInSeconds(now()) < 60) {
             $wait = 60 - $user->otp_sent_at->diffInSeconds(now());
-            return back()->withErrors(['code' => "Tunggu {$wait} detik sebelum kirim ulang."]);
+            return back()->withErrors(['code' => __('Tunggu :n detik sebelum kirim ulang.', ['n' => $wait])]);
         }
         $this->sendOtp($user);
-        return back()->with('success', 'Kode reset baru dikirim.');
+        return back()->with('success', __('Kode reset baru dikirim.'));
     }
 
     // ============================
@@ -303,7 +310,7 @@ class AuthController extends Controller
 
         // Cloudflare Turnstile (anti-bot). Aman-nonaktif bila belum dikonfigurasi.
         if (!\App\Services\Turnstile::verify($request->input('cf-turnstile-response'), $request->ip())) {
-            return back()->withErrors(['email' => 'Verifikasi anti-bot gagal. Muat ulang halaman lalu coba lagi.'])
+            return back()->withErrors(['email' => __('Verifikasi anti-bot gagal. Muat ulang halaman lalu coba lagi.')])
                 ->withInput($request->only('email'));
         }
 
@@ -325,8 +332,8 @@ class AuthController extends Controller
         if (!$user || !Hash::check($data['password'], $user->password)) {
             RateLimiter::hit($throttleKey, $lockSeconds); // catat kegagalan (kedaluwarsa 5 menit)
             $left = RateLimiter::remaining($throttleKey, $maxAttempts);
-            $suffix = $left > 0 ? " Sisa percobaan: {$left}." : ' Akun dikunci sementara.';
-            return back()->withErrors(['email' => 'Email atau password salah.' . $suffix])
+            $suffix = ' ' . ($left > 0 ? __('Sisa percobaan: :n.', ['n' => $left]) : __('Akun dikunci sementara.'));
+            return back()->withErrors(['email' => __('Email atau password salah.') . $suffix])
                 ->withInput($request->only('email'));
         }
 
@@ -359,13 +366,13 @@ class AuthController extends Controller
             return redirect('/pin-challenge'); // belum ada PIN → form buat PIN
         }
         if ($user->pinLocked()) {
-            return back()->withErrors(['pin' => 'PIN terkunci sementara. Coba lagi nanti.']);
+            return back()->withErrors(['pin' => __('PIN terkunci sementara. Coba lagi nanti.')]);
         }
         if (!Hash::check($request->pin, $user->pin_hash)) {
             $user->increment('pin_attempts');
             if ($user->pin_attempts >= 5) {
                 $user->forceFill(['pin_locked_until' => now()->addMinutes(15), 'pin_attempts' => 0])->save();
-                return back()->withErrors(['pin' => 'PIN salah 5×. Dikunci 15 menit.']);
+                return back()->withErrors(['pin' => __('PIN salah 5×. Dikunci 15 menit.')]);
             }
             return back()->withErrors(['pin' => 'PIN salah. Sisa percobaan: ' . max(0, 5 - $user->pin_attempts) . '.']);
         }
@@ -403,7 +410,7 @@ class AuthController extends Controller
         ]);
         $user = auth()->user();
         if (!\Illuminate\Support\Facades\Hash::check($data['password'], $user->password)) {
-            return response()->json(['success' => false, 'message' => 'Password salah.'], 422);
+            return response()->json(['success' => false, 'message' => __('Password salah.')], 422);
         }
         $user->forceFill(['pin_hash' => \Illuminate\Support\Facades\Hash::make($data['pin'])])->save();
         return response()->json(['success' => true]);
@@ -415,7 +422,7 @@ class AuthController extends Controller
         if (is_null($user->email_verified_at)) {
             $this->sendOtp($user);
             session(['otp_user_id' => $user->id]);
-            return redirect('/verify-otp')->with('success', 'Akun belum terverifikasi. Kode OTP baru dikirim ke email kamu.');
+            return redirect('/verify-otp')->with('success', __('Akun belum terverifikasi. Kode OTP baru dikirim ke email kamu.'));
         }
         if ($user->hasTwoFactor()) {
             session(['2fa:user:id' => $user->id]);
@@ -477,7 +484,7 @@ class AuthController extends Controller
         // Cloudflare Turnstile, sama seperti login password: tanpa ini login wallet
         // menjadi jalan pintas yang melewati anti-bot. Aman-nonaktif bila belum dikonfigurasi.
         if (!\App\Services\Turnstile::verify($request->input('cf-turnstile-response'), $request->ip())) {
-            return response()->json(['error' => 'Verifikasi anti-bot gagal. Centang "Verify you are human" lalu coba lagi.'], 422);
+            return response()->json(['error' => __('Verifikasi anti-bot gagal. Centang "Verify you are human" lalu coba lagi.')], 422);
         }
 
         $wallet = strtolower($request->wallet_address);
@@ -485,12 +492,12 @@ class AuthController extends Controller
         $user = User::where('wallet_address', $wallet)->first();
 
         if (!$user) {
-            return response()->json(['error' => 'Wallet not registered'], 400);
+            return response()->json(['error' => __('Wallet not registered')], 400);
         }
 
         // Nonce wajib masih berlaku (cegah replay signature lama).
         if (!$user->nonce_expires_at || now()->greaterThan($user->nonce_expires_at)) {
-            return response()->json(['error' => 'Nonce kadaluarsa, muat ulang halaman & coba lagi'], 401);
+            return response()->json(['error' => __('Nonce kadaluarsa, muat ulang halaman & coba lagi')], 401);
         }
 
         // Pesan yang ditandatangani frontend (MetaMask personal_sign menambah prefix EIP-191).
@@ -498,10 +505,10 @@ class AuthController extends Controller
         $recovered = $this->recoverSigner($message, $request->signature);
 
         if (!$recovered) {
-            return response()->json(['error' => 'Format/verifikasi signature gagal'], 400);
+            return response()->json(['error' => __('Format/verifikasi signature gagal')], 400);
         }
         if (strtolower($recovered) !== strtolower($wallet)) {
-            return response()->json(['error' => 'Signature tidak cocok dengan wallet'], 401);
+            return response()->json(['error' => __('Signature tidak cocok dengan wallet')], 401);
         }
 
         // Nonce sekali pakai: rotasi + hapus masa berlaku.
