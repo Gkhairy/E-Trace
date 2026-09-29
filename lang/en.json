@@ -1757,5 +1757,8 @@
     "…atau tempel payload QRIS di sini": "…or paste the QRIS payload here",
     "…atau URL gambar": "…or image URL",
     "✎ = beri nickname pribadi (mis. “Budi”); 🔒 = kamu sudah memberi nickname. Hanya kamu yang melihatnya.": "✎ = set a private nickname (e.g. “Budi”); 🔒 = you've set a nickname. Only you can see it.",
-    "🔒 Hanya kamu yang melihat julukan ini. Kosongkan untuk pakai nama asli.": "🔒 Only you can see this nickname. Leave empty to use the real name."
+    "🔒 Hanya kamu yang melihat julukan ini. Kosongkan untuk pakai nama asli.": "🔒 Only you can see this nickname. Leave empty to use the real name.",
+    "Pilih atau ketik": "Pick or type",
+    "Tampilkan kurir": "Show couriers",
+    "Tidak ada di daftar. Nama yang kamu ketik tetap dipakai.": "Not on the list. The name you typed will be used."
 }
