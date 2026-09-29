@@ -132,7 +132,7 @@
                                     <ul id="kurirList{{ $it->id }}" role="listbox" hidden class="absolute z-30 left-0 mt-1.5 w-full min-w-[13rem] max-h-64 overflow-auto rounded-xl bg-white ring-1 ring-slate-200 shadow-lg shadow-slate-900/10 p-1 text-sm">
                                         @foreach($couriers as $c)
                                             <li id="kurir{{ $it->id }}-{{ $loop->index }}" role="option" aria-selected="false" data-value="{{ $c }}"
-                                                class="group flex items-center gap-2.5 px-2 py-1.5 rounded-lg cursor-pointer text-slate-700 hover:bg-slate-100 data-[active]:bg-slate-100 aria-selected:text-blue-700">
+                                                class="group flex [&[hidden]]:hidden items-center gap-2.5 px-2 py-1.5 rounded-lg cursor-pointer text-slate-700 hover:bg-slate-100 data-[active]:bg-slate-100 aria-selected:text-blue-700">
                                                 <span class="size-7 shrink-0 rounded-md bg-slate-100 group-aria-selected:bg-blue-100 grid place-items-center text-[10px] font-bold tracking-wide text-slate-600 group-aria-selected:text-blue-700">{{ strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $c), 0, 2)) }}</span>
                                                 <span class="truncate">{{ $c }}</span>
                                                 <svg class="size-4 ml-auto hidden group-aria-selected:block" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.58l7.3-7.3a1 1 0 0 1 1.4 0Z" clip-rule="evenodd"/></svg>
