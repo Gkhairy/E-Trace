@@ -10,7 +10,7 @@ E-Trace is a marketplace on BNB Smart Chain where the buyer's money never sits i
 
 * **App:** [e-trace.shop](https://e-trace.shop)
 * **Source code:** [github.com/Gkhairy/E-Trace](https://github.com/Gkhairy/E-Trace)
-* **Demo video:** _coming soon_
+* **Demo video:** [E-Trace | The Transparent Blockchain Marketplace](https://youtu.be/QE7p25uFDSw)
 * **Network:** BNB Smart Chain Testnet (chain ID 97)
 
 ### The problem

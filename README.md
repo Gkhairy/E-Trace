@@ -15,7 +15,7 @@
 ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-06B6D4?logo=tailwindcss&logoColor=white)
 ![Status](https://img.shields.io/badge/status-prototype_·_testnet-orange)
 
-**[🌐 Live app: e-trace.shop](https://e-trace.shop)** · **[📚 Docs](https://khairy.gitbook.io/e-trace/)** · **🎬 Demo video: _coming soon_**
+**[🌐 Live app: e-trace.shop](https://e-trace.shop)** · **[📚 Docs](https://khairy.gitbook.io/e-trace/)** · **[🎬 Demo video](https://youtu.be/QE7p25uFDSw)**
 
 </div>
 
@@ -33,7 +33,7 @@ On top of that escrow, E-Trace builds an **on-chain financial ecosystem**: two-s
 | --- | --- |
 | **Live app** | [https://e-trace.shop](https://e-trace.shop) |
 | **Documentation** (user flows, contracts, business model, roadmap) | [https://khairy.gitbook.io/e-trace](https://khairy.gitbook.io/e-trace/) |
-| **Demo video** | _coming soon_ |
+| **Demo video** | [E-Trace \| The Transparent Blockchain Marketplace](https://youtu.be/QE7p25uFDSw) |
 | **Network** | BNB Smart Chain Testnet (chain ID 97) |
 
 ## 📜 Smart contract addresses (BSC Testnet)
