@@ -99,26 +99,71 @@ Delivery status (delivered / late) is computed **on the server** from `tracking_
 
 ## 💰 Business model
 
+E-Trace earns when it adds value: when a trade closes safely, when credit is repaid, when a delivery is insured, and when brands want shoppers' attention. Donations stay free. Every fee is on-chain, so the platform can prove what it earns.
+
 | Revenue stream | How it works |
 | --- | --- |
-| **Escrow fee** | 1% of each completed sale, paid by the seller from the payout; refunds are free |
-| **Paylater interest share** | The platform keeps 15–40% of the flat 3% loan interest, depending on the funder's term |
-| **Sponsored banners** | Paid slots in the home-page jumbotron for sellers, brands and partners |
-| **On-Time Guarantee** | Margin between premiums collected and payouts |
+| **Escrow fee** | 1% of each completed sale, taken only when funds are released and paid by the seller from the payout. Refunds are free. Hard-coded in the contract and capped at 10% |
+| **Paylater interest share** | Borrowers pay a flat 3%; the platform keeps 40% / 30% / 15% of it depending on the funder's term (flexible / 30 days / 90 days) |
+| **Sponsored banners** | Paid weekly slots in the home-page carousel for sellers, brands and partners, paid in TLKM with an on-chain receipt. Later: pay per impression or click |
+| **On-Time Guarantee** | Margin between delivery-insurance premiums and payouts, with per-claim and daily caps |
+| **Premium seller tools** *(later)* | Advanced reports, analytics and AI tools as a monthly subscription for high-volume stores |
 | **Donations and community wallets** | Always free (0% fee) |
 
-Market size (TAM/SAM/SOM), 3-year revenue projection and Paylater economics: see [Business model](https://khairy.gitbook.io/e-trace/project/business-model).
+**Market (Indonesia)**
+
+| | Market | Size |
+| --- | --- | --- |
+| **TAM** | E-commerce users | 73 million (Ministry of Trade, 2025) |
+| **SAM** | Online SMEs, donors and donations | 4.4M SMEs, 11.7M donors, 1M donations |
+| **SOM** | First-market target | 500 SMEs, 100 communities, 10,000 users and donors |
+
+**3-year revenue projection (IDR)**, with transaction volume (GMV) growing 25% a year:
+
+| | Year 1 | Year 2 | Year 3 |
+| --- | --- | --- | --- |
+| Transaction volume (GMV) | 10.0 B | 12.5 B | 15.6 B |
+| Escrow fee (1%) | 100 M | 125 M | 156 M |
+| Sponsored banners | 60 M | 90 M | 130 M |
+| Paylater interest share | 32 M | 45 M | 63 M |
+| On-Time Guarantee margin | 10 M | 15 M | 20 M |
+| **Total revenue** | **202 M** | **275 M** | **369 M** |
+
+B = billion, M = million. These are projections, not results. Assumptions and Paylater economics: [Business model](https://khairy.gitbook.io/e-trace/project/business-model).
 
 ## 🗺️ Roadmap
 
 | Phase | When | Focus |
 | --- | --- | --- |
-| **0** | Q3 2026 (done) | Testnet MVP: escrow, Paylater, AI settlement, donations, explorer |
-| **1** | Q4 2026 – Q1 2027 | Stabilize the 5 core features, external audit, onboard first sellers and communities |
-| **2** | Q2 – Q3 2027 | Smarter AI assistant, **mainnet launch**, more categories and partners |
-| **3** | Q4 2027 → | Open transparency API for donation institutions, cooperatives and agencies |
+| **0 · Testnet MVP** ✅ | Q3 2026 | Multi-seller escrow with disputes and arbitration, embedded wallet (PIN, OTP, 2FA), Paylater pool, AI auto-settlement and On-Time Guarantee, Disaster Radar donations, Transparency Explorer, seller reports, EN/ID |
+| **1 · Stabilize and onboard** | Q4 2026 – Q1 2027 | Ship the fixes from the [internal audit](https://khairy.gitbook.io/e-trace/project/audit-report) in a new contract version, then an **external audit**. Self-serve seller onboarding and ad booking, real courier APIs, stablecoin checkout |
+| **2 · Mainnet and expansion** | Q2 – Q3 2027 | **Mainnet on BNB Smart Chain**, price oracle and liquidation for Paylater, multisig or community arbitration, smarter AI assistant, mobile app, onboarding SMEs, cooperatives, schools and mosques |
+| **3 · Transparency API** | Q4 2027 → | Open escrow, on-chain receipts and the explorer to donation institutions, cooperatives and government agencies through a public API. Institutional partnerships become a revenue stream |
 
-**Funding:** raising a **USD 150,000 pre-seed** round (18 months runway) for audits, engineering, acquisition and legal. Details: [Roadmap](https://khairy.gitbook.io/e-trace/project/roadmap).
+Full roadmap: [Roadmap](https://khairy.gitbook.io/e-trace/project/roadmap).
+
+## 💸 Fundraising
+
+We are raising a **USD 150,000 pre-seed round** (about IDR 2.4 billion) for **18 months of runway**, to take E-Trace from testnet to mainnet and reach our first-market target.
+
+| Use of funds | Share | USD |
+| --- | --- | --- |
+| Security audits (external smart-contract and app audit) | 25% | 37,500 |
+| Engineering (courier integrations, mobile, oracle, transparency API) | 40% | 60,000 |
+| Seller and community acquisition | 20% | 30,000 |
+| Legal and compliance (payments, personal data protection law) | 15% | 22,500 |
+| **Total** | **100%** | **150,000** |
+
+**What this round unlocks**
+
+- External audit completed and every finding fixed
+- Mainnet launch on BNB Smart Chain
+- First-market target: 500 SMEs, 100 communities, 10,000 users and donors
+- About IDR 10 billion in yearly transaction volume
+
+**Who we're talking to:** Web3-focused VCs and accelerators, BNB Chain ecosystem grants, and Indonesian fintech angels.
+
+**Why E-Trace:** the product is already live on testnet with real flows end to end. Every fee and donation is verifiable on-chain, so traction and revenue can be audited by anyone, investors included.
 
 ## 🛡️ Security
 
