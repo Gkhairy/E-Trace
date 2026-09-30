@@ -15,7 +15,21 @@ RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist \
 COPY . .
 RUN composer dump-autoload --optimize --no-dev --classmap-authoritative
 
-# ---------- Tahap 2: runtime ----------
+# ---------- Tahap 2: aset front-end (Vite) ----------
+# Halaman welcome adalah React + Three.js yang dibundel Vite. Hasilnya
+# (public/build + manifest.json) disalin ke runtime; tanpa ini @vite() di
+# welcome.blade.php melempar error "Vite manifest not found".
+# Hanya file yang dibutuhkan build yang disalin, supaya cache npm ci tetap
+# terpakai selama package-lock.json tidak berubah.
+FROM node:22-alpine AS assets
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY vite.config.js ./
+COPY resources ./resources
+RUN npm run build
+
+# ---------- Tahap 3: runtime ----------
 FROM php:8.2-fpm-alpine
 
 # gmp & bcmath WAJIB: dipakai AbiEncoder, ChainSigner, dan konversi wei->TLKM.
@@ -53,6 +67,7 @@ RUN { \
 
 WORKDIR /app
 COPY --from=vendor /app /app
+COPY --from=assets /app/public/build /app/public/build
 COPY docker/nginx.conf.template /etc/nginx/nginx.conf.template
 COPY docker/php-fpm-pool.conf /usr/local/etc/php-fpm.d/zz-etrace.conf
 COPY docker/supervisord.web.conf /etc/supervisor/web.conf
