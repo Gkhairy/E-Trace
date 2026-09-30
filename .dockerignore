@@ -2,6 +2,10 @@
 .github
 node_modules
 vendor
+# Local Vite output. The image builds its own in the assets stage, and a leftover
+# public/hot would point Laravel at a dev server that doesn't exist in production.
+public/hot
+public/build
 .env
 .env.*
 !.env.example
