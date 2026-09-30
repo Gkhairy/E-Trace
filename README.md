@@ -48,6 +48,12 @@ On top of that escrow, E-Trace builds an **on-chain financial ecosystem**: two-s
 
 Sources are in [`contracts/`](contracts/). The app reads contract addresses from `.env` via `config/chain.php`.
 
+### 🪙 Why TLKM (for now)
+
+The deployed contracts are fixed to **TLKM**, our own BEP-20 token on BNB Smart Chain Testnet. We chose a token we can mint ourselves because it keeps the prototype flexible: every new account gets 1,000 TLKM to try the app, and we can fund the Paylater pool, the insurance pool and demo stores without relying on outside liquidity or real money.
+
+TLKM is not meant to be the final currency. **Later**, E-Trace plans to settle payments in a **real-world-asset (RWA) token**, such as a rupiah-backed stablecoin, so prices and balances match the money users actually spend. Escrow, donations and community wallets take their token address when they are deployed, so a future contract version can point at that token without changing how escrow works. In Paylater, only the pool-seeding helper mints TLKM; borrowing and lending already run on supplied liquidity.
+
 ## ✨ Features
 
 ### 🛒 Marketplace and escrow
@@ -136,7 +142,7 @@ B = billion, M = million. These are projections, not results. Assumptions and Pa
 | Phase | When | Focus |
 | --- | --- | --- |
 | **0 · Testnet MVP** ✅ | Q3 2026 | Multi-seller escrow with disputes and arbitration, embedded wallet (PIN, OTP, 2FA), Paylater pool, AI auto-settlement and On-Time Guarantee, Disaster Radar donations, Transparency Explorer, seller reports, EN/ID |
-| **1 · Stabilize and onboard** | Q4 2026 – Q1 2027 | Ship the fixes from the [internal audit](https://khairy.gitbook.io/e-trace/project/audit-report) in a new contract version, then an **external audit**. Self-serve seller onboarding and ad booking, real courier APIs, stablecoin checkout |
+| **1 · Stabilize and onboard** | Q4 2026 – Q1 2027 | Ship the fixes from the [internal audit](https://khairy.gitbook.io/e-trace/project/audit-report) in a new contract version, then an **external audit**. Self-serve seller onboarding and ad booking, real courier APIs, plan the move from TLKM to an RWA payment token (e.g. a rupiah-backed stablecoin) |
 | **2 · Mainnet and expansion** | Q2 – Q3 2027 | **Mainnet on BNB Smart Chain**, price oracle and liquidation for Paylater, multisig or community arbitration, smarter AI assistant, mobile app, onboarding SMEs, cooperatives, schools and mosques |
 | **3 · Transparency API** | Q4 2027 → | Open escrow, on-chain receipts and the explorer to donation institutions, cooperatives and government agencies through a public API. Institutional partnerships become a revenue stream |
 
