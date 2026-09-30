@@ -1,20 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
 import { ParticleField } from './particles';
 
 gsap.registerPlugin(ScrollTrigger);
-
-// Section id -> particle shape it should show when centred on screen.
-// 0 sphere, 1 coin, 2 scatter, 3 logo. Repeating a stage holds that shape across sections.
-const ANCHORS = [
-    ['hero', 0],
-    ['paylater', 1],
-    ['solusi', 2],
-    ['transparansi', 2],
-    ['cta', 3],
-];
 
 function Logo({ size = 26 }) {
     return (
@@ -62,6 +52,101 @@ function Divider() {
     return <div className="divider" />;
 }
 
+// A real 3D wireframe cube (six CSS faces, edges only) with a glowing neon outline, which
+// keeps tumbling slowly. Each feature starts from its own pose and turns its own way, so
+// the set never looks like five copies of one icon.
+function Cube({ neon, spin }) {
+    const style = {
+        '--neon': neon,
+        '--rx': `${spin.rx}deg`, '--ry': `${spin.ry}deg`, '--rz': `${spin.rz}deg`,
+        '--sx': spin.sx, '--sy': spin.sy, '--dur': `${spin.dur}s`,
+    };
+    return (
+        <span className="cube3d" style={style} aria-hidden="true">
+            <i className="f-front" /><i className="f-back" /><i className="f-right" />
+            <i className="f-left" /><i className="f-top" /><i className="f-bottom" />
+        </span>
+    );
+}
+
+// Feature blocks "called out" of the particle field: each drops out of the scatter above
+// and settles into a loose, uneven cluster, then its label fades in (driven by the scroll
+// scene). Clicking a block swaps the copy on the right for that feature's explanation.
+const FEATURES = [
+    { id: 'paylater', title: 'Paylater — Pinjam & Danai', neon: '#d946ef',
+        spin: { rx: -22, ry: 32, rz: 12, sx: 1, sy: 1, dur: 16 },
+        body: (t) => <>{t('Belanja sekarang bayar nanti dengan jaminan, atau')} <b>{t('danai')}</b> {t('pool likuiditas dan dapat bagi hasil. Bunga, jangka, & pool semua tercatat on-chain.')}</> },
+    { id: 'wallet', title: 'E-Wallet Crypto', neon: '#06b6d4',
+        spin: { rx: 38, ry: -42, rz: -18, sx: -1, sy: 1, dur: 12 },
+        body: (t) => t('Dompet dalam aplikasi untuk menyimpan & mengirim TLKM/stablecoin, dilindungi PIN.') },
+    { id: 'multisig', title: 'Dompet Bersama + Multisig', neon: '#8b5cf6',
+        spin: { rx: -48, ry: 125, rz: 28, sx: 1, sy: -1, dur: 19 },
+        body: (t) => <>{t('Dana komunitas yang butuh persetujuan beberapa orang (')}<b>{t('M dari N')}</b>{t(') sebelum dicairkan. Setiap usulan & persetujuan tercatat dan bisa diaudit publik.')}</> },
+    { id: 'reports', title: 'Laporan Otomatis Penjual', neon: '#0ea5e9',
+        spin: { rx: 160, ry: 210, rz: -32, sx: -1, sy: -1, dur: 14 },
+        body: (t) => <>{t('Penjual mengunduh laporan penjualan')} <b>{t('Excel & PDF')}</b> {t('otomatis — harian (rincian transaksi) dan bulanan (rekap) — langsung dari transaksi di aplikasi.')}</> },
+    { id: 'donation', title: 'Donasi Transparan & Anti-Beku', neon: '#c026d3',
+        spin: { rx: 62, ry: -18, rz: 48, sx: 1, sy: 1, dur: 21 },
+        body: (t) => t('Donasi tercatat on-chain dan tersalur lewat smart contract — tidak bisa dibekukan sepihak. Belajar dari kasus donasi yang pernah dibekukan di Indonesia: transparansi & desentralisasi menjaga dana tetap sampai ke tujuan.') },
+];
+
+function Ecosystem({ t }) {
+    const [active, setActive] = useState(null);
+    const feature = FEATURES.find((f) => f.id === active);
+    const swapRef = useRef(null);
+    const firstRender = useRef(true);
+
+    // Fade the copy in whenever the chosen feature changes (not on first paint, so the
+    // text is never left invisible if an animation fails to run).
+    useEffect(() => {
+        if (firstRender.current) {
+            firstRender.current = false;
+            return;
+        }
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        gsap.fromTo(swapRef.current, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power2.out' });
+    }, [active]);
+
+    return (
+        <section id="ekosistem" className="section container scene">
+            <div className="eco-layout">
+                <div className="eco-field">
+                    {FEATURES.map((f, i) => (
+                        <button
+                            key={f.id}
+                            type="button"
+                            className={`feat feat-${i + 1}${active === f.id ? ' is-active' : ''}${active && active !== f.id ? ' is-dim' : ''}`}
+                            aria-pressed={active === f.id}
+                            onClick={() => setActive(active === f.id ? null : f.id)}
+                        >
+                            <span className="feat-block"><span className="cube-wrap"><Cube neon={f.neon} spin={f.spin} /></span></span>
+                            <span className="feat-label">{t(f.title)}</span>
+                        </button>
+                    ))}
+                </div>
+                <div className="eco-copy" aria-live="polite">
+                    <div ref={swapRef} className="eco-swap">
+                        {feature ? (
+                            <>
+                                <p className="eyebrow">{t('Lebih dari Marketplace')}</p>
+                                <h2 className="h2-lg">{t(feature.title)}</h2>
+                                <p className="lead">{feature.body(t)}</p>
+                                <button type="button" className="eco-back" onClick={() => setActive(null)}>← {t('Semua fitur')}</button>
+                            </>
+                        ) : (
+                            <>
+                                <p className="eyebrow">{t('Lebih dari Marketplace')}</p>
+                                <h2 className="h2-lg">{t('Ekosistem keuangan yang transparan & bisa diaudit.')}</h2>
+                                <p className="lead">{t('Pilih salah satu fitur untuk melihat cara kerjanya.')}</p>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+}
+
 export default function App({ t, year, locale, langUrls }) {
     const fieldRef = useRef(null);
 
@@ -81,52 +166,15 @@ export default function App({ t, year, locale, langUrls }) {
             console.warn('Particle field disabled:', err);
         }
 
-        // Scroll position -> stage, from the centre of each anchor section.
-        let points = [];
-        const measure = () => {
-            const vh = window.innerHeight;
-            const max = document.documentElement.scrollHeight - vh;
-            points = ANCHORS.map(([id, stage]) => {
-                const el = document.getElementById(id);
-                if (!el) return null;
-                const at = id === 'hero' ? 0 : el.offsetTop + el.offsetHeight / 2 - vh / 2;
-                return [Math.min(Math.max(at, 0), max), stage];
-            }).filter(Boolean);
-        };
-        const stageAt = (y) => {
-            if (!points.length || y <= points[0][0]) return points[0]?.[1] ?? 0;
-            for (let i = 1; i < points.length; i++) {
-                const [y1, s1] = points[i];
-                const [y0, s0] = points[i - 1];
-                if (y <= y1) return s0 + (s1 - s0) * ((y - y0) / Math.max(1, y1 - y0));
-            }
-            return points[points.length - 1][1];
-        };
-        const onScroll = (y) => field?.setStage(stageAt(y));
-
-        measure();
-        const ro = new ResizeObserver(() => {
-            measure();
-            ScrollTrigger.refresh();
-        });
-        ro.observe(document.body);
-
         let lenis = null;
         let tickerFn = null;
-        const onNativeScroll = () => onScroll(window.scrollY);
         if (!reduceMotion) {
             lenis = new Lenis({ lerp: 0.1, smoothWheel: true });
-            lenis.on('scroll', ({ scroll }) => {
-                ScrollTrigger.update();
-                onScroll(scroll);
-            });
+            lenis.on('scroll', ScrollTrigger.update);
             tickerFn = (time) => lenis.raf(time * 1000);
             gsap.ticker.add(tickerFn);
             gsap.ticker.lagSmoothing(0);
-        } else {
-            window.addEventListener('scroll', onNativeScroll, { passive: true });
         }
-        onScroll(window.scrollY);
         if (import.meta.env.DEV) Object.assign(window, { __welcomeLenis: lenis, __welcomeField: field });
 
         const anchorClicks = [...document.querySelectorAll('a[href^="#"]')].map((a) => {
@@ -141,29 +189,139 @@ export default function App({ t, year, locale, langUrls }) {
             return [a, fn];
         });
 
+        // Scrollytelling. Scenes are pinned while scroll plays them; between scenes a
+        // "segment" trigger carries the particles from one shape to the next. The stage is
+        // simply the sum of segment progress:
+        // 0 sphere, 1 coin, 2 scatter (problem), 3 bulb (solution), 4 scatter, 5 logo.
+        // Triggers are created in page order so each accounts for the pin spacing above it.
+        const segments = [];
+        let heroScene = null;
+        let coinScene = null;
+        const hilite = (color, glow) => ({ opacity: 1, scale: 1.03, borderColor: color, boxShadow: `0 20px 44px -20px ${glow}` });
+        const rest = { scale: 1, borderColor: '#e2e8f0', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' };
+
         const ctx = gsap.context(() => {
-            if (reduceMotion) return;
-            gsap.utils.toArray('[data-reveal="hero"]').forEach((el, i) =>
-                gsap.fromTo(el, { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 1, delay: 0.15 + i * 0.1, ease: 'power3.out' }),
-            );
-            const onEnter = (el, from, extra = {}) =>
-                gsap.fromTo(el, { opacity: 0, ...from }, {
-                    opacity: 1, x: 0, y: 0, duration: 0.9, ease: 'power3.out',
-                    scrollTrigger: { trigger: el, start: 'top 82%' }, ...extra,
+            const animate = !reduceMotion;
+            // Scenes only pin when they fit on one screen. On phones they are taller than the
+            // viewport, so the same timelines play as the section scrolls past instead.
+            const canPin = window.innerWidth >= 768 && window.innerHeight >= 620;
+            const scene = (trigger, length) => (canPin || trigger === '#hero'
+                ? { trigger, start: 'top top', end: `+=${length}%`, pin: true, scrub: true, anticipatePin: 1 }
+                : { trigger, start: 'top 60%', end: 'bottom 60%', scrub: true });
+
+            if (animate) {
+                gsap.utils.toArray('[data-reveal="hero"]').forEach((el, i) =>
+                    gsap.fromTo(el, { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 1, delay: 0.15 + i * 0.1, ease: 'power3.out' }),
+                );
+            }
+
+            // 1. Hero: held while the camera pushes into the sphere and the copy lifts away.
+            if (animate) {
+                const tl = gsap.timeline({ scrollTrigger: scene('#hero', 90) });
+                tl.to('#hero .hero-content', { scale: 1.1, opacity: 0, y: -30, ease: 'power1.in' })
+                    .to('#hero .scroll-hint', { opacity: 0, duration: 0.3 }, 0);
+                heroScene = tl.scrollTrigger;
+            }
+            segments.push(ScrollTrigger.create({ trigger: '#paylater', start: 'top bottom', end: 'top top' }));
+
+            // 2. Paylater: the coin turns with the scroll while Borrow, then Supply, light up.
+            if (animate) {
+                const tl = gsap.timeline({ scrollTrigger: scene('#paylater', 140) });
+                tl.fromTo('#paylater .pl-borrow', { opacity: 0.4, scale: 0.96 }, { ...hilite('#2563eb', 'rgba(37,99,235,0.45)'), duration: 1 })
+                    .fromTo('#paylater .pl-supply', { opacity: 0.4, scale: 0.96 }, { ...hilite('#e5121f', 'rgba(229,18,31,0.4)'), duration: 1 }, '+=0.4')
+                    .to('#paylater .pl-borrow', { ...rest, opacity: 0.6, duration: 1 }, '<')
+                    .to({}, { duration: 0.4 });
+                coinScene = tl.scrollTrigger;
+            }
+            segments.push(ScrollTrigger.create({ trigger: '#masalah', start: 'top bottom', end: 'top top' }));
+
+            // 3. Problem: the conventional way, point by point, over scattered particles.
+            if (animate) {
+                gsap.timeline({ scrollTrigger: scene('#masalah', 80) })
+                    .fromTo('#masalah .old-item', { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 1, stagger: 0.8 })
+                    .to({}, { duration: 0.6 });
+            }
+            segments.push(ScrollTrigger.create({ trigger: '#solusi', start: 'top bottom', end: 'top top' }));
+
+            // 4. Solution: the particles light up as an idea bulb while each point arrives.
+            if (animate) {
+                gsap.timeline({ scrollTrigger: scene('#solusi', 110) })
+                    .fromTo('#solusi .sol-item', { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 1, stagger: 0.7 })
+                    .to({}, { duration: 0.6 });
+            }
+            segments.push(ScrollTrigger.create({ trigger: '#cara-kerja', start: 'top bottom', end: 'top top' }));
+
+            // 5. How it works: steps 01 -> 02 -> 03 light up in turn along a progress bar.
+            if (animate) {
+                const steps = gsap.utils.toArray('#cara-kerja .step');
+                const tl = gsap.timeline({ scrollTrigger: scene('#cara-kerja', 160) });
+                tl.fromTo('#cara-kerja .steps-bar i', { scaleX: 0 }, { scaleX: 1, ease: 'none', duration: steps.length }, 0);
+                steps.forEach((el, i) => {
+                    tl.fromTo(el, { opacity: 0.3, y: 24, scale: 0.96 }, { ...hilite('#2563eb', 'rgba(37,99,235,0.4)'), y: 0, duration: 0.5 }, i);
+                    if (i < steps.length - 1) tl.to(el, { ...rest, duration: 0.5 }, i + 0.6);
                 });
-            gsap.utils.toArray('[data-reveal="fade"]').forEach((el) => onEnter(el, { y: 28 }));
-            gsap.utils.toArray('[data-reveal="left"]').forEach((el) => onEnter(el, { x: -40 }));
-            gsap.utils.toArray('[data-reveal="right"]').forEach((el) => onEnter(el, { x: 40 }));
-            gsap.utils.toArray('[data-reveal="card"]').forEach((el, i) =>
-                onEnter(el, { y: 24 }, { duration: 0.7, delay: (i % 4) * 0.1, scrollTrigger: { trigger: el.closest('section'), start: 'top 75%' } }),
-            );
+            }
+
+            // 6. Ecosystem: feature blocks drop one at a time out of the particle field above
+            // the top of the screen, fading in as they fall, then settle and get their label
+            // (like the reference's investors).
+            if (animate) {
+                const tl = gsap.timeline({ scrollTrigger: { ...scene('#ekosistem', 130), invalidateOnRefresh: true } });
+                tl.fromTo('#ekosistem .eco-copy', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.8 });
+                const sec = document.getElementById('ekosistem');
+                gsap.utils.toArray('#ekosistem .feat').forEach((el, i) => {
+                    const block = el.querySelector('.feat-block');
+                    const r = gsap.utils.random;
+                    // Distance from the block up past the top edge of the (pinned) section.
+                    const fall = () => block.getBoundingClientRect().top - sec.getBoundingClientRect().top + r(160, 380);
+                    tl.fromTo(block,
+                        { opacity: 0, scale: 0.35, x: () => r(-140, 140), y: () => -fall() },
+                        { opacity: 1, scale: 1, x: 0, y: 0, duration: 1.1, ease: 'power3.out' }, 0.4 + i * 0.5)
+                        .fromTo(el.querySelector('.feat-label'), { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: 0.5 }, 1.1 + i * 0.5);
+                });
+                tl.to({}, { duration: 0.6 });
+            }
+
+            segments.push(ScrollTrigger.create({ trigger: '#cta', start: 'top bottom', end: 'center center' }));
+
+            // Unpinned sections: a gentle zoom-in as they arrive, plus the usual reveals.
+            if (animate) {
+                gsap.utils.toArray('main > section:not(.scene):not(#hero)').forEach((sec) => {
+                    gsap.fromTo(sec, { scale: 0.92, opacity: 0.3 }, {
+                        scale: 1, opacity: 1, ease: 'none',
+                        scrollTrigger: { trigger: sec, start: 'top bottom', end: 'top 40%', scrub: true },
+                    });
+                });
+                const onEnter = (el, from, extra = {}) =>
+                    gsap.fromTo(el, { opacity: 0, ...from }, {
+                        opacity: 1, x: 0, y: 0, duration: 0.9, ease: 'power3.out',
+                        scrollTrigger: { trigger: el, start: 'top 82%' }, ...extra,
+                    });
+                gsap.utils.toArray('[data-reveal="fade"]').forEach((el) => onEnter(el, { y: 28 }));
+                gsap.utils.toArray('[data-reveal="left"]').forEach((el) => onEnter(el, { x: -40 }));
+                gsap.utils.toArray('[data-reveal="right"]').forEach((el) => onEnter(el, { x: 40 }));
+                gsap.utils.toArray('[data-reveal="card"]').forEach((el, i) =>
+                    onEnter(el, { y: 24 }, { duration: 0.7, delay: (i % 4) * 0.1, scrollTrigger: { trigger: el.closest('section'), start: 'top 75%' } }),
+                );
+            }
         });
 
+        const drive = () => {
+            if (!field) return;
+            field.setStage(segments.reduce((sum, st) => sum + st.progress, 0));
+            field.setPush(heroScene ? heroScene.progress * (1 - segments[0].progress) : 0);
+            field.setTurn(coinScene ? (coinScene.progress - 0.5) * 0.7 : 0);
+        };
+        gsap.ticker.add(drive);
+
+        const ro = new ResizeObserver(() => ScrollTrigger.refresh());
+        ro.observe(document.body);
+
         return () => {
+            gsap.ticker.remove(drive);
             ctx.revert();
             ro.disconnect();
             anchorClicks.forEach(([a, fn]) => a.removeEventListener('click', fn));
-            window.removeEventListener('scroll', onNativeScroll);
             if (tickerFn) gsap.ticker.remove(tickerFn);
             lenis?.destroy();
             field?.dispose();
@@ -202,7 +360,7 @@ export default function App({ t, year, locale, langUrls }) {
                         </p>
                         <div className="actions" data-reveal="hero">
                             <a href="/login" className="btn btn-primary">{t('Masuk Toko')}</a>
-                            <a href="#solusi" className="btn btn-ghost">{t('Pelajari')}</a>
+                            <a href="#masalah" className="btn btn-ghost">{t('Pelajari')}</a>
                         </div>
                     </div>
                     <div className="scroll-hint" data-reveal="hero">
@@ -211,8 +369,10 @@ export default function App({ t, year, locale, langUrls }) {
                     </div>
                 </section>
 
-                <section id="paylater" className="section split">
-                    <div className="container split-grid">
+                <section id="paylater" className="section split scene">
+                    <div className="container split-grid split-reverse">
+                        {/* The coin is drawn by the particle field in this space. */}
+                        <div className="split-visual" />
                         <div>
                             <h2 className="h2-lg" data-reveal="left">
                                 {t('Belanja dulu, bayar nanti —')} <span className="accent">{t('atau danai, panen bagi hasil.')}</span>
@@ -220,46 +380,50 @@ export default function App({ t, year, locale, langUrls }) {
                             <p className="lead" data-reveal="left">
                                 {t('TLKM bukan cuma alat bayar. Kunci jaminan untuk dapat limit belanja, atau setor ke pool likuiditas dan dapat bagi hasil dari bunga peminjam. Semua tercatat di smart contract — pool, bunga, dan jangka waktunya terbuka untuk siapa saja.')}
                             </p>
-                            <div className="pair" data-reveal="left">
-                                <div className="card card-blue">
+                            <div className="pair">
+                                <div className="card card-blue pl-borrow">
                                     <div className="card-title"><span className="dot" />{t('Pinjam')}</div>
                                     <p>{t('Jaminkan aset, dapat limit TLKM. Checkout sekarang, lunasi sesuai jangka yang kamu pilih.')}</p>
                                 </div>
-                                <div className="card card-red">
+                                <div className="card card-red pl-supply">
                                     <div className="card-title"><span className="dot dot-red" />{t('Danai')}</div>
                                     <p>{t('Setor TLKM ke pool — fleksibel, 30, atau 90 hari. Bagi hasil naik seiring jangka.')}</p>
                                 </div>
                             </div>
                         </div>
-                        {/* The coin is drawn by the particle field in this space. */}
-                        <div className="split-visual" />
                     </div>
                 </section>
 
                 <Divider />
 
-                <section id="solusi" className="section container">
+                {/* Problem: the conventional way, over scattered particles. */}
+                <section id="masalah" className="section container scene">
                     <div className="heading" data-reveal="fade">
                         <p className="eyebrow">{t('Masalah & Solusi')}</p>
                         <h2>{t('Marketplace biasa menahan dana Anda di tempat yang gelap.')}</h2>
                     </div>
-                    <div className="grid grid-2">
-                        <div className="card card-lg" data-reveal="left">
-                            <p className="muted-label">{t('Cara konvensional')}</p>
-                            <h3 className="h3-muted">{t('Perantara memegang dana')}</h3>
-                            <ul className="list list-dash">
-                                <li>{t('Dana pembeli dipegang platform, prosesnya tidak terlihat.')}</li>
-                                <li>{t('Sengketa bergantung keputusan sepihak platform, tanpa bukti terbuka.')}</li>
-                                <li>{t('Tidak ada cara publik memverifikasi transaksi terjadi.')}</li>
-                            </ul>
-                        </div>
-                        <div className="card card-lg card-blue" data-reveal="right">
-                            <p className="accent-label">{t('Pendekatan E-Trace')}</p>
-                            <h3>{t('Smart contract memegang dana')}</h3>
-                            <ul className="list list-check">
-                                <li>{t('Dana ditahan escrow on-chain, dilepas hanya saat pembeli konfirmasi.')}</li>
-                                <li>{t('Ada masalah? Ajukan sengketa dengan bukti — diputus pengawas, bukan refund otomatis.')}</li>
-                                <li>{t('Setiap transaksi tercatat & terbuka di block explorer.')}</li>
+                    <div className="card card-lg problem-card">
+                        <p className="muted-label">{t('Cara konvensional')}</p>
+                        <h3>{t('Perantara memegang dana')}</h3>
+                        <ul className="list list-dash">
+                            <li className="old-item">{t('Dana pembeli dipegang platform, prosesnya tidak terlihat.')}</li>
+                            <li className="old-item">{t('Sengketa bergantung keputusan sepihak platform, tanpa bukti terbuka.')}</li>
+                            <li className="old-item">{t('Tidak ada cara publik memverifikasi transaksi terjadi.')}</li>
+                        </ul>
+                    </div>
+                </section>
+
+                {/* Solution: the particles light up as an idea bulb on the left. */}
+                <section id="solusi" className="section split scene">
+                    <div className="container split-grid split-reverse">
+                        <div className="split-visual" />
+                        <div>
+                            <p className="eyebrow sol-item">{t('Pendekatan E-Trace')}</p>
+                            <h2 className="h2-lg sol-item">{t('Smart contract memegang dana')}</h2>
+                            <ul className="list list-check list-lg">
+                                <li className="sol-item">{t('Dana ditahan escrow on-chain, dilepas hanya saat pembeli konfirmasi.')}</li>
+                                <li className="sol-item">{t('Ada masalah? Ajukan sengketa dengan bukti — diputus pengawas, bukan refund otomatis.')}</li>
+                                <li className="sol-item">{t('Setiap transaksi tercatat & terbuka di block explorer.')}</li>
                             </ul>
                         </div>
                     </div>
@@ -267,18 +431,19 @@ export default function App({ t, year, locale, langUrls }) {
 
                 <Divider />
 
-                <section className="section container">
+                <section id="cara-kerja" className="section container scene">
                     <div className="heading" data-reveal="fade">
                         <p className="eyebrow">{t('Cara Kerja')}</p>
                         <h2>{t('Tiga langkah, dana selalu di bawah kendali Anda.')}</h2>
                     </div>
+                    <div className="steps-bar" aria-hidden="true"><i /></div>
                     <div className="grid grid-3">
                         {[
                             ['01', 'Daftar & Dapat Wallet', 'Daftar dengan email + PIN atau MetaMask — tanpa seed phrase. Wallet dibuat otomatis untuk Anda.'],
                             ['02', 'Bayar via Escrow', 'Bayar dengan token TLKM. Dana masuk ke smart contract escrow, terpisah per penjual.'],
                             ['03', 'Konfirmasi & Dana Lepas', 'Barang diterima, Anda konfirmasi — escrow melepas dana ke penjual. Bermasalah? Ajukan sengketa dengan bukti; pengawas yang memutus.'],
                         ].map(([n, title, body]) => (
-                            <div className="card" key={n} data-reveal="card">
+                            <div className="card step" key={n}>
                                 <span className="num">{n}</span>
                                 <h3>{t(title)}</h3>
                                 <p>{t(body)}</p>
@@ -351,39 +516,7 @@ export default function App({ t, year, locale, langUrls }) {
 
                 <Divider />
 
-                <section className="section container">
-                    <div className="heading" data-reveal="fade">
-                        <p className="eyebrow">{t('Lebih dari Marketplace')}</p>
-                        <h2>{t('Ekosistem keuangan yang transparan & bisa diaudit.')}</h2>
-                    </div>
-                    <div className="grid grid-5">
-                        <div className="card" data-reveal="card">
-                            <Badge icon="coins" tone="red" />
-                            <h3>{t('Paylater — Pinjam & Danai')}</h3>
-                            <p>{t('Belanja sekarang bayar nanti dengan jaminan, atau')} <b>{t('danai')}</b> {t('pool likuiditas dan dapat bagi hasil. Bunga, jangka, & pool semua tercatat on-chain.')}</p>
-                        </div>
-                        <div className="card" data-reveal="card">
-                            <Badge icon="card" />
-                            <h3>{t('E-Wallet Crypto')}</h3>
-                            <p>{t('Dompet dalam aplikasi untuk menyimpan & mengirim TLKM/stablecoin, dilindungi PIN.')}</p>
-                        </div>
-                        <div className="card" data-reveal="card">
-                            <Badge icon="users" tone="violet" />
-                            <h3>{t('Dompet Bersama + Multisig')}</h3>
-                            <p>{t('Dana komunitas yang butuh persetujuan beberapa orang (')}<b>{t('M dari N')}</b>{t(') sebelum dicairkan. Setiap usulan & persetujuan tercatat dan bisa diaudit publik.')}</p>
-                        </div>
-                        <div className="card" data-reveal="card">
-                            <Badge icon="file" />
-                            <h3>{t('Laporan Otomatis Penjual')}</h3>
-                            <p>{t('Penjual mengunduh laporan penjualan')} <b>{t('Excel & PDF')}</b> {t('otomatis — harian (rincian transaksi) dan bulanan (rekap) — langsung dari transaksi di aplikasi.')}</p>
-                        </div>
-                        <div className="card" data-reveal="card">
-                            <Badge icon="heart" tone="red" />
-                            <h3>{t('Donasi Transparan & Anti-Beku')}</h3>
-                            <p>{t('Donasi tercatat on-chain dan tersalur lewat smart contract — tidak bisa dibekukan sepihak. Belajar dari kasus donasi yang pernah dibekukan di Indonesia: transparansi & desentralisasi menjaga dana tetap sampai ke tujuan.')}</p>
-                        </div>
-                    </div>
-                </section>
+                <Ecosystem t={t} />
 
                 <Divider />
 

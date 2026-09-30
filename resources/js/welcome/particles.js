@@ -165,12 +165,12 @@ function coinShape(n, font) {
         ctx.font = `800 270px ${font}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.lineWidth = 14;
+        ctx.lineWidth = 11;
         ctx.strokeStyle = '#e5121f';
         [0.2, 0.5, 0.8].forEach((f) => ctx.strokeText('TLKM', w / 2, h * f));
     });
-    takeEven(text, Math.floor(n * 0.3)).forEach(([x, y]) =>
-        s.push((x / 1100 - 0.5) * 12.5, -(y / 860 - 0.5) * 9.4, -2.6 + rand(-0.05, 0.05), '#e5121f'),
+    takeEven(text, Math.floor(n * 0.26)).forEach(([x, y]) =>
+        s.push((x / 1100 - 0.5) * 8.6, -(y / 860 - 0.5) * 7, -1.8 + rand(-0.05, 0.05), '#e5121f'),
     );
 
     // Coin face: light disc, red open-book mark and a dark "TS" monogram.
@@ -197,18 +197,18 @@ function coinShape(n, font) {
         ctx.textBaseline = 'middle';
         ctx.fillText('TS', c, 410);
     });
-    const tilt = new THREE.Euler(0.12, -0.42, 0.05);
+    const tilt = new THREE.Euler(0.1, 0.36, -0.04); // turned toward the copy on the right
     const v = new THREE.Vector3();
     const put = (x, y, z, color) => {
         v.set(x, y, z).applyEuler(tilt);
         s.push(v.x, v.y, v.z, color);
     };
-    takeEven(face, Math.floor(n * 0.5)).forEach(([x, y, r, g, b]) =>
+    takeEven(face, Math.floor(n * 0.56)).forEach(([x, y, r, g, b]) =>
         put((x / 600 - 0.5) * 2 * R, -(y / 600 - 0.5) * 2 * R, T / 2, [r, g, b]),
     );
 
     // Rim, then the back face.
-    const rim = Math.floor(n * 0.14);
+    const rim = Math.floor(n * 0.11);
     for (let k = 0; k < rim; k++) {
         const a = rand(0, Math.PI * 2);
         put(Math.cos(a) * R, Math.sin(a) * R, rand(-T / 2, T / 2), '#6b7c96');
@@ -217,6 +217,137 @@ function coinShape(n, font) {
         const a = rand(0, Math.PI * 2);
         const r = Math.sqrt(Math.random()) * R;
         put(Math.cos(a) * r, Math.sin(a) * r, -T / 2, '#a3b1c6');
+    }
+    return s;
+}
+
+// A 3D warning sign for the problem scene: a rounded red triangle with a raised white
+// exclamation mark and three "alert" dashes off its top-right corner, tilted like a
+// sticker-style 3D icon.
+function warningShape(n) {
+    const s = new Shape(n);
+    const W = 600;
+    const tri = (ctx) => {
+        ctx.beginPath();
+        ctx.moveTo(300, 90);
+        ctx.lineTo(95, 480);
+        ctx.lineTo(505, 480);
+        ctx.closePath();
+    };
+    const body = (ctx) => {
+        const g = ctx.createLinearGradient(0, 90, 0, 480);
+        g.addColorStop(0, '#f87171');
+        g.addColorStop(1, '#dc2626');
+        ctx.fillStyle = g;
+        ctx.strokeStyle = g;
+        ctx.lineWidth = 70;
+        ctx.lineJoin = 'round';
+        tri(ctx);
+        ctx.fill();
+        ctx.stroke();
+    };
+
+    // Front face: body, exclamation mark and the alert dashes.
+    const front = sampleCanvas(W, W, (ctx) => {
+        body(ctx);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 50;
+        ctx.beginPath();
+        ctx.moveTo(300, 200);
+        ctx.lineTo(300, 325);
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(300, 420, 30, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 26;
+        [[425, 70, 440, 18], [470, 110, 520, 72], [492, 168, 548, 158]].forEach(([x1, y1, x2, y2]) => {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        });
+    });
+
+    // Outline of the body only, for the thickness around the edge.
+    const mask = document.createElement('canvas');
+    mask.width = mask.height = W;
+    const mctx = mask.getContext('2d');
+    body(mctx);
+    const md = mctx.getImageData(0, 0, W, W).data;
+    const solid = (x, y) => x >= 0 && y >= 0 && x < W && y < W && md[(y * W + x) * 4 + 3] > 140;
+    const edge = [];
+    for (let y = 0; y < W; y += 2) {
+        for (let x = 0; x < W; x += 2) {
+            if (solid(x, y) && (!solid(x + 4, y) || !solid(x - 4, y) || !solid(x, y + 4) || !solid(x, y - 4))) edge.push([x, y]);
+        }
+    }
+
+    const T = 0.6;
+    const tilt = new THREE.Euler(0.12, -0.38, 0.2);
+    const v = new THREE.Vector3();
+    const put = (px, py, z, color) => {
+        v.set((px / W - 0.5) * 5.4, -(py / W - 0.5) * 5.4, z).applyEuler(tilt);
+        s.push(v.x, v.y, v.z, color);
+    };
+
+    takeEven(front, Math.floor(n * 0.58)).forEach(([x, y, r, g, b]) => {
+        // The white mark sits proud of the face.
+        const white = r > 230 && g > 230 && b > 230;
+        put(x, y, T / 2 + (white ? 0.1 : 0), [r, g, b]);
+    });
+    takeEven(edge, Math.floor(n * 0.28)).forEach(([x, y]) => put(x, y, rand(-T / 2, T / 2), '#b91c1c'));
+    const back = sampleCanvas(W, W, body);
+    takeEven(back, s.left).forEach(([x, y, r, g, b]) => put(x, y, -T / 2, [r * 0.8, g * 0.8, b * 0.8]));
+    return s;
+}
+
+// Warm-to-cool ramp for the idea bulb: amber glass at the top down to a cyan screw base.
+// Saturated on purpose: pale peach and lilac vanish against the light page.
+const BULB = ['#f59e0b', '#f59e0b', '#f97316', '#a855f7', '#7c3aed', '#0891b2'].map((h) => new THREE.Color(h));
+function bulbColor(t) {
+    const f = Math.min(1, Math.max(0, t)) * (BULB.length - 1);
+    const i = Math.min(BULB.length - 2, Math.floor(f));
+    return '#' + _g.copy(BULB[i]).lerp(BULB[i + 1], f - i).getHexString();
+}
+
+// A tilted light bulb: round glass, tapering neck, ridged screw base and a glowing filament.
+function bulbShape(n) {
+    const s = new Shape(n);
+    const TOP = 3.0;
+    const BOTTOM = -3.2;
+    const radiusAt = (y) => {
+        if (y >= -0.6) return Math.sqrt(Math.max(0, 2.1 * 2.1 - (y - 0.9) ** 2));
+        if (y >= -1.7) return 1.47 + ((y + 0.6) / -1.1) * (0.85 - 1.47);
+        if (y >= -2.9) return 0.85 + 0.07 * Math.sin((y + 1.7) * 16);
+        return 0.85 - ((y + 2.9) / -0.3) * 0.55;
+    };
+    const tilt = new THREE.Euler(0.15, 0.25, -0.38);
+    const v = new THREE.Vector3();
+    const put = (x, y, z, color) => {
+        v.set(x, y, z).applyEuler(tilt);
+        s.push(v.x, v.y, v.z, color);
+    };
+
+    // Filament: a small zigzag coil inside the glass.
+    const fil = Math.floor(n * 0.07);
+    for (let k = 0; k < fil; k++) {
+        const u = k / fil;
+        const y = -0.5 + u * 1.6;
+        const x = Math.sin(u * Math.PI * 10) * 0.35;
+        put(x + rand(-0.03, 0.03), y, rand(-0.05, 0.05), Math.random() < 0.5 ? '#f97316' : '#f59e0b');
+    }
+
+    // Surface of revolution, sampled so density stays even where the radius shrinks.
+    while (s.left > 0) {
+        const y = rand(BOTTOM, TOP);
+        const r = radiusAt(y);
+        if (Math.random() * 2.1 > r) continue;
+        const a = rand(0, Math.PI * 2);
+        const rr = r + rand(-0.04, 0.04);
+        put(Math.cos(a) * rr, y, Math.sin(a) * rr, bulbColor((TOP - y) / (TOP - BOTTOM) + rand(-0.05, 0.05)));
     }
     return s;
 }
@@ -263,7 +394,16 @@ export class ParticleField {
         sun.position.set(5, 8, 10);
         this.scene.add(sun);
 
-        this.shapes = [sphereShape(count), coinShape(count, font), scatterShape(count), logoShape(count)];
+        // Stage order follows the page: hero, paylater, problem (warning sign), solution
+        // (idea bulb), the middle sections (a loose scatter), closing CTA.
+        this.shapes = [
+            sphereShape(count),
+            coinShape(count, font),
+            warningShape(count),
+            bulbShape(count),
+            scatterShape(count),
+            logoShape(count),
+        ];
         this.n = count;
 
         // Per-particle constants: burst direction, wobble phase, size and a fixed tilt.
@@ -327,6 +467,8 @@ export class ParticleField {
             return [
                 { x: 0, y: 0.42, s: 0.62, o: 0.55, spin: 0.12, sway: 0, turn: 1 },
                 { x: 0, y: 0.3, s: 0.55, o: 0.4, spin: 0, sway: 0.2, turn: 1 },
+                { x: 0, y: 0.3, s: 0.5, o: 0.45, spin: 0, sway: 0.2, turn: 1 },
+                { x: 0, y: 0.3, s: 0.5, o: 0.45, spin: 0, sway: 0.2, turn: 1 },
                 { x: 0, y: 0, s: 1, o: 0.22, spin: 0, sway: 0, turn: 0 },
                 { x: 0, y: 0.35, s: 0.55, o: 0.45, spin: 0, sway: 0.25, turn: 1 },
             ];
@@ -335,7 +477,9 @@ export class ParticleField {
         // rotation would swing the whole cloud to one side of the screen.
         return [
             { x: 0.53, y: -0.02, s: 0.8, o: 1, spin: 0.12, sway: 0, turn: 1 },
-            { x: 0.5, y: 0, s: 0.9, o: 1, spin: 0, sway: 0.18, turn: 1 },
+            { x: -0.56, y: 0, s: 1, o: 1, spin: 0, sway: 0.06, turn: 1 },
+            { x: 0.52, y: -0.04, s: 0.95, o: 1, spin: 0, sway: 0.15, turn: 1 },
+            { x: -0.5, y: 0.02, s: 0.95, o: 1, spin: 0, sway: 0.15, turn: 1 },
             { x: 0, y: 0, s: 1, o: 0.3, spin: 0, sway: 0, turn: 0 },
             { x: 0.45, y: 0, s: 0.95, o: 1, spin: 0, sway: 0.25, turn: 1 },
         ];
@@ -354,6 +498,16 @@ export class ParticleField {
 
     setStage(s) {
         this.stage = Math.max(0, Math.min(this.shapes.length - 1, s));
+    }
+
+    // Driven by the pinned scenes: push (0..1) dollies the camera into the hero sphere,
+    // turn (radians) rotates the coin while the Paylater scene plays.
+    setPush(p) {
+        this.push = p;
+    }
+
+    setTurn(r) {
+        this.turn = r;
     }
 
     _tick = () => {
@@ -407,7 +561,11 @@ export class ParticleField {
         const sb = this.slots[b];
         const lerp = (p, q) => p + (q - p) * e;
         this.group.position.set(lerp(sa.x, sb.x) * this.halfW, lerp(sa.y, sb.y) * this.halfH, 0);
-        this.group.scale.setScalar(lerp(sa.s, sb.s));
+        // Zoom through each transition: the camera pushes in and the shape swells as it
+        // bursts, then both settle back as the next shape forms.
+        const zoom = this.reduceMotion ? 0 : Math.sin(e * Math.PI);
+        this.camera.position.z = 16 - zoom * 3 - (this.push || 0) * 2.5;
+        this.group.scale.setScalar(lerp(sa.s, sb.s) * (1 + zoom * 0.22));
         this.material.opacity = lerp(sa.o, sb.o);
 
         this.rot.x += (this.mouse.y * 0.25 - this.rot.x) * 0.05;
@@ -421,7 +579,9 @@ export class ParticleField {
         const wrapped = Math.atan2(Math.sin(this.spinAngle), Math.cos(this.spinAngle));
         const spinWeight = lerp(sa.spin > 0 ? 1 : 0, sb.spin > 0 ? 1 : 0);
         const turn = lerp(sa.turn, sb.turn);
-        this.group.rotation.set(this.rot.x * turn, (this.rot.y + wrapped * spinWeight + sway) * turn, 0);
+        const coin = a === 1 ? 1 - e : b === 1 ? e : 0;
+        const scrollTurn = (this.turn || 0) * coin;
+        this.group.rotation.set(this.rot.x * turn, (this.rot.y + wrapped * spinWeight + sway + scrollTurn) * turn, 0);
         // The unrotated scatter still answers the mouse, as a small parallax shift.
         this.group.position.x -= this.rot.y * 0.8 * (1 - turn);
         this.group.position.y += this.rot.x * 0.5 * (1 - turn);
