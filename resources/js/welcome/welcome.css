@@ -113,7 +113,6 @@ main > section, main > section > .container { transform-origin: 50% 50%; }
 .cube3d i {
     position: absolute; inset: 0; background: none; backface-visibility: visible;
     border: 2px solid var(--neon);
-    transition: border-width 0.3s;
 }
 .cube3d .f-front  { transform: translateZ(var(--h)); }
 .cube3d .f-back   { transform: rotateY(180deg) translateZ(var(--h)); }

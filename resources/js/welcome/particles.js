@@ -28,6 +28,10 @@ const LOGO_PATHS = [
     'M 100 302 H 218',
 ];
 
+// Opening convergence: length of the fly-in, and how much of it is spread as per-block delay.
+const INTRO_SECONDS = 3.2;
+const INTRO_STAGGER = 0.4;
+
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (arr) => arr[(Math.random() * arr.length) | 0];
 const smooth = (a, b, x) => {
@@ -410,6 +414,19 @@ export class ParticleField {
         this.burst = new Float32Array(count * 3);
         this.phase = new Float32Array(count);
         this.basis = new Float32Array(count * 9);
+        // Opening convergence: every block starts just past the left or right edge of the
+        // screen (so the page opens clean) and streams in to its place, each on a slightly
+        // different delay. The hero sphere sits right of centre, so the left-hand blocks
+        // start further out in the group's local space.
+        this.introStart = new Float32Array(count * 3);
+        this.introDelay = new Float32Array(count);
+        for (let i = 0; i < count; i++) {
+            const fromRight = Math.random() < 0.5;
+            this.introStart[i * 3] = fromRight ? rand(8, 14) : -rand(19, 27);
+            this.introStart[i * 3 + 1] = rand(-6, 6);
+            this.introStart[i * 3 + 2] = rand(-3, 2);
+            this.introDelay[i] = Math.random() * INTRO_STAGGER;
+        }
         const q = new THREE.Quaternion();
         const m = new THREE.Matrix4();
         const v = new THREE.Vector3();
@@ -514,6 +531,7 @@ export class ParticleField {
         this._raf = requestAnimationFrame(this._tick);
         if (!this.running) return;
         const t = this.clock.getElapsedTime();
+        const intro = this.reduceMotion ? 1 : Math.min(1, t / INTRO_SECONDS);
 
         const a = Math.floor(this.stage);
         const b = Math.min(a + 1, this.shapes.length - 1);
@@ -531,9 +549,19 @@ export class ParticleField {
         for (let i = 0; i < this.n; i++) {
             const k = i * 3;
             const w = Math.sin(t * 1.3 + ph[i]) * wob;
-            const x = pa[k] + (pb[k] - pa[k]) * e + bd[k] * burst + w;
-            const y = pa[k + 1] + (pb[k + 1] - pa[k + 1]) * e + bd[k + 1] * burst - w;
-            const z = pa[k + 2] + (pb[k + 2] - pa[k + 2]) * e + bd[k + 2] * burst;
+            let x = pa[k] + (pb[k] - pa[k]) * e + bd[k] * burst + w;
+            let y = pa[k + 1] + (pb[k + 1] - pa[k + 1]) * e + bd[k + 1] * burst - w;
+            let z = pa[k + 2] + (pb[k + 2] - pa[k + 2]) * e + bd[k + 2] * burst;
+            if (intro < 1) {
+                let u = (intro - this.introDelay[i]) / (1 - INTRO_STAGGER);
+                u = u < 0 ? 0 : u > 1 ? 1 : u;
+                // Ease in-out, so the stream is visibly travelling in from the edges.
+                u = u < 0.5 ? 4 * u * u * u : 1 - (-2 * u + 2) ** 3 / 2;
+                const s = this.introStart;
+                x = s[k] + (x - s[k]) * u;
+                y = s[k + 1] + (y - s[k + 1]) * u;
+                z = s[k + 2] + (z - s[k + 2]) * u;
+            }
             const m = i * 16;
             const r = i * 9;
             mat[m] = basis[r]; mat[m + 1] = basis[r + 1]; mat[m + 2] = basis[r + 2]; mat[m + 3] = 0;
@@ -554,7 +582,8 @@ export class ParticleField {
         });
         this.linkGeo.attributes.position.needsUpdate = true;
         const sphereWeight = a === 0 ? 1 - e : 0;
-        this.linkMat.opacity = 0.6 * sphereWeight;
+        // The chain lines only draw in once the blocks have (mostly) arrived.
+        this.linkMat.opacity = 0.6 * sphereWeight * smooth(0.75, 1, intro);
         this.lines.visible = sphereWeight > 0.01;
 
         const sa = this.slots[a];
@@ -566,7 +595,7 @@ export class ParticleField {
         const zoom = this.reduceMotion ? 0 : Math.sin(e * Math.PI);
         this.camera.position.z = 16 - zoom * 3 - (this.push || 0) * 2.5;
         this.group.scale.setScalar(lerp(sa.s, sb.s) * (1 + zoom * 0.22));
-        this.material.opacity = lerp(sa.o, sb.o);
+        this.material.opacity = lerp(sa.o, sb.o) * smooth(0, 0.25, intro);
 
         this.rot.x += (this.mouse.y * 0.25 - this.rot.x) * 0.05;
         this.rot.y += (this.mouse.x * 0.35 - this.rot.y) * 0.05;
