@@ -80,7 +80,15 @@ main, .footer { position: relative; z-index: 1; }
 /* ---------- split sections (text left, particle shape right) ---------- */
 .split-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
 .split-reverse { grid-template-columns: 0.95fr 1.05fr; }
-.split-visual { min-height: 460px; }
+.split-visual { position: relative; min-height: 460px; }
+/* Names the particle coin for people who don't know the TLKM mark. */
+.coin-tag {
+    position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%);
+    display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+    padding: 8px 16px; border-radius: 999px; background: #fff; border: 1px solid #fecaca;
+    box-shadow: 0 8px 20px -10px rgba(229, 18, 31, 0.35);
+    font-size: 14px; font-weight: 600; color: var(--ink);
+}
 main > section, main > section > .container { transform-origin: 50% 50%; }
 
 /* Pinned scrollytelling scenes: exactly one screen tall, content centred under the nav. */
