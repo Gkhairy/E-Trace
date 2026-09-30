@@ -39,8 +39,9 @@ const smooth = (a, b, x) => {
     return t * t * (3 - 2 * t);
 };
 
-// Filled pixels of a 2D drawing, as [x, y, r, g, b].
-function sampleCanvas(w, h, draw, step = 2) {
+// Filled pixels of a 2D drawing, as [x, y, r, g, b, a]; minAlpha sets how faint a
+// pixel may be and still count as filled.
+function sampleCanvas(w, h, draw, step = 2, minAlpha = 140) {
     const c = document.createElement('canvas');
     c.width = w;
     c.height = h;
@@ -51,7 +52,7 @@ function sampleCanvas(w, h, draw, step = 2) {
     for (let y = 0; y < h; y += step) {
         for (let x = 0; x < w; x += step) {
             const i = (y * w + x) * 4;
-            if (d[i + 3] > 140) pts.push([x, y, d[i], d[i + 1], d[i + 2]]);
+            if (d[i + 3] > minAlpha) pts.push([x, y, d[i], d[i + 1], d[i + 2], d[i + 3]]);
         }
     }
     return pts;
@@ -308,6 +309,119 @@ function warningShape(n) {
     return s;
 }
 
+// A flat pixel mosaic of a photo: the image is sampled on a grid sized so its opaque
+// pixels roughly match the particle count, and each particle takes one pixel's colour.
+// Transparent pixels are skipped; spare particles are parked at the centre with zero
+// size (pix = 0). Rendering straightens the cubes for this shape so they read as pixels.
+function imageShape(img, n, width) {
+    const aspect = img.naturalWidth / img.naturalHeight;
+    const probe = sampleCanvas(200, Math.round(200 / aspect), (ctx, w, h) => ctx.drawImage(img, 0, 0, w, h), 1);
+    const coverage = probe.length / (200 * Math.round(200 / aspect));
+    // Colours come from the sharp image; coverage from a slightly blurred copy, which
+    // feathers the silhouette into a few rings of partially covered edge pixels.
+    // Only pixels within two cells of real transparency count as rim; everything inside
+    // the coins stays a full, still block (dark shading inside must never read as a hole).
+    const sampleAt = (cols, rows) => {
+        const pts = sampleCanvas(cols, rows, (ctx, w, h) => ctx.drawImage(img, 0, 0, w, h), 1, 0);
+        const sharp = new Uint8Array(cols * rows);
+        pts.forEach(([x, y, , , , a]) => { sharp[y * cols + x] = a; });
+        const soft = new Uint8Array(cols * rows);
+        sampleCanvas(cols, rows, (ctx, w, h) => {
+            ctx.filter = 'blur(1.1px)';
+            ctx.drawImage(img, 0, 0, w, h);
+        }, 1, -1).forEach(([x, y, , , , a]) => { soft[y * cols + x] = a; });
+        const nearOutside = (x, y) => {
+            for (let dy = -2; dy <= 2; dy++) {
+                for (let dx = -2; dx <= 2; dx++) {
+                    const nx = x + dx, ny = y + dy;
+                    if (nx < 0 || ny < 0 || nx >= cols || ny >= rows || sharp[ny * cols + nx] < 30) return true;
+                }
+            }
+            return false;
+        };
+        return pts
+            .map((p) => { p[5] = nearOutside(p[0], p[1]) ? Math.min(p[5], soft[p[1] * cols + p[0]]) : 255; return p; })
+            .filter((p) => p[5] >= 30);
+    };
+    // 3D build: the face pixels, plus RIM_LAYERS copies of each outline pixel stepped
+    // back in depth to give every coin a solid edge. The grid is sized so faces and rims
+    // together fit the particle count; every face pixel always gets a particle (a
+    // dropped pixel shows as a hole), so an oversized grid is shrunk and resampled.
+    const RIM_LAYERS = 2;
+    const layout = (pts, cols, rows) => {
+        const at = new Map(pts.map((p) => [p[1] * cols + p[0], p]));
+        const rim = pts.filter(([x, y]) => !at.has(y * cols + x + 1) || !at.has(y * cols + x - 1) || !at.has((y + 1) * cols + x) || !at.has((y - 1) * cols + x));
+        return { at, rim, total: pts.length + rim.length * RIM_LAYERS };
+    };
+    let cols = Math.round(Math.sqrt((n * 0.7) / coverage * aspect));
+    let rows = Math.round(cols / aspect);
+    let used = sampleAt(cols, rows);
+    let grid = layout(used, cols, rows);
+    for (let tries = 0; grid.total > n && tries < 8; tries++) {
+        cols = Math.floor(cols * Math.sqrt(n / grid.total) * 0.99);
+        rows = Math.round(cols / aspect);
+        used = sampleAt(cols, rows);
+        grid = layout(used, cols, rows);
+    }
+
+    // Each coin gets its own depth: flood-fill the pixel grid into connected coins, keep
+    // the biggest at the centre plane and push the others in front of / behind it.
+    const coin = new Int32Array(cols * rows).fill(-1);
+    const sizes = [];
+    used.forEach(([x0, y0]) => {
+        if (coin[y0 * cols + x0] >= 0) return;
+        const id = sizes.length;
+        let size = 0;
+        const stack = [[x0, y0]];
+        coin[y0 * cols + x0] = id;
+        while (stack.length) {
+            const [x, y] = stack.pop();
+            size++;
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    const k = (y + dy) * cols + (x + dx);
+                    if (grid.at.has(k) && coin[k] < 0) { coin[k] = id; stack.push([x + dx, y + dy]); }
+                }
+            }
+        }
+        sizes.push(size);
+    });
+    const order = sizes.map((_, i) => i).sort((p, q) => sizes[q] - sizes[p]);
+    const depthOf = new Float32Array(sizes.length);
+    order.forEach((id, rank) => { depthOf[id] = rank === 0 ? 0 : (rank % 2 ? 1 : -1) * 0.9; });
+
+    const s = new Shape(n);
+    s.pixel = true;
+    s.pix = new Float32Array(n);
+    s.pixelSize = (width / cols) * 0.95;
+    const height = width / aspect;
+    const step = width / cols;
+    // Lighting on the blocks greys out pure white, so colours are lifted to read as the
+    // white coins in the source image.
+    const LIFT = 1.32;
+    const lift = (r, g, b) => [Math.min(255, r * LIFT), Math.min(255, g * LIFT), Math.min(255, b * LIFT)];
+    used.forEach(([x, y, r, g, b, a]) => {
+        if (s.left <= 0) return;
+        const z = depthOf[coin[y * cols + x]];
+        // The logo (red book, grey "TS") sits proud of the white face.
+        const lum = (0.3 * r + 0.59 * g + 0.11 * b) / 255;
+        const relief = step * 1.6 * (1 - smooth(0.55, 0.85, lum));
+        // Anti-aliasing in blocks: a half-covered edge pixel becomes a smaller block,
+        // so the coins' rims round off instead of stepping like a staircase.
+        s.pix[s.i] = 0.3 + 0.7 * smooth(30, 235, a);
+        s.push((x / cols - 0.5) * width, -(y / rows - 0.5) * height, z + relief, lift(r, g, b));
+    });
+    grid.rim.forEach(([x, y]) => {
+        const z = depthOf[coin[y * cols + x]];
+        for (let l = 1; l <= RIM_LAYERS && s.left > 0; l++) {
+            s.pix[s.i] = 1;
+            s.push((x / cols - 0.5) * width, -(y / rows - 0.5) * height, z - l * step * 1.6, l === 1 ? '#e5e7eb' : '#cbd5e1');
+        }
+    });
+    while (s.left > 0) s.push(0, 0, 0, '#ffffff');
+    return s;
+}
+
 // Warm-to-cool ramp for the idea bulb: amber glass at the top down to a cyan screw base.
 // Saturated on purpose: pale peach and lilac vanish against the light page.
 const BULB = ['#f59e0b', '#f59e0b', '#f97316', '#a855f7', '#7c3aed', '#0891b2'].map((h) => new THREE.Color(h));
@@ -375,7 +489,7 @@ function logoShape(n) {
 }
 
 export class ParticleField {
-    constructor(container, { count, reduceMotion, font }) {
+    constructor(container, { count, reduceMotion, font, photo }) {
         this.container = container;
         this.reduceMotion = reduceMotion;
         this.stage = 0;
@@ -409,6 +523,19 @@ export class ParticleField {
             logoShape(count),
         ];
         this.n = count;
+
+        // Paylater stage: once the TLKM coin photo loads, the particles rebuild it as a
+        // pixel mosaic. Until then (or if it fails) the drawn coin above stands in.
+        if (photo) {
+            const img = new Image();
+            img.decoding = 'async';
+            img.onload = () => {
+                // Sized by height (~4.3 units) so the coins keep the same presence whatever
+                // the image's proportions.
+                this.shapes[1] = imageShape(img, count, 4.3 * (img.naturalWidth / img.naturalHeight));
+            };
+            img.src = photo;
+        }
 
         // Per-particle constants: burst direction, wobble phase, size and a fixed tilt.
         this.burst = new Float32Array(count * 3);
@@ -494,7 +621,7 @@ export class ParticleField {
         // rotation would swing the whole cloud to one side of the screen.
         return [
             { x: 0.53, y: -0.02, s: 0.8, o: 1, spin: 0.12, sway: 0, turn: 1 },
-            { x: -0.56, y: 0, s: 1, o: 1, spin: 0, sway: 0.06, turn: 1 },
+            { x: -0.52, y: 0, s: 1, o: 1, spin: 0, sway: 0.12, turn: 1 },
             { x: 0.52, y: -0.04, s: 0.95, o: 1, spin: 0, sway: 0.15, turn: 1 },
             { x: -0.5, y: 0.02, s: 0.95, o: 1, spin: 0, sway: 0.15, turn: 1 },
             { x: 0, y: 0, s: 1, o: 0.3, spin: 0, sway: 0, turn: 0 },
@@ -546,9 +673,17 @@ export class ParticleField {
         const col = this.mesh.instanceColor.array;
         const pa = A.pos, pb = B.pos, ca = A.col, cb = B.col;
         const basis = this.basis, bd = this.burst, ph = this.phase;
+        // Photo mosaic: blend each cube from its random tilt to a straight, grid-sized
+        // pixel as the pixel shape takes over (and back out as it leaves).
+        const align = (A.pixel ? 1 - e : 0) + (B.pixel ? e : 0);
+        const px = (A.pixel ? A.pixelSize : B.pixel ? B.pixelSize : 0) * align;
         for (let i = 0; i < this.n; i++) {
             const k = i * 3;
-            const w = Math.sin(t * 1.3 + ph[i]) * wob;
+            const w = Math.sin(t * 1.3 + ph[i]) * wob * (1 - align);
+            // Spare particles in a mosaic shrink to nothing instead of cluttering it.
+            let vis = (A.pixel ? A.pix[i] : 1) * (1 - e) + (B.pixel ? B.pix[i] : 1) * e;
+            // Edge pixels (partly covered) breathe gently: a soft shimmer along the rims.
+            if (align > 0 && vis > 0 && vis < 0.98 && !this.reduceMotion) vis *= 1 + 0.22 * (1 - vis) * Math.sin(t * 2.4 + ph[i]);
             let x = pa[k] + (pb[k] - pa[k]) * e + bd[k] * burst + w;
             let y = pa[k + 1] + (pb[k + 1] - pa[k + 1]) * e + bd[k + 1] * burst - w;
             let z = pa[k + 2] + (pb[k + 2] - pa[k + 2]) * e + bd[k + 2] * burst;
@@ -564,9 +699,11 @@ export class ParticleField {
             }
             const m = i * 16;
             const r = i * 9;
-            mat[m] = basis[r]; mat[m + 1] = basis[r + 1]; mat[m + 2] = basis[r + 2]; mat[m + 3] = 0;
-            mat[m + 4] = basis[r + 3]; mat[m + 5] = basis[r + 4]; mat[m + 6] = basis[r + 5]; mat[m + 7] = 0;
-            mat[m + 8] = basis[r + 6]; mat[m + 9] = basis[r + 7]; mat[m + 10] = basis[r + 8]; mat[m + 11] = 0;
+            const ra = (1 - align) * vis;
+            const pv = px * vis;
+            mat[m] = basis[r] * ra + pv; mat[m + 1] = basis[r + 1] * ra; mat[m + 2] = basis[r + 2] * ra; mat[m + 3] = 0;
+            mat[m + 4] = basis[r + 3] * ra; mat[m + 5] = basis[r + 4] * ra + pv; mat[m + 6] = basis[r + 5] * ra; mat[m + 7] = 0;
+            mat[m + 8] = basis[r + 6] * ra; mat[m + 9] = basis[r + 7] * ra; mat[m + 10] = basis[r + 8] * ra + pv; mat[m + 11] = 0;
             mat[m + 12] = x; mat[m + 13] = y; mat[m + 14] = z; mat[m + 15] = 1;
             col[k] = ca[k] + (cb[k] - ca[k]) * e;
             col[k + 1] = ca[k + 1] + (cb[k + 1] - ca[k + 1]) * e;

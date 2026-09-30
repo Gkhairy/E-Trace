@@ -160,6 +160,7 @@ export default function App({ t, year, locale, langUrls }) {
                 count: mobile ? 2200 : 5000,
                 reduceMotion,
                 font: "'Bricolage Grotesque', 'Arial Black', sans-serif",
+                photo: '/img/tlkm-coins.png?v=2',
             });
         } catch (err) {
             // No WebGL: the page still reads fine without the particles.
@@ -227,8 +228,7 @@ export default function App({ t, year, locale, langUrls }) {
             // 2. Paylater: the coin turns with the scroll while Borrow, then Supply, light up.
             if (animate) {
                 const tl = gsap.timeline({ scrollTrigger: scene('#paylater', 140) });
-                tl.fromTo('#paylater .coin-tag', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5 })
-                    .fromTo('#paylater .pl-borrow', { opacity: 0.4, scale: 0.96 }, { ...hilite('#2563eb', 'rgba(37,99,235,0.45)'), duration: 1 })
+                tl.fromTo('#paylater .pl-borrow', { opacity: 0.4, scale: 0.96 }, { ...hilite('#2563eb', 'rgba(37,99,235,0.45)'), duration: 1 })
                     .fromTo('#paylater .pl-supply', { opacity: 0.4, scale: 0.96 }, { ...hilite('#e5121f', 'rgba(229,18,31,0.4)'), duration: 1 }, '+=0.4')
                     .to('#paylater .pl-borrow', { ...rest, opacity: 0.6, duration: 1 }, '<')
                     .to({}, { duration: 0.4 });
@@ -311,7 +311,7 @@ export default function App({ t, year, locale, langUrls }) {
             if (!field) return;
             field.setStage(segments.reduce((sum, st) => sum + st.progress, 0));
             field.setPush(heroScene ? heroScene.progress * (1 - segments[0].progress) : 0);
-            field.setTurn(coinScene ? (coinScene.progress - 0.5) * 0.7 : 0);
+            field.setTurn(coinScene ? (coinScene.progress - 0.5) * 0.9 : 0);
         };
         gsap.ticker.add(drive);
 
@@ -332,7 +332,6 @@ export default function App({ t, year, locale, langUrls }) {
     return (
         <div className="wp">
             <div ref={fieldRef} className="field" aria-hidden="true" />
-
             <header className="nav">
                 <div className="nav-inner">
                     <a href="/" className="brand">
@@ -372,10 +371,8 @@ export default function App({ t, year, locale, langUrls }) {
 
                 <section id="paylater" className="section split scene">
                     <div className="container split-grid split-reverse">
-                        {/* The coin is drawn by the particle field in this space; the tag names it. */}
-                        <div className="split-visual">
-                            <span className="coin-tag"><span className="dot dot-red" />{t('Token TLKM · BEP-20')}</span>
-                        </div>
+                        {/* The particle field rebuilds the TLKM coins here as a pixel mosaic. */}
+                        <div className="split-visual" />
                         <div>
                             <h2 className="h2-lg" data-reveal="left">
                                 {t('Belanja dulu, bayar nanti —')} <span className="accent">{t('atau danai, panen bagi hasil.')}</span>
