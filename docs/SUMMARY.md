@@ -38,3 +38,4 @@
 * [Security and audit status](project/security.md)
 * [Audit report](project/audit-report.md)
 * [FAQ](project/faq.md)
+* [Terms of Service](project/terms.md)

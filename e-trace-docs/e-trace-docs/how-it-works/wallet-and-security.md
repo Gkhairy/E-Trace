@@ -6,7 +6,7 @@ Most shoppers have never used a crypto wallet. E-Trace gives every email account
 
 * You sign up with your email and set a 6-digit PIN. No seed phrase, no browser extension.
 * To pay, you enter your PIN. The server signs the transaction for you.
-* Before a PIN transaction, the platform tops up your wallet with a little tBNB for gas, so you never have to buy gas yourself.
+* On testnet only, the platform tops up your wallet with a little tBNB for gas before a PIN transaction, so you never have to buy gas yourself. This may not continue on mainnet.
 
 If you'd rather keep your own keys, log in with MetaMask or any injected wallet instead.
 

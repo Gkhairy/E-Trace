@@ -15,7 +15,7 @@
 ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-06B6D4?logo=tailwindcss&logoColor=white)
 ![Status](https://img.shields.io/badge/status-prototype_·_testnet-orange)
 
-**[🌐 Live app: e-trace.shop](https://e-trace.shop)** · **[📚 Docs](https://khairy.gitbook.io/e-trace/)** · **[🎬 Demo video](https://youtu.be/QE7p25uFDSw)**
+**[🌐 Live app: e-trace.shop](https://e-trace.shop)** · **[📚 Docs](https://khairy.gitbook.io/e-trace/)** · **[🎬 Demo video](https://youtu.be/QE7p25uFDSw)** · **[📜 Terms of Service](https://khairy.gitbook.io/e-trace/project/terms)**
 
 </div>
 
@@ -81,6 +81,7 @@ TLKM is not meant to be the final currency. **Later**, E-Trace plans to settle p
 
 ### 👛 Wallet, security and more
 - **Embedded wallet** (email + **PIN**): no seed phrase needed. MetaMask login is also supported (Sign-In with Ethereum).
+- **Send TLKM by phone number**, like a regular e-wallet: type the recipient's phone number (or a wallet address), check their display name, then confirm with your PIN. Their email is never shown, and phone numbers stay encrypted off-chain.
 - **Cloudflare Turnstile**, email OTP, optional **2FA**, rate limits.
 - **AI chatbot (EVA)** for app help and product search.
 - **Seller financial reports** (automatic summaries + COGS, Excel/PDF export).

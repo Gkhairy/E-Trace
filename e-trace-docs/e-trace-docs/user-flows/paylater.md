@@ -7,7 +7,7 @@ Paylater is a two-sided lending pool in the [TlkmPaylater](../smart-contracts/tl
 1. Open **Paylater → Borrow** and deposit tBNB as collateral.
 2. Your credit limit appears right away: `limit = collateral × rate`. On testnet the rate is 1,000,000 TLKM per tBNB.
 3. Borrow any amount up to your limit, as long as the pool has enough free liquidity.
-4. You owe the amount plus a **flat 3% interest**, due after the loan period (7 days on testnet).
+4. You owe the amount plus a **flat 3% interest**, due after the loan period (7 days on testnet). The flat rate is for now; a later version will make interest depend on how long you borrow.
 5. Repay in one go or in parts. When the debt is zero you can withdraw your collateral.
 
 If a loan is overdue, the platform can seize the collateral to cover it. That is recorded on-chain as a `Seized` event, along with any bad debt.

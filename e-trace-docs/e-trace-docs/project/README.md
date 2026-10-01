@@ -7,3 +7,4 @@ The bigger picture: how E-Trace is built, how it makes money, and where it's goi
 * [Roadmap](roadmap.md)
 * [Security and audit status](security.md)
 * [FAQ](faq.md)
+* [Terms of Service](terms.md)
