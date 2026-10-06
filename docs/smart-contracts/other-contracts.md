@@ -30,9 +30,13 @@ Events: `Donated(campaignId, donor, amount, timestamp)`, `Disbursed(campaignId, 
 
 ## CommunityMultisigWallet
 
-**Example deployment:** [`0xa408e7991b7585ea3b94e38a5312d39169c8849f`](https://testnet.bscscan.com/address/0xa408e7991b7585ea3b94e38a5312d39169c8849f) · **Source:** [`contracts/CommunityMultisigWallet.sol`](https://github.com/Gkhairy/E-Trace/blob/master/contracts/CommunityMultisigWallet.sol)
+**Status:** not deployed yet, source only · **Source:** [`contracts/CommunityMultisigWallet.sol`](https://github.com/Gkhairy/E-Trace/blob/master/contracts/CommunityMultisigWallet.sol)
 
 Each community group gets its own contract. Members hold TLKM together, and nothing moves without enough approvals.
+
+{% hint style="info" %}
+Community wallets in the prototype **don't use a smart contract yet**. Each group gets its own wallet address, managed by the app (its key is stored encrypted on the server). The app enforces the rules (a monthly allowance per member, or approval from every signer, each confirmed with a PIN), records every approval, and then sends a normal TLKM transfer. So on BscScan a community wallet such as `0xa408…849f` shows up as a regular address with TLKM transfers, not as a contract. `CommunityMultisigWallet` and `CommunityAllowanceWallet` are written and internally reviewed, and will replace the app-managed wallets in the next contract version.
+{% endhint %}
 
 | Function | Description |
 | --- | --- |
